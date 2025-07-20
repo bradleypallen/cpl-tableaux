@@ -44,11 +44,135 @@ This will test transitivity formulas and display tableau trees.
 
 ### Command-Line Interface
 
-For interactive formula testing:
+The CLI provides both interactive and command-line modes for formula testing.
+
+#### Interactive Mode
+
+Start the interactive interface:
 
 ```bash
 python cli.py
 ```
+
+Example interactive session:
+```
+============================================================
+SEMANTIC TABLEAU SYSTEM
+============================================================
+Enter propositional logic formulas to test satisfiability.
+
+Syntax:
+  Atoms: p, q, r, x, y, etc.
+  Negation: ~p or ¬p
+  Conjunction: p & q or p ∧ q
+  Disjunction: p | q or p ∨ q
+  Implication: p -> q or p → q
+  Parentheses: (p & q) -> r
+
+Commands:
+  help     - Show this help
+  history  - Show formula history
+  examples - Show example formulas
+  multi    - Enter multiple formulas mode
+  quit     - Exit
+============================================================
+
+Tableau> p | ~p
+Parsed formula: (p ∨ ¬p)
+Testing satisfiability...
+----------------------------------------
+
+RESULT: SATISFIABLE
+
+Show full tableau tree? (y/n): y
+
+======================================================================
+SEMANTIC TABLEAU TREE
+======================================================================
+Testing satisfiability of: (p ∨ ¬p)
+
+└── 1: (p ∨ ¬p)
+    ├── 2: p [Branch 2✓] [by Disjunction (A∨B → A | B)]
+    └── 3: ¬p [Branch 3✓] [by Disjunction (A∨B → A | B)]
+
+======================================================================
+Total branches: 2
+Open branches: 2 [2, 3]
+Closed branches: 0 
+✓ SATISFIABLE - Formula has satisfying interpretation(s)
+======================================================================
+
+Tableau> p & ~p
+Parsed formula: (p ∧ ¬p)
+Testing satisfiability...
+----------------------------------------
+
+RESULT: UNSATISFIABLE
+
+Tableau> history
+Formula History:
+--------------------
+ 1. (p ∨ ¬p)
+ 2. (p ∧ ¬p)
+
+Tableau> quit
+Goodbye!
+```
+
+#### Command-Line Mode
+
+Test formulas directly from the command line:
+
+```bash
+# Single formula
+python cli.py "p -> q"
+python cli.py "(p & q) -> (p | q)"
+python cli.py "~(p & q) -> (~p | ~q)"
+
+# Multiple formulas (comma-separated)
+python cli.py "p -> q, q -> r, p, ~r"
+```
+
+Example output:
+```bash
+$ python cli.py "p & ~p"
+Tableau System - Single Formula Mode
+========================================
+
+Parsed formula: (p ∧ ¬p)
+Testing satisfiability...
+----------------------------------------
+
+RESULT: UNSATISFIABLE
+
+======================================================================
+SEMANTIC TABLEAU TREE
+======================================================================
+Testing satisfiability of: (p ∧ ¬p)
+
+└── 1: (p ∧ ¬p)
+    ├── 2: p [Branch 1✗] [by Conjunction (A∧B → A, B)]
+    └── 3: ¬p [Branch 1✗] [by Conjunction (A∧B → A, B)]
+
+======================================================================
+Total branches: 1
+Open branches: 0 
+Closed branches: 1 [1]
+✗ UNSATISFIABLE - All branches close
+======================================================================
+```
+
+#### Syntax Reference
+
+The CLI accepts formulas using either symbolic or ASCII notation:
+
+| Logic Operator | Symbolic | ASCII | Example |
+|---------------|----------|-------|---------|
+| Negation | ¬ | ~ | `~p` or `¬p` |
+| Conjunction | ∧ | & | `p & q` or `p ∧ q` |
+| Disjunction | ∨ | \| | `p \| q` or `p ∨ q` |
+| Implication | → | -> | `p -> q` or `p → q` |
+| Parentheses | ( ) | ( ) | `(p & q) -> r` |
 
 ### Programmatic Usage
 
