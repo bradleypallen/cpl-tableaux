@@ -195,6 +195,7 @@ The CLI accepts formulas using either symbolic or ASCII notation:
 
 ### Programmatic Usage
 
+#### Classical Logic
 ```python
 from tableau import Tableau
 from formula import Atom, Implication, Conjunction
@@ -213,6 +214,85 @@ models = tableau.extract_all_models()
 for model in models:
     print(f"Model: {model}")
 ```
+
+#### Weak Kleene Logic (WK3)
+```python
+from wk3_tableau import WK3Tableau
+from wk3_model import WK3Model
+from truth_value import TruthValue, t, f, e
+from formula import Atom, Negation, Conjunction, Disjunction
+
+# Create formulas
+p, q = Atom("p"), Atom("q")
+excluded_middle = Disjunction(p, Negation(p))  # p ∨ ¬p
+contradiction = Conjunction(p, Negation(p))    # p ∧ ¬p
+
+# Test satisfiability in WK3
+wk3_tableau = WK3Tableau(excluded_middle)
+is_satisfiable = wk3_tableau.build()
+wk3_tableau.print_tree()
+
+# Extract three-valued models
+wk3_models = wk3_tableau.extract_all_models()
+for model in wk3_models:
+    p_val = model.get_value('p')
+    formula_val = model.satisfies(excluded_middle)
+    print(f"Model: p={p_val} → formula={formula_val}")
+
+# Create specific three-valued models
+model_t = WK3Model({'p': t, 'q': f})
+model_e = WK3Model({'p': e, 'q': e})  # Both atoms undefined
+
+# Evaluate formulas under different models
+print(f"p ∧ ¬p with p=t: {model_t.satisfies(contradiction)}")  # f
+print(f"p ∧ ¬p with p=e: {model_e.satisfies(contradiction)}")  # e
+
+# Work with truth values directly
+from truth_value import WeakKleeneOperators
+result = WeakKleeneOperators.conjunction(t, e)  # t ∧ e = e
+print(f"t ∧ e = {result}")
+```
+
+#### Comparing Classical vs WK3 Results
+```python
+from tableau import Tableau
+from wk3_tableau import WK3Tableau
+from formula import Atom, Conjunction, Negation
+
+# Test the same formula in both logics
+p = Atom("p")
+contradiction = Conjunction(p, Negation(p))  # p ∧ ¬p
+
+# Classical logic
+classical_tableau = Tableau(contradiction)
+classical_result = classical_tableau.build()
+
+# WK3 logic  
+wk3_tableau = WK3Tableau(contradiction)
+wk3_result = wk3_tableau.build()
+
+print(f"Classical: p ∧ ¬p is {'SATISFIABLE' if classical_result else 'UNSATISFIABLE'}")
+print(f"WK3:       p ∧ ¬p is {'SATISFIABLE' if wk3_result else 'UNSATISFIABLE'}")
+
+# Show WK3 models
+if wk3_result:
+    wk3_models = wk3_tableau.extract_all_models()
+    for model in wk3_models:
+        p_val = model.get_value('p')
+        print(f"  WK3 Model: p={p_val}")
+```
+
+#### Key API Differences
+
+| Feature | Classical | WK3 |
+|---------|-----------|-----|
+| **Tableau Class** | `Tableau` | `WK3Tableau` |
+| **Model Class** | `Model` | `WK3Model` |  
+| **Truth Values** | `True`/`False` | `t`/`f`/`e` |
+| **Model Creation** | `{'p': True}` | `{'p': t}` or `{'p': 'true'}` |
+| **Formula Classes** | Same (`Atom`, `Negation`, etc.) | Same |
+| **Model Evaluation** | `.satisfies()` returns `bool` | `.satisfies()` returns `TruthValue` |
+| **Classical Check** | N/A | `.is_satisfying()` for bool result |
 
 ### Testing
 
