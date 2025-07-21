@@ -1,17 +1,21 @@
 # Classical Propositional Logic Tableaux
 
-A sophisticated implementation of semantic tableaux for classical propositional logic in Python with production-quality optimizations.
+An implementation of semantic tableaux for classical propositional logic in Python with optimizations.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Files
 
 - `tableau.py` - Main tableau implementation with optimized expansion rules
 - `formula.py` - Formula representation classes and logical operators
 - `cli.py` - Command-line interface for interactive use
-- `test_tableau.py` - Comprehensive test suite (40+ tests)
+- `test_tableau.py` - Test suite (40+ tests)
 - `test_performance.py` - Performance benchmarks and optimization tests
-- `test_medium_optimizations.py` - Advanced optimization feature tests
-- `OPTIMIZATIONS.md` - Detailed documentation of performance improvements
-- `TECHNICAL_ANALYSIS.md` - Expert analysis and assessment of implementation quality
+- `test_medium_optimizations.py` - Optimization feature tests
+- `OPTIMIZATIONS.md` - Documentation of performance improvements
+- `TECHNICAL_ANALYSIS.md` - Analysis and assessment of implementation quality
 
 ## Installation
 
@@ -102,12 +106,23 @@ Closed branches: 0
 ✓ SATISFIABLE - Formula has satisfying interpretation(s)
 ======================================================================
 
+Tableau> mode
+Current mode: Classical
+
+Available modes:
+  1. Classical Propositional Logic
+  2. Weak Kleene Logic (WK3)
+
+Select mode (1 or 2): 2
+Switched to Weak Kleene Logic (WK3) mode.
+Note: In WK3, atoms can have values t (true), f (false), or e (neither/undefined).
+
 Tableau> p & ~p
 Parsed formula: (p ∧ ¬p)
 Testing satisfiability...
 ----------------------------------------
 
-RESULT: UNSATISFIABLE
+RESULT: SATISFIABLE
 
 Tableau> history
 Formula History:
@@ -124,13 +139,17 @@ Goodbye!
 Test formulas directly from the command line:
 
 ```bash
-# Single formula
+# Single formula (Classical Logic)
 python cli.py "p -> q"
 python cli.py "(p & q) -> (p | q)"
 python cli.py "~(p & q) -> (~p | ~q)"
 
 # Multiple formulas (comma-separated)
 python cli.py "p -> q, q -> r, p, ~r"
+
+# Weak Kleene Logic (WK3) mode
+python cli.py --wk3 "p | ~p"     # Not a tautology in WK3!
+python cli.py --wk3 "p & ~p"     # Not unsatisfiable in WK3!
 ```
 
 Example output:
@@ -197,7 +216,7 @@ for model in models:
 
 ### Testing
 
-Run the comprehensive test suite:
+Run the test suite:
 
 ```bash
 # All tests
@@ -242,9 +261,29 @@ formula = Implication(
 )
 ```
 
+## Weak Kleene Logic (WK3) Support
+
+The system supports both Classical Propositional Logic and Weak Kleene Logic:
+
+### Key Differences in WK3:
+- **Three truth values**: t (true), f (false), e (neither/undefined)
+- **Law of Excluded Middle not a tautology**: `p ∨ ¬p` can be `e` when `p = e`
+- **Contradictions not always unsatisfiable**: `p ∧ ¬p` can be `e` when `p = e`
+- **Partial information handling**: Useful for incomplete databases and partial knowledge
+
+### Usage:
+```bash
+# Command line
+python cli.py --wk3 "p | ~p"
+
+# Interactive mode - use 'mode' command to switch
+python cli.py
+Tableau> mode
+```
+
 ## Performance Features
 
-This implementation includes state-of-the-art tableau optimizations:
+This implementation includes tableau optimizations:
 
 1. **Proper Termination**: No arbitrary iteration limits
 2. **Formula Prioritization**: α-formulas expanded before β-formulas to minimize branching
@@ -255,7 +294,7 @@ This implementation includes state-of-the-art tableau optimizations:
 
 ## Output
 
-The system provides detailed output including:
+The system provides output including:
 
 - **Tableau Trees**: Visual representation of the proof search
 - **Branch Information**: Open/closed status with closure reasons

@@ -11,6 +11,8 @@ import re
 from typing import List, Optional
 from formula import *
 from tableau import Tableau
+from wk3_tableau import WK3Tableau
+from truth_value import TruthValue, t, f, e
 
 class FormulaParser:
     """Parse string formulas into Formula objects"""
@@ -128,14 +130,16 @@ class FormulaParser:
 class TableauCLI:
     """Command Line Interface for the tableau system"""
     
-    def __init__(self):
+    def __init__(self, logic_mode="classical"):
         self.parser = FormulaParser()
         self.history = []
+        self.logic_mode = logic_mode  # "classical" or "wk3"
     
     def run(self):
         """Main CLI loop"""
         print("=" * 60)
-        print("SEMANTIC TABLEAU SYSTEM")
+        logic_name = "Classical Propositional Logic" if self.logic_mode == "classical" else "Weak Kleene Logic (WK3)"
+        print(f"SEMANTIC TABLEAU SYSTEM - {logic_name}")
         print("=" * 60)
         print("Enter propositional logic formulas to test satisfiability.")
         print()
@@ -152,6 +156,7 @@ class TableauCLI:
         print("  history  - Show formula history")
         print("  examples - Show example formulas")
         print("  multi    - Enter multiple formulas mode")
+        print("  mode     - Switch between classical and WK3 logic")
         print("  quit     - Exit")
         print()
         print("Multiple formulas:")
@@ -185,6 +190,10 @@ class TableauCLI:
                     self._multi_formula_mode()
                     continue
                 
+                if formula_input.lower() == 'mode':
+                    self._switch_mode()
+                    continue
+                
                 # Check if input contains commas (multiple formulas)
                 if ',' in formula_input:
                     self._process_multiple_formulas(formula_input)
@@ -214,9 +223,13 @@ class TableauCLI:
             print("Testing satisfiability...")
             print("-" * 40)
             
-            # Create and run tableau
-            tableau = Tableau(formula)
-            is_satisfiable = tableau.build()
+            # Create and run tableau based on logic mode
+            if self.logic_mode == "wk3":
+                tableau = WK3Tableau(formula)
+                is_satisfiable = tableau.build()
+            else:
+                tableau = Tableau(formula)
+                is_satisfiable = tableau.build()
             
             # Show results
             print(f"\nRESULT: {'SATISFIABLE' if is_satisfiable else 'UNSATISFIABLE'}")
@@ -238,6 +251,14 @@ class TableauCLI:
                 
                 if open_branches:
                     print(f"  Open branch IDs: {[b.id for b in open_branches]}")
+                
+                # Show sample models for WK3
+                if self.logic_mode == "wk3" and open_branches:
+                    models = tableau.extract_all_models()
+                    if models:
+                        print(f"  Sample models: {len(models)} found")
+                        for i, model in enumerate(models[:3], 1):  # Show first 3
+                            print(f"    Model {i}: {model}")
         
         except Exception as e:
             print(f"Error processing formula: {e}")
@@ -269,9 +290,13 @@ class TableauCLI:
             print("\nTesting satisfiability of formula set...")
             print("-" * 40)
             
-            # Create and run tableau with multiple formulas
-            tableau = Tableau(formulas)
-            is_satisfiable = tableau.build()
+            # Create and run tableau with multiple formulas based on logic mode
+            if self.logic_mode == "wk3":
+                tableau = WK3Tableau(formulas)
+                is_satisfiable = tableau.build()
+            else:
+                tableau = Tableau(formulas)
+                is_satisfiable = tableau.build()
             
             # Show results
             print(f"\nRESULT: {'SATISFIABLE' if is_satisfiable else 'UNSATISFIABLE'}")
@@ -432,22 +457,87 @@ class TableauCLI:
         print("  p & q, ~p | r")
         print("  p -> q, q -> r, p, ~r")
         print("  p | q, ~p, ~q")
+    
+    def _switch_mode(self):
+        """Switch between classical and WK3 logic modes"""
+        print()
+        current_mode = "Classical" if self.logic_mode == "classical" else "Weak Kleene (WK3)"
+        print(f"Current mode: {current_mode}")
+        print()
+        print("Available modes:")
+        print("  1. Classical Propositional Logic")
+        print("  2. Weak Kleene Logic (WK3)")
+        print()
+        
+        try:
+            choice = input("Select mode (1 or 2): ").strip()
+            if choice == "1":
+                self.logic_mode = "classical"
+                print("Switched to Classical Propositional Logic mode.")
+            elif choice == "2":
+                self.logic_mode = "wk3"
+                print("Switched to Weak Kleene Logic (WK3) mode.")
+                print("Note: In WK3, atoms can have values t (true), f (false), or e (neither/undefined).")
+            else:
+                print("Invalid choice. Mode unchanged.")
+        except (KeyboardInterrupt, EOFError):
+            print("\nMode unchanged.")
+    
+    def _show_help(self):
+        """Show help information"""
+        print()
+        if self.logic_mode == "wk3":
+            print("Weak Kleene Logic (WK3) - Three-valued logic with t, f, e")
+            print()
+        print("Syntax:")
+        print("  Atoms: p, q, r, x, y, etc.")
+        print("  Negation: ~p or ¬p")
+        print("  Conjunction: p & q or p ∧ q")
+        print("  Disjunction: p | q or p ∨ q")
+        print("  Implication: p -> q or p → q")
+        print("  Parentheses: (p & q) -> r")
+        print()
+        print("Commands:")
+        print("  help     - Show this help")
+        print("  history  - Show formula history")
+        print("  examples - Show example formulas")
+        print("  multi    - Enter multiple formulas mode")
+        print("  mode     - Switch between classical and WK3 logic")
+        print("  quit     - Exit")
+        print()
+        if self.logic_mode == "wk3":
+            print("WK3 Note: Formulas may have three-valued models where atoms can be:")
+            print("  t (true), f (false), or e (neither/undefined)")
 
 def main():
     """Main entry point"""
-    if len(sys.argv) > 1:
+    # Check for logic mode arguments
+    logic_mode = "classical"
+    args = sys.argv[1:]
+    
+    if args and args[0] in ['--wk3', '--weak-kleene']:
+        logic_mode = "wk3"
+        args = args[1:]  # Remove mode flag
+    elif args and args[0] in ['--classical', '--cpl']:
+        logic_mode = "classical"
+        args = args[1:]  # Remove mode flag
+    
+    if len(args) > 0:
         # Command line mode - process formula(s)
-        formula_str = ' '.join(sys.argv[1:])
-        cli = TableauCLI()
+        formula_str = ' '.join(args)
+        cli = TableauCLI(logic_mode)
+        
+        # Show mode info
+        mode_name = "Weak Kleene Logic (WK3)" if logic_mode == "wk3" else "Classical Propositional Logic"
         
         # Check if multiple formulas (comma-separated)
         if ',' in formula_str:
-            print("Tableau System - Multiple Formula Mode")
-            print("=" * 45)
+            print(f"Tableau System - Multiple Formula Mode ({mode_name})")
+            print("=" * 60)
             cli._process_multiple_formulas(formula_str)
         else:
-            print("Tableau System - Single Formula Mode")
-            print("=" * 40)
+            print(f"Tableau System - Single Formula Mode ({mode_name})")
+            print("=" * 55)
             
             # Process single formula without interactive prompts
             try:
@@ -456,8 +546,13 @@ def main():
                 print("Testing satisfiability...")
                 print("-" * 40)
                 
-                tableau = Tableau(formula)
-                is_satisfiable = tableau.build()
+                # Create tableau based on logic mode
+                if logic_mode == "wk3":
+                    tableau = WK3Tableau(formula)
+                    is_satisfiable = tableau.build()
+                else:
+                    tableau = Tableau(formula)
+                    is_satisfiable = tableau.build()
                 
                 print(f"\nRESULT: {'SATISFIABLE' if is_satisfiable else 'UNSATISFIABLE'}")
                 
@@ -469,7 +564,7 @@ def main():
                 print(f"Error: {e}")
     else:
         # Interactive mode
-        cli = TableauCLI()
+        cli = TableauCLI(logic_mode)
         cli.run()
 
 if __name__ == "__main__":

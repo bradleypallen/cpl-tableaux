@@ -175,7 +175,7 @@ Weak Kleene logic is a **three-valued logic** with truth values:
 - ✅ Graceful handling of exponential cases
 
 ### Quality Requirements
-- ✅ Comprehensive test suite covering WK3 specifics
+- ✅ Test suite covering WK3 specifics
 - ✅ Clear documentation of differences from CPL
 - ✅ Maintainable code structure supporting both logics
 
@@ -183,7 +183,7 @@ Weak Kleene logic is a **three-valued logic** with truth values:
 
 1. **Week 1**: Core infrastructure (TruthValue, Model updates)
 2. **Week 2**: Basic tableau rules for WK3
-3. **Week 3**: Advanced rules and optimization integration  
+3. **Week 3**: Rules and optimization integration  
 4. **Week 4**: Testing, validation, and documentation
 
 ## Research References

@@ -4,14 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This repository implements a semantic tableau system for classical propositional logic using Python. The system can check satisfiability of propositional formulas by constructing and analyzing tableau trees with sophisticated optimizations.
+This repository implements a semantic tableau system for classical propositional logic using Python. The system can check satisfiability of propositional formulas by constructing and analyzing tableau trees with optimizations.
+
+**License**: MIT License - This project is open source and freely available for use, modification, and distribution under the MIT License.
 
 ## Project Structure
 
 - `tableau.py` - Main tableau implementation with optimized expansion rules
 - `formula.py` - Formula representation classes and logical operators
 - `cli.py` - Command-line interface for the tableau system
-- `test_tableau.py` - Comprehensive test suite for tableau functionality
+- `test_tableau.py` - Test suite for tableau functionality
 - `test_performance.py` - Performance tests and benchmarks
 - `test_medium_optimizations.py` - Tests for optimization features
 - `README.md` - Project documentation and usage instructions
@@ -20,7 +22,7 @@ This repository implements a semantic tableau system for classical propositional
 
 ## Development Commands
 
-This is a Python project with comprehensive testing capabilities. Key commands:
+This is a Python project with testing capabilities. Key commands:
 
 ```bash
 # Run the tableau system directly
@@ -29,7 +31,7 @@ python tableau.py
 # Run with command-line interface
 python cli.py
 
-# Run comprehensive test suite
+# Run test suite
 python -m pytest test_tableau.py test_performance.py test_medium_optimizations.py -v
 
 # Run all tests
@@ -41,7 +43,7 @@ python -m pytest test_tableau.py::TestTableau::test_tautology_03_transitivity -v
 
 ## Architecture Notes
 
-The tableau system implements standard semantic tableau rules with advanced optimizations:
+The tableau system implements standard semantic tableau rules with optimizations:
 - **Formula representation**: Uses Python classes `Atom`, `Negation`, `Conjunction`, `Disjunction`, `Implication`
 - **Node structure**: `TableauNode` objects track formula expansion with parent-child relationships
 - **Branch management**: Optimized `Branch` class with incremental formula inheritance
@@ -49,17 +51,17 @@ The tableau system implements standard semantic tableau rules with advanced opti
 - **Satisfiability checking**: Proper termination detection without arbitrary limits
 - **Performance optimizations**: Formula prioritization, subsumption elimination, early satisfiability detection
 
-The system implements production-quality optimizations including proper termination, strategic formula expansion, and memory-efficient branch management.
+The system implements optimizations including proper termination, strategic formula expansion, and memory-efficient branch management.
 
 ## Technical Quality Assessment
 
-This implementation achieves **production-ready quality (8.5/10)** with sophisticated automated theorem proving techniques:
+This implementation achieves good quality (8.5/10) with automated theorem proving techniques:
 
 ### **Key Strengths**
 - **Theoretical soundness**: All tableau rules correctly implement classical logic semantics
-- **Advanced optimizations**: Formula prioritization (α before β), subsumption elimination, O(1) closure detection
+- **Optimizations**: Formula prioritization (α before β), subsumption elimination, O(1) closure detection
 - **Complete termination**: No arbitrary limits that compromise logical completeness
-- **Comprehensive testing**: 61 tests covering all major logical patterns and edge cases
+- **Testing**: 61 tests covering all major logical patterns and edge cases
 - **Clean architecture**: Maintainable code structure suitable for both education and production
 
 ### **Known Limitations**
@@ -76,8 +78,8 @@ This implementation achieves **production-ready quality (8.5/10)** with sophisti
 ### **Comparison to ATP Systems**
 **Better than typical implementations:**
 - No arbitrary iteration limits (common educational flaw)
-- Sophisticated optimization integration
-- Comprehensive test coverage
+- Optimization integration
+- Test coverage
 
 **Missing from industrial systems:**
 - Connection method integration
@@ -88,5 +90,5 @@ This implementation achieves **production-ready quality (8.5/10)** with sophisti
 When working with this codebase:
 1. **Maintain theoretical correctness** - All changes should preserve logical soundness
 2. **Preserve optimizations** - The formula prioritization and subsumption are critical for performance
-3. **Add comprehensive tests** - Any new features should include test cases covering edge cases
+3. **Add tests** - Any new features should include test cases covering edge cases
 4. **Consider performance** - Be aware that branch management is the primary performance bottleneck
