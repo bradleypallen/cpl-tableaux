@@ -14,7 +14,7 @@ import copy
 
 from truth_value import TruthValue, t, f, e
 from wk3_model import WK3Model
-from formula import Formula, Atom, Negation, Conjunction, Disjunction, Implication, RuleType
+from formula import Formula, Atom, Predicate, Negation, Conjunction, Disjunction, Implication, RuleType
 from tableau import TableauNode  # Reuse the node structure
 
 

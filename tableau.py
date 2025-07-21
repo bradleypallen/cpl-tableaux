@@ -13,7 +13,7 @@ from enum import Enum
 import copy
 
 from formula import (
-    Formula, Atom, Negation, Conjunction, Disjunction, Implication,
+    Formula, Atom, Predicate, Negation, Conjunction, Disjunction, Implication,
     RuleType
 )
 
@@ -84,8 +84,12 @@ class Branch:
         self.closure_reason: Optional[Tuple[Formula, Formula]] = None
         
         # Optimized literal indexing for fast closure detection
-        self.positive_literals: Set[str] = set()  # Atom names
-        self.negative_literals: Set[str] = set()  # Atom names from ¬Atom
+        self.positive_literals: Set[str] = set()  # Atom names (backward compatibility)
+        self.negative_literals: Set[str] = set()  # Atom names from ¬Atom (backward compatibility)
+        
+        # Extended predicate indexing for n-ary predicates
+        self.positive_predicates: Set[Formula] = set()  # Positive atomic formulas
+        self.negative_predicates: Set[Formula] = set()  # Negated atomic formulas
         
         # Cycle detection: track formula set signatures for loop detection
         self._formula_signatures: List[int] = []  # Hash signatures of formula sets
@@ -130,6 +134,8 @@ class Branch:
         """Rebuild the literal index from all formulas in the branch"""
         self.positive_literals.clear()
         self.negative_literals.clear()
+        self.positive_predicates.clear()
+        self.negative_predicates.clear()
         
         for formula in self.formulas:
             self._update_literal_index(formula)
@@ -138,17 +144,40 @@ class Branch:
         """Update literal index with a new formula"""
         normalized = self._normalize_formula(formula)
         
-        if isinstance(normalized, Atom):
-            self.positive_literals.add(normalized.name)
-        elif isinstance(normalized, Negation) and isinstance(normalized.operand, Atom):
-            self.negative_literals.add(normalized.operand.name)
+        # Handle atomic formulas (both Atoms and Predicates)
+        if isinstance(normalized, (Atom, Predicate)) and normalized.is_atomic():
+            # Backward compatibility: still track atom names for old atoms
+            if isinstance(normalized, Atom):
+                self.positive_literals.add(normalized.name)
+            # Track all atomic formulas in new system
+            self.positive_predicates.add(normalized)
+            
+        elif isinstance(normalized, Negation) and isinstance(normalized.operand, (Atom, Predicate)):
+            if normalized.operand.is_atomic():
+                # Backward compatibility: still track atom names for old atoms
+                if isinstance(normalized.operand, Atom):
+                    self.negative_literals.add(normalized.operand.name)
+                # Track all negated atomic formulas in new system
+                self.negative_predicates.add(normalized.operand)
     
     def _check_closure_optimized(self):
         """Optimized closure detection using literal indexing - O(1) lookup"""
         if self.is_closed:
             return
         
-        # Check for contradiction: if any atom appears in both positive and negative literals
+        # Check for contradiction: if any atomic formula appears in both positive and negative
+        contradicting_predicates = self.positive_predicates.intersection(self.negative_predicates)
+        
+        if contradicting_predicates:
+            # Found contradiction - set closure reason with first contradicting predicate
+            positive_predicate = next(iter(contradicting_predicates))
+            negative_predicate = Negation(positive_predicate)
+            
+            self.is_closed = True
+            self.closure_reason = (positive_predicate, negative_predicate)
+            return
+        
+        # Backward compatibility: also check old atom-based indexing
         contradicting_atoms = self.positive_literals.intersection(self.negative_literals)
         
         if contradicting_atoms:

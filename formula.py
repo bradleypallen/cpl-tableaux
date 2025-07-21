@@ -11,6 +11,18 @@ from typing import List, Set, Optional, Tuple
 from dataclasses import dataclass
 from enum import Enum
 
+# Import term hierarchy for predicate support
+try:
+    from .term import Term, Constant, Variable
+except ImportError:
+    try:
+        from term import Term, Constant, Variable
+    except ImportError:
+        # Fallback for systems without term.py
+        Term = None
+        Constant = None
+        Variable = None
+
 # Formula representation
 class Formula(ABC):
     @abstractmethod
@@ -24,13 +36,50 @@ class Formula(ABC):
     @abstractmethod
     def is_literal(self) -> bool:
         pass
+    
+    def is_ground(self) -> bool:
+        """Check if this formula contains only ground terms (no variables)"""
+        return True  # Default implementation for propositional formulas
+    
+    def get_variables(self) -> Set[str]:
+        """Get all variable names in this formula"""
+        return set()  # Default implementation for propositional formulas
 
-class Atom(Formula):
-    def __init__(self, name: str):
-        self.name = name
+class Predicate(Formula):
+    """
+    Represents an n-ary predicate R(t1, t2, ..., tn) where n >= 0.
+    For n=0, this represents a propositional atom.
+    
+    Examples:
+    - Predicate("P", []) represents propositional atom P
+    - Predicate("Student", [Constant("john")]) represents Student(john)
+    - Predicate("Loves", [Constant("john"), Constant("mary")]) represents Loves(john, mary)
+    """
+    
+    def __init__(self, predicate_name: str, args: List['Term'] = None):
+        if not predicate_name or not isinstance(predicate_name, str):
+            raise ValueError("Predicate name must be a non-empty string")
+        
+        # Relaxed naming convention - allow both cases for backward compatibility
+        self.predicate_name = predicate_name
+        self.args = args if args is not None else []
+        
+        # Validate argument types if Term classes are available
+        if Term is not None:
+            for arg in self.args:
+                if not isinstance(arg, Term):
+                    raise ValueError(f"All arguments must be Term instances: {arg}")
+    
+    @property
+    def arity(self) -> int:
+        """Return the number of arguments (arity) of this predicate"""
+        return len(self.args)
     
     def __str__(self) -> str:
-        return self.name
+        if self.arity == 0:
+            return self.predicate_name  # P (propositional)
+        args_str = ', '.join(str(arg) for arg in self.args)
+        return f"{self.predicate_name}({args_str})"  # R(c1, c2, ..., cn)
     
     def is_atomic(self) -> bool:
         return True
@@ -38,26 +87,78 @@ class Atom(Formula):
     def is_literal(self) -> bool:
         return True
     
+    def is_ground(self) -> bool:
+        """Check if all arguments are ground (contain no variables)"""
+        return all(arg.is_ground() for arg in self.args)
+    
+    def get_variables(self) -> Set[str]:
+        """Get all variable names in the arguments"""
+        variables = set()
+        for arg in self.args:
+            variables.update(arg.get_variables())
+        return variables
+    
     def __eq__(self, other):
-        return isinstance(other, Atom) and self.name == other.name
+        return (isinstance(other, Predicate) and 
+                self.predicate_name == other.predicate_name and 
+                self.args == other.args)
     
     def __hash__(self):
-        return hash(self.name)
+        return hash(('predicate', self.predicate_name, tuple(self.args)))
+
+
+class Atom(Predicate):
+    """
+    Backward compatibility class for propositional atoms.
+    An Atom is just a 0-ary Predicate.
+    """
+    
+    def __init__(self, name: str):
+        # Store original name for backward compatibility
+        self._original_name = name
+        super().__init__(name, [])
+    
+    @property
+    def name(self) -> str:
+        """Return the original name for backward compatibility"""
+        return self._original_name
+    
+    def __str__(self) -> str:
+        return self._original_name
+    
+    def __eq__(self, other):
+        if isinstance(other, Atom):
+            return self.name == other.name
+        elif isinstance(other, Predicate):
+            return (other.arity == 0 and 
+                    other.predicate_name == self.name)
+        return False
+    
+    def __hash__(self):
+        return hash(self.name)  # Use original name for compatibility
 
 class Negation(Formula):
     def __init__(self, operand: Formula):
         self.operand = operand
     
     def __str__(self) -> str:
-        if isinstance(self.operand, Atom):
+        if isinstance(self.operand, (Atom, Predicate)) and self.operand.is_atomic():
             return f"¬{self.operand}"
         return f"¬({self.operand})"
     
     def is_atomic(self) -> bool:
-        return isinstance(self.operand, Atom)
+        return isinstance(self.operand, (Atom, Predicate)) and self.operand.is_atomic()
     
     def is_literal(self) -> bool:
-        return isinstance(self.operand, Atom)
+        return isinstance(self.operand, (Atom, Predicate)) and self.operand.is_atomic()
+    
+    def is_ground(self) -> bool:
+        """Check if this formula contains only ground terms (no variables)"""
+        return self.operand.is_ground()
+    
+    def get_variables(self) -> Set[str]:
+        """Get all variable names in this formula"""
+        return self.operand.get_variables()
     
     def __eq__(self, other):
         return isinstance(other, Negation) and self.operand == other.operand
@@ -84,6 +185,14 @@ class Conjunction(Formula):
     
     def __hash__(self):
         return hash(('and', self.left, self.right))
+    
+    def is_ground(self) -> bool:
+        """Check if this formula contains only ground terms (no variables)"""
+        return self.left.is_ground() and self.right.is_ground()
+    
+    def get_variables(self) -> Set[str]:
+        """Get all variable names in this formula"""
+        return self.left.get_variables() | self.right.get_variables()
 
 class Disjunction(Formula):
     def __init__(self, left: Formula, right: Formula):
@@ -104,6 +213,14 @@ class Disjunction(Formula):
     
     def __hash__(self):
         return hash(('or', self.left, self.right))
+    
+    def is_ground(self) -> bool:
+        """Check if this formula contains only ground terms (no variables)"""
+        return self.left.is_ground() and self.right.is_ground()
+    
+    def get_variables(self) -> Set[str]:
+        """Get all variable names in this formula"""
+        return self.left.get_variables() | self.right.get_variables()
 
 class Implication(Formula):
     def __init__(self, antecedent: Formula, consequent: Formula):
@@ -124,6 +241,14 @@ class Implication(Formula):
     
     def __hash__(self):
         return hash(('imp', self.antecedent, self.consequent))
+    
+    def is_ground(self) -> bool:
+        """Check if this formula contains only ground terms (no variables)"""
+        return self.antecedent.is_ground() and self.consequent.is_ground()
+    
+    def get_variables(self) -> Set[str]:
+        """Get all variable names in this formula"""
+        return self.antecedent.get_variables() | self.consequent.get_variables()
 
 # Tableau data structures
 class RuleType(Enum):
