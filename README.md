@@ -133,7 +133,7 @@ Available modes:
 
 Select mode (1 or 2): 2
 Switched to Weak Kleene Logic (WK3) mode.
-Note: In WK3, atoms can have values t (true), f (false), or e (neither/undefined).
+Note: In WK3, atoms can have values t (true), f (false), or e (undefined).
 
 Tableau> p & ~p
 Parsed formula: (p ∧ ¬p)
@@ -380,7 +380,7 @@ formula = Implication(
 The system supports both Classical Propositional Logic and Weak Kleene Logic:
 
 ### Key Differences in WK3:
-- **Three truth values**: t (true), f (false), e (neither/undefined)
+- **Three truth values**: t (true), f (false), e (undefined)
 - **Law of Excluded Middle not a tautology**: `p ∨ ¬p` can be `e` when `p = e`
 - **Contradictions not always unsatisfiable**: `p ∧ ¬p` can be `e` when `p = e`
 - **Partial information handling**: Useful for incomplete databases and partial knowledge

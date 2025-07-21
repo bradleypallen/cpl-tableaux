@@ -477,7 +477,7 @@ class TableauCLI:
             elif choice == "2":
                 self.logic_mode = "wk3"
                 print("Switched to Weak Kleene Logic (WK3) mode.")
-                print("Note: In WK3, atoms can have values t (true), f (false), or e (neither/undefined).")
+                print("Note: In WK3, atoms can have values t (true), f (false), or e (undefined).")
             else:
                 print("Invalid choice. Mode unchanged.")
         except (KeyboardInterrupt, EOFError):
@@ -507,7 +507,7 @@ class TableauCLI:
         print()
         if self.logic_mode == "wk3":
             print("WK3 Note: Formulas may have three-valued models where atoms can be:")
-            print("  t (true), f (false), or e (neither/undefined)")
+            print("  t (true), f (false), or e (undefined)")
 
 def main():
     """Main entry point"""

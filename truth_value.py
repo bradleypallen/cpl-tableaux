@@ -5,7 +5,7 @@ Truth Value System for Weak Kleene Logic
 Defines the three-valued truth system for weak Kleene logic with truth values:
 - t (true)
 - f (false) 
-- e (neither/undefined/gap)
+- e (undefined/gap)
 """
 
 from enum import Enum
@@ -17,7 +17,7 @@ class TruthValue(Enum):
     
     TRUE = 't'
     FALSE = 'f'
-    NEITHER = 'e'
+    UNDEFINED = 'e'
     
     def __str__(self) -> str:
         """String representation using lowercase letters"""
@@ -38,12 +38,12 @@ class TruthValue(Enum):
         value_map = {
             't': cls.TRUE,
             'f': cls.FALSE,
-            'e': cls.NEITHER,
+            'e': cls.UNDEFINED,
             'true': cls.TRUE,
             'false': cls.FALSE,
-            'neither': cls.NEITHER,
-            'undefined': cls.NEITHER,
-            'gap': cls.NEITHER
+            'neither': cls.UNDEFINED,
+            'undefined': cls.UNDEFINED,
+            'gap': cls.UNDEFINED
         }
         
         normalized = value.lower().strip()
@@ -53,7 +53,7 @@ class TruthValue(Enum):
             raise ValueError(f"Invalid truth value: {value}")
     
     def to_bool(self) -> Union[bool, None]:
-        """Convert to boolean (None for NEITHER)"""
+        """Convert to boolean (None for UNDEFINED)"""
         if self == TruthValue.TRUE:
             return True
         elif self == TruthValue.FALSE:
@@ -69,7 +69,7 @@ class TruthValue(Enum):
 # Convenience aliases
 t = TruthValue.TRUE
 f = TruthValue.FALSE
-e = TruthValue.NEITHER
+e = TruthValue.UNDEFINED
 
 
 class WeakKleeneOperators:

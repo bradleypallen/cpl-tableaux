@@ -9,9 +9,11 @@ This document outlines the plan to extend the current classical propositional lo
 Weak Kleene logic is a **three-valued logic** with truth values:
 - **t** (True)
 - **f** (False)  
-- **e** (Neither/Undefined/Gap)
+- **e** (Undefined/Gap)
 
 ### Truth Tables for Weak Kleene Logic
+
+**Key principle**: In weak Kleene logic, any operation involving the undefined value 'e' returns 'e'. This distinguishes it from strong Kleene logic where some operations with 'e' can return definite values (e.g., f∧e=f in strong Kleene vs f∧e=e in weak Kleene).
 
 #### Negation (¬)
 | A | ¬A |
@@ -28,9 +30,9 @@ Weak Kleene logic is a **three-valued logic** with truth values:
 | t | e | e   |
 | f | t | f   |
 | f | f | f   |
-| f | e | f   |
+| f | e | e   |
 | e | t | e   |
-| e | f | f   |
+| e | f | e   |
 | e | e | e   |
 
 #### Disjunction (∨)
@@ -38,11 +40,11 @@ Weak Kleene logic is a **three-valued logic** with truth values:
 |---|---|-----|
 | t | t | t   |
 | t | f | t   |
-| t | e | t   |
+| t | e | e   |
 | f | t | t   |
 | f | f | f   |
 | f | e | e   |
-| e | t | t   |
+| e | t | e   |
 | e | f | e   |
 | e | e | e   |
 
@@ -54,8 +56,8 @@ Weak Kleene logic is a **three-valued logic** with truth values:
 | t | e | e   |
 | f | t | t   |
 | f | f | t   |
-| f | e | t   |
-| e | t | t   |
+| f | e | e   |
+| e | t | e   |
 | e | f | e   |
 | e | e | e   |
 
@@ -94,7 +96,7 @@ Weak Kleene logic is a **three-valued logic** with truth values:
 #### 2.1 Three-Valued Literals
 - **Positive literals**: A = t
 - **Negative literals**: A = f  
-- **Neither literals**: A = e (new)
+- **Undefined literals**: A = e (new)
 - **Update closure detection**: No contradiction with e values
 
 #### 2.2 Updated Expansion Rules

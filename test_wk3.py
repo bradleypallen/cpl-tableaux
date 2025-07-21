@@ -20,7 +20,7 @@ class TestTruthValue:
         """Test creating TruthValue instances"""
         assert t == TruthValue.TRUE
         assert f == TruthValue.FALSE
-        assert e == TruthValue.NEITHER
+        assert e == TruthValue.UNDEFINED
     
     def test_string_representation(self):
         """Test string representation"""
@@ -41,6 +41,7 @@ class TestTruthValue:
         assert TruthValue.from_string('true') == t
         assert TruthValue.from_string('false') == f
         assert TruthValue.from_string('neither') == e
+        assert TruthValue.from_string('undefined') == e
     
     def test_to_bool(self):
         """Test conversion to boolean"""

@@ -181,7 +181,7 @@ def demonstrate_tableau_differences():
 def main():
     """Run all demonstrations"""
     print("WEAK KLEENE LOGIC DEMONSTRATION")
-    print("Showing three-valued logic with truth values: t (true), f (false), e (neither)")
+    print("Showing three-valued logic with truth values: t (true), f (false), e (undefined)")
     
     demonstrate_truth_tables()
     demonstrate_formulas()

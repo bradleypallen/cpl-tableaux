@@ -154,15 +154,15 @@ class WK3Model:
         # Group by truth value
         true_atoms = [atom for atom, value in self.assignment.items() if value == t]
         false_atoms = [atom for atom, value in self.assignment.items() if value == f]
-        neither_atoms = [atom for atom, value in self.assignment.items() if value == e]
+        undefined_atoms = [atom for atom, value in self.assignment.items() if value == e]
         
         parts = []
         if true_atoms:
             parts.append(f"t: {{{', '.join(sorted(true_atoms))}}}")
         if false_atoms:
             parts.append(f"f: {{{', '.join(sorted(false_atoms))}}}")
-        if neither_atoms:
-            parts.append(f"e: {{{', '.join(sorted(neither_atoms))}}}")
+        if undefined_atoms:
+            parts.append(f"e: {{{', '.join(sorted(undefined_atoms))}}}")
         
         return " | ".join(parts) if parts else "{}"
     
