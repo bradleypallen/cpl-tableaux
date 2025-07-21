@@ -35,7 +35,7 @@ This is a pure Python implementation with no external dependencies for core func
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd cpl-tableaux
+cd tableaux
 
 # Optional: Create virtual environment
 python -m venv env
