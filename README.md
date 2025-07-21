@@ -1,6 +1,6 @@
-# Classical Propositional Logic Tableaux
+# Propositional Logic Tableaux
 
-An implementation of semantic tableaux for classical propositional logic in Python with optimizations.
+Semantic tableau systems for both Classical Propositional Logic (CPL) and Weak Kleene Logic (WK3) with optimizations and full CLI support.
 
 ## License
 
@@ -8,14 +8,25 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Files
 
-- `tableau.py` - Main tableau implementation with optimized expansion rules
+### Core Logic Systems
+- `tableau.py` - Classical propositional logic tableau implementation
+- `wk3_tableau.py` - Weak Kleene logic (WK3) tableau implementation  
 - `formula.py` - Formula representation classes and logical operators
-- `cli.py` - Command-line interface for interactive use
-- `test_tableau.py` - Test suite (40+ tests)
+- `truth_value.py` - Three-valued truth system for WK3
+- `wk3_model.py` - Three-valued model evaluation for WK3
+
+### Interface and Tools
+- `cli.py` - Command-line interface supporting both CPL and WK3 modes
+- `wk3_demo.py` - Comprehensive WK3 demonstration and examples
+
+### Testing and Documentation
+- `test_tableau.py` - Classical logic test suite (50+ tests)
+- `test_wk3.py` - WK3 test suite (25+ tests)
 - `test_performance.py` - Performance benchmarks and optimization tests
 - `test_medium_optimizations.py` - Optimization feature tests
 - `OPTIMIZATIONS.md` - Documentation of performance improvements
 - `TECHNICAL_ANALYSIS.md` - Analysis and assessment of implementation quality
+- `WEAK_KLEENE_PLAN.md` - WK3 implementation plan and design notes
 
 ## Installation
 
@@ -38,17 +49,24 @@ pip install pytest
 
 ### Basic Usage
 
-Run the tableau system with built-in examples:
-
+**Classical Logic:**
 ```bash
 python tableau.py
 ```
 
-This will test transitivity formulas and display tableau trees.
+**Weak Kleene Logic:**
+```bash
+python wk3_demo.py
+```
+
+**Interactive CLI (supports both logics):**
+```bash
+python cli.py
+```
 
 ### Command-Line Interface
 
-The CLI provides both interactive and command-line modes for formula testing.
+The CLI provides both interactive and command-line modes for testing formulas in either Classical Propositional Logic or Weak Kleene Logic (WK3).
 
 #### Interactive Mode
 
@@ -296,20 +314,28 @@ if wk3_result:
 
 ### Testing
 
-Run the test suite:
+Run the comprehensive test suite (86 tests total):
 
 ```bash
-# All tests
+# All tests (Classical + WK3 + Performance)
 python -m pytest -v
 
-# Specific test categories
-python -m pytest test_tableau.py -v         # Core functionality
-python -m pytest test_performance.py -v     # Performance tests
-python -m pytest test_medium_optimizations.py -v  # Optimization tests
+# Logic-specific tests
+python -m pytest test_tableau.py -v         # Classical logic (50 tests)
+python -m pytest test_wk3.py -v            # Weak Kleene logic (25 tests)
+
+# Performance and optimization tests
+python -m pytest test_performance.py -v     # Performance tests (4 tests)
+python -m pytest test_medium_optimizations.py -v  # Optimization tests (5 tests)
+
+# Logic demonstrations
+python wk3_demo.py                          # WK3 demonstration
+python tableau.py                           # Classical demonstration
 ```
 
 ## Tableau Rules Implemented
 
+### Classical Propositional Logic (CPL)
 - **Double Negation**: `¬¬A` → `A`
 - **Conjunction**: `A ∧ B` → `A`, `B` (same branch)
 - **Negated Conjunction**: `¬(A ∧ B)` → `¬A | ¬B` (branching)
@@ -317,6 +343,14 @@ python -m pytest test_medium_optimizations.py -v  # Optimization tests
 - **Negated Disjunction**: `¬(A ∨ B)` → `¬A`, `¬B` (same branch)
 - **Implication**: `A → B` → `¬A ∨ B` (branching)
 - **Negated Implication**: `¬(A → B)` → `A`, `¬B` (same branch)
+
+### Weak Kleene Logic (WK3)
+- **Three-valued atoms**: Each atom can be `t`, `f`, or `e`
+- **Three-valued closure**: Contradiction only when atom is both `t` and `f`
+- **Conjunction**: Follows WK3 truth table (false-preserving)
+- **Disjunction**: Follows WK3 truth table (true-preserving)
+- **Implication**: Follows WK3 truth table
+- **Negation**: `¬e = e` (undefined stays undefined)
 
 ## Formula Syntax
 

@@ -4,37 +4,55 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This repository implements a semantic tableau system for classical propositional logic using Python. The system can check satisfiability of propositional formulas by constructing and analyzing tableau trees with optimizations.
+This repository implements semantic tableau systems for both Classical Propositional Logic (CPL) and Weak Kleene Logic (WK3) using Python. The systems can check satisfiability of propositional formulas by constructing and analyzing tableau trees with optimizations.
 
 **License**: MIT License - This project is open source and freely available for use, modification, and distribution under the MIT License.
 
 ## Project Structure
 
-- `tableau.py` - Main tableau implementation with optimized expansion rules
+### Core Logic Systems
+- `tableau.py` - Classical propositional logic tableau implementation
+- `wk3_tableau.py` - Weak Kleene logic (WK3) tableau implementation
 - `formula.py` - Formula representation classes and logical operators
-- `cli.py` - Command-line interface for the tableau system
-- `test_tableau.py` - Test suite for tableau functionality
+- `truth_value.py` - Three-valued truth system for WK3
+- `wk3_model.py` - Three-valued model evaluation for WK3
+
+### Interface and Tools  
+- `cli.py` - Command-line interface supporting both CPL and WK3 modes
+- `wk3_demo.py` - Comprehensive WK3 demonstration and examples
+
+### Testing and Documentation
+- `test_tableau.py` - Classical logic test suite (50+ tests)
+- `test_wk3.py` - WK3 test suite (25+ tests)
 - `test_performance.py` - Performance tests and benchmarks
 - `test_medium_optimizations.py` - Tests for optimization features
 - `README.md` - Project documentation and usage instructions
 - `OPTIMIZATIONS.md` - Documentation of performance improvements
+- `TECHNICAL_ANALYSIS.md` - Implementation quality analysis
+- `WEAK_KLEENE_PLAN.md` - WK3 implementation plan and design notes
 - `env/` - Python virtual environment (Python 3.11.11)
 
 ## Development Commands
 
-This is a Python project with testing capabilities. Key commands:
+This is a Python project with dual logic systems and testing capabilities. Key commands:
 
 ```bash
-# Run the tableau system directly
-python tableau.py
+# Run tableau systems directly
+python tableau.py          # Classical logic demo
+python wk3_demo.py         # Weak Kleene logic demo
 
-# Run with command-line interface
-python cli.py
+# Run with command-line interface (supports both logics)
+python cli.py              # Interactive mode (classical default)
+python cli.py --wk3        # Command-line WK3 mode
+python cli.py "p | ~p"     # Classical logic
+python cli.py --wk3 "p | ~p"  # WK3 logic
 
-# Run test suite
-python -m pytest test_tableau.py test_performance.py test_medium_optimizations.py -v
+# Run test suites
+python -m pytest test_tableau.py -v     # Classical logic (50 tests)
+python -m pytest test_wk3.py -v        # WK3 logic (25 tests)
+python -m pytest test_performance.py -v # Performance tests
 
-# Run all tests
+# Run all tests (86 total)
 python -m pytest -v
 
 # Run specific test categories
@@ -43,15 +61,25 @@ python -m pytest test_tableau.py::TestTableau::test_tautology_03_transitivity -v
 
 ## Architecture Notes
 
-The tableau system implements standard semantic tableau rules with optimizations:
+The system implements dual semantic tableau systems with shared optimizations:
+
+### Shared Components
 - **Formula representation**: Uses Python classes `Atom`, `Negation`, `Conjunction`, `Disjunction`, `Implication`
 - **Node structure**: `TableauNode` objects track formula expansion with parent-child relationships
-- **Branch management**: Optimized `Branch` class with incremental formula inheritance
-- **Closure detection**: O(1) literal indexing for fast contradiction detection
-- **Satisfiability checking**: Proper termination detection without arbitrary limits
 - **Performance optimizations**: Formula prioritization, subsumption elimination, early satisfiability detection
 
-The system implements optimizations including proper termination, strategic formula expansion, and memory-efficient branch management.
+### Classical Logic (CPL)
+- **Branch management**: Optimized `Branch` class with incremental formula inheritance
+- **Closure detection**: O(1) literal indexing for fast contradiction detection (`A` and `¬A`)
+- **Model extraction**: Two-valued satisfying assignments
+
+### Weak Kleene Logic (WK3)  
+- **Three-valued system**: Truth values `t`, `f`, `e` with complete WK3 operators
+- **Branch management**: `WK3Branch` class with three-valued assignment tracking
+- **Closure detection**: Three-valued closure (contradiction only when atom is both `t` and `f`)
+- **Model extraction**: Three-valued models with partial information support
+
+Both systems implement proper termination, strategic formula expansion, and memory-efficient branch management.
 
 ## Technical Quality Assessment
 
