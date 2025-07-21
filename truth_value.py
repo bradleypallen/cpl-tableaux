@@ -88,34 +88,37 @@ class WeakKleeneOperators:
     @staticmethod
     def conjunction(a: TruthValue, b: TruthValue) -> TruthValue:
         """Weak Kleene conjunction: A ∧ B"""
-        # If either operand is false, result is false
-        if a == f or b == f:
-            return f
+        # In weak Kleene, any operation with 'e' returns 'e'
+        if a == e or b == e:
+            return e
         # If both are true, result is true
         elif a == t and b == t:
             return t
-        # Otherwise (at least one is e and none is f), result is e
+        # Otherwise (at least one is false), result is false
         else:
-            return e
+            return f
     
     @staticmethod
     def disjunction(a: TruthValue, b: TruthValue) -> TruthValue:
         """Weak Kleene disjunction: A ∨ B"""
-        # If either operand is true, result is true
-        if a == t or b == t:
-            return t
-        # If both are false, result is false
-        elif a == f and b == f:
-            return f
-        # Otherwise (at least one is e and none is t), result is e
-        else:
+        # In weak Kleene, any operation with 'e' returns 'e'
+        if a == e or b == e:
             return e
+        # If either operand is true, result is true
+        elif a == t or b == t:
+            return t
+        # Otherwise (both are false), result is false
+        else:
+            return f
     
     @staticmethod
     def implication(a: TruthValue, b: TruthValue) -> TruthValue:
         """Weak Kleene implication: A → B"""
+        # In weak Kleene, any operation with 'e' returns 'e'
+        if a == e or b == e:
+            return e
         # If antecedent is false, result is true
-        if a == f:
+        elif a == f:
             return t
         # If antecedent is true and consequent is true, result is true
         elif a == t and b == t:
@@ -123,18 +126,6 @@ class WeakKleeneOperators:
         # If antecedent is true and consequent is false, result is false
         elif a == t and b == f:
             return f
-        # If antecedent is true and consequent is e, result is e
-        elif a == t and b == e:
-            return e
-        # If antecedent is e and consequent is true, result is true
-        elif a == e and b == t:
-            return t
-        # If antecedent is e and consequent is false, result is e
-        elif a == e and b == f:
-            return e
-        # If antecedent is e and consequent is e, result is e
-        elif a == e and b == e:
-            return e
         else:
             return e  # Should not reach here
     

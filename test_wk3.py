@@ -74,11 +74,11 @@ class TestWeakKleeneOperators:
         # f cases
         assert WeakKleeneOperators.conjunction(f, t) == f
         assert WeakKleeneOperators.conjunction(f, f) == f
-        assert WeakKleeneOperators.conjunction(f, e) == f
+        assert WeakKleeneOperators.conjunction(f, e) == e  # Weak Kleene: f ∧ e = e
         
         # e cases
         assert WeakKleeneOperators.conjunction(e, t) == e
-        assert WeakKleeneOperators.conjunction(e, f) == f
+        assert WeakKleeneOperators.conjunction(e, f) == e  # Weak Kleene: e ∧ f = e
         assert WeakKleeneOperators.conjunction(e, e) == e
     
     def test_disjunction(self):
@@ -86,7 +86,7 @@ class TestWeakKleeneOperators:
         # t cases
         assert WeakKleeneOperators.disjunction(t, t) == t
         assert WeakKleeneOperators.disjunction(t, f) == t
-        assert WeakKleeneOperators.disjunction(t, e) == t
+        assert WeakKleeneOperators.disjunction(t, e) == e  # Weak Kleene: t ∨ e = e
         
         # f cases
         assert WeakKleeneOperators.disjunction(f, t) == t
@@ -94,7 +94,7 @@ class TestWeakKleeneOperators:
         assert WeakKleeneOperators.disjunction(f, e) == e
         
         # e cases
-        assert WeakKleeneOperators.disjunction(e, t) == t
+        assert WeakKleeneOperators.disjunction(e, t) == e  # Weak Kleene: e ∨ t = e
         assert WeakKleeneOperators.disjunction(e, f) == e
         assert WeakKleeneOperators.disjunction(e, e) == e
     
@@ -108,10 +108,10 @@ class TestWeakKleeneOperators:
         # f cases
         assert WeakKleeneOperators.implication(f, t) == t
         assert WeakKleeneOperators.implication(f, f) == t
-        assert WeakKleeneOperators.implication(f, e) == t
+        assert WeakKleeneOperators.implication(f, e) == e  # Weak Kleene: f → e = e
         
         # e cases
-        assert WeakKleeneOperators.implication(e, t) == t
+        assert WeakKleeneOperators.implication(e, t) == e  # Weak Kleene: e → t = e
         assert WeakKleeneOperators.implication(e, f) == e
         assert WeakKleeneOperators.implication(e, e) == e
 
@@ -155,7 +155,7 @@ class TestWK3Model:
         # Test conjunction
         assert model.satisfies(Conjunction(p, q)) == f  # t ∧ f = f
         assert model.satisfies(Conjunction(p, r)) == e  # t ∧ e = e
-        assert model.satisfies(Conjunction(q, r)) == f  # f ∧ e = f
+        assert model.satisfies(Conjunction(q, r)) == e  # f ∧ e = e (weak Kleene)
         
         # Test disjunction
         assert model.satisfies(Disjunction(p, q)) == t  # t ∨ f = t
@@ -164,7 +164,7 @@ class TestWK3Model:
         # Test implication
         assert model.satisfies(Implication(p, q)) == f  # t → f = f
         assert model.satisfies(Implication(q, p)) == t  # f → t = t
-        assert model.satisfies(Implication(r, p)) == t  # e → t = t
+        assert model.satisfies(Implication(r, p)) == e  # e → t = e (weak Kleene)
     
     def test_is_satisfying(self):
         """Test classical satisfiability check"""
