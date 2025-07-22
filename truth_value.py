@@ -9,7 +9,7 @@ Defines the three-valued truth system for weak Kleene logic with truth values:
 """
 
 from enum import Enum
-from typing import Union
+from typing import Union, Set, Tuple
 
 
 class TruthValue(Enum):
@@ -137,7 +137,65 @@ class WeakKleeneOperators:
         return WeakKleeneOperators.conjunction(left, right)
 
 
+class RestrictedQuantifierOperators:
+    """Implementation of restricted Kleene quantifiers from Ferguson (2024)"""
+    
+    @staticmethod
+    def restricted_existential(value_pairs: Set[Tuple[TruthValue, TruthValue]]) -> TruthValue:
+        """
+        Implement ∃̌(X) from Ferguson (2024) Definition 3
+        
+        For a nonempty set X ⊆ V₃²:
+        ∃̌(X) = t  if ⟨t,t⟩ ∈ X
+               e  if for all ⟨u,v⟩ ∈ X, either u = e or v = e  
+               f  if ⟨t,t⟩ ∉ X and for some ⟨u,v⟩ ∈ X, u ≠ e and v ≠ e
+        """
+        if not value_pairs:
+            raise ValueError("Empty set not allowed for restricted quantifiers")
+        
+        # Check if ⟨t,t⟩ ∈ X
+        if (t, t) in value_pairs:
+            return t
+            
+        # Check if for all ⟨u,v⟩ ∈ X, either u = e or v = e
+        if all(u == e or v == e for u, v in value_pairs):
+            return e
+            
+        # Otherwise: ⟨t,t⟩ ∉ X and for some ⟨u,v⟩ ∈ X, u ≠ e and v ≠ e
+        return f
+    
+    @staticmethod
+    def restricted_universal(value_pairs: Set[Tuple[TruthValue, TruthValue]]) -> TruthValue:
+        """
+        Implement ∀̌(X) from Ferguson (2024) Definition 3
+        
+        For a nonempty set X ⊆ V₃²:
+        ∀̌(X) = t  if ⟨t,f⟩, ⟨t,e⟩ ∉ X and for some ⟨u,v⟩ ∈ X, u ≠ e and v ≠ e
+               e  if for all ⟨u,v⟩ ∈ X, either u = e or v = e
+               f  if {⟨t,f⟩, ⟨t,e⟩} ∩ X ≠ ∅ and for some ⟨u,v⟩ ∈ X, u ≠ e and v ≠ e  
+        """
+        if not value_pairs:
+            raise ValueError("Empty set not allowed for restricted quantifiers")
+            
+        # Check if for all ⟨u,v⟩ ∈ X, either u = e or v = e
+        if all(u == e or v == e for u, v in value_pairs):
+            return e
+            
+        # Check if {⟨t,f⟩, ⟨t,e⟩} ∩ X ≠ ∅ and for some ⟨u,v⟩ ∈ X, u ≠ e and v ≠ e
+        has_critical_pairs = (t, f) in value_pairs or (t, e) in value_pairs
+        has_non_undefined_pair = any(u != e and v != e for u, v in value_pairs)
+        
+        if has_critical_pairs and has_non_undefined_pair:
+            return f
+            
+        # Otherwise: ⟨t,f⟩, ⟨t,e⟩ ∉ X and for some ⟨u,v⟩ ∈ X, u ≠ e and v ≠ e  
+        if has_non_undefined_pair:
+            return t
+            
+        return e  # Fallback case
+
+
 # Export commonly used items
 __all__ = [
-    'TruthValue', 't', 'f', 'e', 'WeakKleeneOperators'
+    'TruthValue', 't', 'f', 'e', 'WeakKleeneOperators', 'RestrictedQuantifierOperators'
 ]

@@ -13,6 +13,7 @@ from classical_rules import get_classical_rules
 from classical_components import create_classical_components
 from wk3_rules import get_wk3_rules
 from wk3_components import create_wk3_components
+from wkrq_logic import create_wkrq_logic_system
 
 
 def create_classical_logic_system() -> LogicSystem:
@@ -94,6 +95,13 @@ def register_builtin_logics():
     register_logic_system("WK3", wk3_system)
     register_logic_system("weak-kleene", wk3_system)
     register_logic_system("weak_kleene", wk3_system)
+    
+    # Register wKrQ Logic with multiple aliases
+    wkrq_system = create_wkrq_logic_system()
+    register_logic_system("wkrq", wkrq_system)
+    register_logic_system("wKrQ", wkrq_system)
+    register_logic_system("restricted-kleene", wkrq_system)
+    register_logic_system("fol-wk3", wkrq_system)
 
 
 # Framework for future logic extensions
@@ -223,7 +231,8 @@ def initialize():
 # Export main functions
 __all__ = [
     'create_classical_logic_system',
-    'create_wk3_logic_system', 
+    'create_wk3_logic_system',
+    'create_wkrq_logic_system',
     'register_builtin_logics',
     'validate_all_builtin_logics',
     'describe_all_logics',

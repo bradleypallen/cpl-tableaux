@@ -250,6 +250,131 @@ class Implication(Formula):
         """Get all variable names in this formula"""
         return self.antecedent.get_variables() | self.consequent.get_variables()
 
+
+class RestrictedExistentialQuantifier(Formula):
+    """
+    Represents a restricted existential quantifier ∃̌xφ(x) from Ferguson (2024).
+    
+    This implements the restricted Kleene existential quantifier which differs from 
+    classical existential quantification in its treatment of undefined values.
+    """
+    
+    def __init__(self, variable: 'Variable', body: Formula):
+        if Variable is None:
+            raise ValueError("Variable class not available - ensure term.py is imported")
+        
+        if not isinstance(variable, Variable):
+            raise ValueError("Variable must be an instance of Variable class")
+        
+        if not isinstance(body, Formula):
+            raise ValueError("Body must be a Formula")
+        
+        self.variable = variable
+        self.body = body
+        self.quantifier_type = "restricted_existential"
+    
+    def __str__(self) -> str:
+        return f"∃̌{self.variable.name}({self.body})"
+    
+    def is_atomic(self) -> bool:
+        return False
+    
+    def is_literal(self) -> bool:
+        return False
+    
+    def is_ground(self) -> bool:
+        """Quantified formulas are never ground since they bind variables"""
+        return False
+    
+    def get_variables(self) -> Set[str]:
+        """Get free variables (bound variable excluded)"""
+        body_vars = self.body.get_variables()
+        body_vars.discard(self.variable.name)  # Remove bound variable
+        return body_vars
+    
+    def substitute(self, old_var: 'Variable', new_term: 'Term') -> 'Formula':
+        """Apply substitution, avoiding variable capture"""
+        if self.variable.name == old_var.name:
+            # Bound variable matches - no substitution needed
+            return self
+        
+        # Substitute in body if the variable doesn't conflict with bound variable
+        if hasattr(self.body, 'substitute'):
+            new_body = self.body.substitute(old_var, new_term)
+            return RestrictedExistentialQuantifier(self.variable, new_body)
+        else:
+            return self
+    
+    def __eq__(self, other):
+        return (isinstance(other, RestrictedExistentialQuantifier) and 
+                self.variable == other.variable and self.body == other.body)
+    
+    def __hash__(self):
+        return hash(('restricted_exists', self.variable, self.body))
+
+
+class RestrictedUniversalQuantifier(Formula):
+    """
+    Represents a restricted universal quantifier ∀̌xφ(x) from Ferguson (2024).
+    
+    This implements the restricted Kleene universal quantifier which differs from 
+    classical universal quantification in its treatment of undefined values.
+    """
+    
+    def __init__(self, variable: 'Variable', body: Formula):
+        if Variable is None:
+            raise ValueError("Variable class not available - ensure term.py is imported")
+        
+        if not isinstance(variable, Variable):
+            raise ValueError("Variable must be an instance of Variable class")
+        
+        if not isinstance(body, Formula):
+            raise ValueError("Body must be a Formula")
+        
+        self.variable = variable
+        self.body = body
+        self.quantifier_type = "restricted_universal"
+    
+    def __str__(self) -> str:
+        return f"∀̌{self.variable.name}({self.body})"
+    
+    def is_atomic(self) -> bool:
+        return False
+    
+    def is_literal(self) -> bool:
+        return False
+    
+    def is_ground(self) -> bool:
+        """Quantified formulas are never ground since they bind variables"""
+        return False
+    
+    def get_variables(self) -> Set[str]:
+        """Get free variables (bound variable excluded)"""
+        body_vars = self.body.get_variables()
+        body_vars.discard(self.variable.name)  # Remove bound variable
+        return body_vars
+    
+    def substitute(self, old_var: 'Variable', new_term: 'Term') -> 'Formula':
+        """Apply substitution, avoiding variable capture"""
+        if self.variable.name == old_var.name:
+            # Bound variable matches - no substitution needed
+            return self
+        
+        # Substitute in body if the variable doesn't conflict with bound variable
+        if hasattr(self.body, 'substitute'):
+            new_body = self.body.substitute(old_var, new_term)
+            return RestrictedUniversalQuantifier(self.variable, new_body)
+        else:
+            return self
+    
+    def __eq__(self, other):
+        return (isinstance(other, RestrictedUniversalQuantifier) and 
+                self.variable == other.variable and self.body == other.body)
+    
+    def __hash__(self):
+        return hash(('restricted_forall', self.variable, self.body))
+
+
 # Tableau data structures
 class RuleType(Enum):
     INITIAL = "Initial"
@@ -260,6 +385,8 @@ class RuleType(Enum):
     NEG_DISJUNCTION = "Negated Disjunction"
     IMPLICATION = "Implication"
     NEG_IMPLICATION = "Negated Implication"
+    RESTRICTED_EXISTENTIAL = "Restricted Existential"
+    RESTRICTED_UNIVERSAL = "Restricted Universal"
 
 @dataclass
 class TableauNode:
