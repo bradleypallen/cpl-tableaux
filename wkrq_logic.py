@@ -2,8 +2,11 @@
 """
 wKrQ Logic System - Weak Kleene Logic with Restricted Quantifiers
 
-Complete implementation of the wKrQ logic system based on Ferguson (2024)
-"Tableaux for Systems Related to Weak Kleene Logic".
+Complete implementation of the wKrQ logic system based on:
+Ferguson, Thomas Macaulay. "Tableaux and restricted quantification for systems 
+related to weak Kleene logic." In International Conference on Automated Reasoning 
+with Analytic Tableaux and Related Methods, pp. 3-19. Cham: Springer International 
+Publishing, 2021.
 """
 
 from typing import List, Dict, Any
@@ -57,7 +60,7 @@ def create_wkrq_logic_system() -> LogicSystem:
     """
     Create the wKrQ (Weak Kleene Logic with Restricted Quantifiers) system.
     
-    Based on Ferguson (2024) with:
+    Based on Ferguson (2021) with:
     - Three-valued semantics {t, f, e}
     - Restricted quantifiers ∃̌ and ∀̌
     - First-order domain reasoning
@@ -77,7 +80,7 @@ def create_wkrq_logic_system() -> LogicSystem:
             "sound": True,
             "truth_values": ["t", "f", "e"],
             "quantifiers": ["∃̌", "∀̌"],
-            "reference": "Ferguson (2024) 'Tableaux for Systems Related to Weak Kleene Logic'",
+            "reference": "Ferguson (2021) 'Tableaux and restricted quantification for systems related to weak Kleene logic'",
             "domain_support": True,
             "witness_generation": True
         }

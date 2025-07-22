@@ -1,6 +1,6 @@
 # Implementation Plan: wKrQ - Weak Kleene Logic with Restricted Quantifiers
 
-Based on Ferguson (2024) "Tableaux for Systems Related to Weak Kleene Logic"
+Based on Ferguson, Thomas Macaulay. "Tableaux and restricted quantification for systems related to weak Kleene logic." In International Conference on Automated Reasoning with Analytic Tableaux and Related Methods, pp. 3-19. Cham: Springer International Publishing, 2021.
 
 ## Overview
 
@@ -113,7 +113,7 @@ class RestrictedQuantifierOperators:
 
 ### 2. Tableau Rules Implementation
 
-Based on Definition 9 from the paper:
+Based on Definition 9 from Ferguson (2021):
 
 #### 2.1 Restricted Existential Quantifier Rule
 ```python
@@ -493,7 +493,7 @@ def test_wkrq_model_extraction():
 ## Research Validation
 
 The implementation will be validated against:
-1. **Formal definitions** from Ferguson (2024)
+1. **Formal definitions** from Ferguson (2021)
 2. **Tableau calculus rules** from Definition 9
 3. **Truth preservation property** from Definition 6
 4. **Comparison with strong/weak quantifier alternatives**

@@ -138,12 +138,12 @@ class WeakKleeneOperators:
 
 
 class RestrictedQuantifierOperators:
-    """Implementation of restricted Kleene quantifiers from Ferguson (2024)"""
+    """Implementation of restricted Kleene quantifiers from Ferguson (2021)"""
     
     @staticmethod
     def restricted_existential(value_pairs: Set[Tuple[TruthValue, TruthValue]]) -> TruthValue:
         """
-        Implement ∃̌(X) from Ferguson (2024) Definition 3
+        Implement ∃̌(X) from Ferguson (2021) Definition 3
         
         For a nonempty set X ⊆ V₃²:
         ∃̌(X) = t  if ⟨t,t⟩ ∈ X
@@ -167,7 +167,7 @@ class RestrictedQuantifierOperators:
     @staticmethod
     def restricted_universal(value_pairs: Set[Tuple[TruthValue, TruthValue]]) -> TruthValue:
         """
-        Implement ∀̌(X) from Ferguson (2024) Definition 3
+        Implement ∀̌(X) from Ferguson (2021) Definition 3
         
         For a nonempty set X ⊆ V₃²:
         ∀̌(X) = t  if ⟨t,f⟩, ⟨t,e⟩ ∉ X and for some ⟨u,v⟩ ∈ X, u ≠ e and v ≠ e

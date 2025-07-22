@@ -4,6 +4,11 @@ Basic wKrQ Implementation Test
 
 Tests the fundamental functionality of the wKrQ (Weak Kleene Logic with
 Restricted Quantifiers) implementation to verify core components work.
+
+Based on: Ferguson, Thomas Macaulay. "Tableaux and restricted quantification for systems 
+related to weak Kleene logic." In International Conference on Automated Reasoning 
+with Analytic Tableaux and Related Methods, pp. 3-19. Cham: Springer International 
+Publishing, 2021.
 """
 
 import sys
@@ -14,7 +19,7 @@ from typing import Set, Tuple
 from truth_value import TruthValue, t, f, e, RestrictedQuantifierOperators
 
 # Import formula classes
-from formula import RestrictedExistentialQuantifier, RestrictedUniversalQuantifier, Predicate
+from formula import RestrictedExistentialFormula, RestrictedUniversalFormula, Predicate
 from term import Variable, Constant
 
 # Import wKrQ components
@@ -74,25 +79,27 @@ def test_formula_classes():
     
     # Create predicates
     student_x = Predicate("Student", [x])
-    student_john = Predicate("Student", [john])
+    human_x = Predicate("Human", [x])
+    bachelor_x = Predicate("Bachelor", [x])
+    unmarried_male_x = Predicate("UnmarriedMale", [x])
     
-    # Create restricted quantifiers
-    exists_student = RestrictedExistentialQuantifier(x, student_x)
-    all_student = RestrictedUniversalQuantifier(x, student_x)
+    # Create restricted quantified formulas
+    exists_student_human = RestrictedExistentialFormula(x, student_x, human_x)
+    all_bachelor_unmarried = RestrictedUniversalFormula(x, bachelor_x, unmarried_male_x)
     
     # Test string representations
-    assert str(exists_student) == "∃̌X(Student(X))", f"Got: {str(exists_student)}"
-    assert str(all_student) == "∀̌X(Student(X))", f"Got: {str(all_student)}"
+    assert str(exists_student_human) == "[∃X Student(X)]Human(X)", f"Got: {str(exists_student_human)}"
+    assert str(all_bachelor_unmarried) == "[∀X Bachelor(X)]UnmarriedMale(X)", f"Got: {str(all_bachelor_unmarried)}"
     print("✓ Formula string representations correct")
     
     # Test properties
-    assert not exists_student.is_atomic()
-    assert not exists_student.is_literal()
-    assert not exists_student.is_ground()
+    assert not exists_student_human.is_atomic()
+    assert not exists_student_human.is_literal()
+    assert not exists_student_human.is_ground()
     print("✓ Formula properties correct")
     
     # Test variable extraction (bound variable should be excluded)
-    free_vars = exists_student.get_variables()
+    free_vars = exists_student_human.get_variables()
     assert len(free_vars) == 0, f"Expected no free variables, got {free_vars}"
     print("✓ Free variable extraction correct")
 

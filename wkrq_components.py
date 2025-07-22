@@ -5,11 +5,16 @@ wKrQ Components - Branch Management and Model Extraction
 Implements the component interfaces for wKrQ (Weak Kleene Logic with 
 Restricted Quantifiers) including branch management with domain tracking
 and three-valued model extraction.
+
+Based on: Ferguson, Thomas Macaulay. "Tableaux and restricted quantification for systems 
+related to weak Kleene logic." In International Conference on Automated Reasoning 
+with Analytic Tableaux and Related Methods, pp. 3-19. Cham: Springer International 
+Publishing, 2021.
 """
 
 from typing import List, Set, Dict, Optional, Any
 from tableau_rules import BranchInterface
-from formula import Formula, Predicate, Negation, RestrictedExistentialQuantifier, RestrictedUniversalQuantifier
+from formula import Formula, Predicate, Negation, RestrictedExistentialFormula, RestrictedUniversalFormula
 from term import Constant, Variable, Term
 from truth_value import TruthValue, t, f, e, WeakKleeneOperators, RestrictedQuantifierOperators
 
@@ -234,45 +239,48 @@ class WKrQ_Model:
             cons_value = self._evaluate_recursive(formula.consequent)
             return WeakKleeneOperators.implication(ante_value, cons_value)
         
-        elif isinstance(formula, RestrictedExistentialQuantifier):
+        elif isinstance(formula, RestrictedExistentialFormula):
             return self._evaluate_restricted_existential(formula)
         
-        elif isinstance(formula, RestrictedUniversalQuantifier):
+        elif isinstance(formula, RestrictedUniversalFormula):
             return self._evaluate_restricted_universal(formula)
         
         else:
             # Unknown formula type
             return e
     
-    def _evaluate_restricted_existential(self, formula: RestrictedExistentialQuantifier) -> TruthValue:
-        """Evaluate ∃̌xφ(x) using restricted quantifier semantics"""
+    def _evaluate_restricted_existential(self, formula: RestrictedExistentialFormula) -> TruthValue:
+        """Evaluate [∃X φ(X)]ψ(X) using restricted quantifier semantics"""
         value_pairs = set()
         
         for constant in self.domain.values():
-            # Create instantiated formula
-            instantiated = self._substitute_variable(formula.body, formula.variable, constant)
+            # Create instantiated formulas φ(c) and ψ(c)
+            phi_c = self._substitute_variable(formula.antecedent, formula.variable, constant)
+            psi_c = self._substitute_variable(formula.consequent, formula.variable, constant)
             
-            # For ∃̌, we need pairs ⟨φ(c), φ(c)⟩ (simplified case)
-            value = self._evaluate_recursive(instantiated)
-            value_pairs.add((value, value))
+            # Evaluate both and create the pair ⟨φ(c), ψ(c)⟩
+            phi_value = self._evaluate_recursive(phi_c)
+            psi_value = self._evaluate_recursive(psi_c)
+            value_pairs.add((phi_value, psi_value))
         
         if not value_pairs:
             return e  # Empty domain
         
         return RestrictedQuantifierOperators.restricted_existential(value_pairs)
     
-    def _evaluate_restricted_universal(self, formula: RestrictedUniversalQuantifier) -> TruthValue:
-        """Evaluate ∀̌xφ(x) using restricted quantifier semantics"""
+    def _evaluate_restricted_universal(self, formula: RestrictedUniversalFormula) -> TruthValue:
+        """Evaluate [∀X φ(X)]ψ(X) using restricted quantifier semantics"""
         value_pairs = set()
         
         for constant in self.domain.values():
-            # Create instantiated formula
-            instantiated = self._substitute_variable(formula.body, formula.variable, constant)
+            # Create instantiated formulas φ(c) and ψ(c)
+            phi_c = self._substitute_variable(formula.antecedent, formula.variable, constant)
+            psi_c = self._substitute_variable(formula.consequent, formula.variable, constant)
             
-            # For ∀̌, we need pairs ⟨φ(c), ¬φ(c)⟩
-            value = self._evaluate_recursive(instantiated)
-            neg_value = WeakKleeneOperators.negation(value)
-            value_pairs.add((value, neg_value))
+            # Evaluate both and create the pair ⟨φ(c), ψ(c)⟩
+            phi_value = self._evaluate_recursive(phi_c)
+            psi_value = self._evaluate_recursive(psi_c)
+            value_pairs.add((phi_value, psi_value))
         
         if not value_pairs:
             return e  # Empty domain

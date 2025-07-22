@@ -3,8 +3,11 @@
 wKrQ Demonstration - Weak Kleene Logic with Restricted Quantifiers
 
 Demonstrates the wKrQ (Weak Kleene Logic with Restricted Quantifiers) 
-implementation based on Ferguson (2024) "Tableaux for Systems Related 
-to Weak Kleene Logic".
+implementation based on:
+Ferguson, Thomas Macaulay. "Tableaux and restricted quantification for systems 
+related to weak Kleene logic." In International Conference on Automated Reasoning 
+with Analytic Tableaux and Related Methods, pp. 3-19. Cham: Springer International 
+Publishing, 2021.
 
 This shows:
 - Restricted quantifier semantics ∃̌ and ∀̌
@@ -17,7 +20,7 @@ import traceback
 from typing import List
 
 # Import core components
-from formula import RestrictedExistentialQuantifier, RestrictedUniversalQuantifier, Predicate, Conjunction, Negation
+from formula import RestrictedExistentialFormula, RestrictedUniversalFormula, Predicate, Conjunction, Negation
 from term import Variable, Constant
 from truth_value import t, f, e, RestrictedQuantifierOperators
 
@@ -42,7 +45,7 @@ def demo_restricted_quantifier_semantics():
     """Demonstrate restricted quantifier truth value semantics"""
     print_header("RESTRICTED QUANTIFIER SEMANTICS DEMO")
     
-    print("Based on Ferguson (2024) Definition 3:")
+    print("Based on Ferguson (2021) Definition 3:")
     print("∃̌(X) and ∀̌(X) for sets X ⊆ V₃²")
     
     print_subheader("Restricted Existential ∃̌(X)")
@@ -109,25 +112,45 @@ def demo_formula_construction():
     print(f"Loves(X,Y): {loves_xy}")  
     print(f"Student(john): {student_john}")
     
-    # Create restricted quantifiers
-    exists_student = RestrictedExistentialQuantifier(x, student_x)
-    all_student = RestrictedUniversalQuantifier(x, student_x)
+    # Create restricted quantified formulas showing subsumption relationships
+    human_x = Predicate("Human", [x])
+    bachelor_x = Predicate("Bachelor", [x])
+    unmarried_male_x = Predicate("UnmarriedMale", [x])
+    animal_x = Predicate("Animal", [x])
+    dog_x = Predicate("Dog", [x])
     
-    print(f"\nRestricted Quantifiers:")
-    print(f"∃̌X Student(X): {exists_student}")
-    print(f"∀̌X Student(X): {all_student}")
+    # Subsumption examples
+    student_human = RestrictedExistentialFormula(x, student_x, human_x)
+    bachelor_unmarried = RestrictedUniversalFormula(x, bachelor_x, unmarried_male_x)
+    dog_animal = RestrictedUniversalFormula(x, dog_x, animal_x)
     
-    # Create complex formulas
-    nested_exists = RestrictedExistentialQuantifier(y, loves_xy)
-    complex_formula = RestrictedUniversalQuantifier(x, nested_exists)
+    print(f"\nRestricted Quantified Formulas (Subsumption Relations):")
+    print(f"[∃X Student(X)]Human(X): {student_human}")
+    print(f"  - 'There exists a student who is human'")
+    print(f"[∀X Bachelor(X)]UnmarriedMale(X): {bachelor_unmarried}")
+    print(f"  - 'Every bachelor is an unmarried male' (subsumption)")
+    print(f"[∀X Dog(X)]Animal(X): {dog_animal}")
+    print(f"  - 'Every dog is an animal' (subsumption)")
     
-    print(f"\nComplex Formula:")
-    print(f"∀̌X ∃̌Y Loves(X,Y): {complex_formula}")
+    # Create complex nested formula
+    person_x = Predicate("Person", [x])
+    loves_john = Predicate("Loves", [x, Constant("john")])
+    complex_formula = RestrictedUniversalFormula(x, person_x, 
+                          RestrictedExistentialFormula(y, student_x, loves_xy))
     
-    # Create contradiction
-    contradiction = Conjunction(exists_student, RestrictedUniversalQuantifier(x, Negation(student_x)))
-    print(f"\nContradiction:")
-    print(f"∃̌X Student(X) ∧ ∀̌X ¬Student(X): {contradiction}")
+    print(f"\nComplex Nested Formula:")
+    print(f"[∀X Person(X)][∃Y Student(Y)]Loves(X,Y): {complex_formula}")
+    print(f"  - 'Every person relates to some student through love'")
+    
+    # Create subsumption test case
+    not_human_x = Negation(human_x)
+    contradiction = Conjunction(
+        RestrictedUniversalFormula(x, student_x, human_x),  # All students are human
+        RestrictedExistentialFormula(x, student_x, not_human_x)  # Some student is not human
+    )
+    print(f"\nContradictory Subsumption:")
+    print(f"[∀X Student(X)]Human(X) ∧ [∃X Student(X)]¬Human(X): {contradiction}")
+    print(f"  - 'All students are human AND some student is not human'")
 
 
 def demo_branch_reasoning():
@@ -261,7 +284,7 @@ def demo_logic_system_integration():
 def run_full_demo():
     """Run complete wKrQ demonstration"""
     print("🎯 wKrQ - Weak Kleene Logic with Restricted Quantifiers")
-    print("Based on Ferguson (2024) 'Tableaux for Systems Related to Weak Kleene Logic'")
+    print("Based on Ferguson (2021) 'Tableaux and restricted quantification for systems related to weak Kleene logic'")
     
     demos = [
         demo_restricted_quantifier_semantics,
@@ -280,7 +303,7 @@ def run_full_demo():
     
     print_header("DEMO COMPLETE")
     print("The wKrQ implementation provides:")
-    print("✓ Exact Ferguson (2024) restricted quantifier semantics")
+    print("✓ Exact Ferguson (2021) restricted quantifier semantics")
     print("✓ Three-valued weak Kleene logic foundation")
     print("✓ First-order domain management with witness generation")
     print("✓ Branch-based tableau reasoning")

@@ -251,30 +251,36 @@ class Implication(Formula):
         return self.antecedent.get_variables() | self.consequent.get_variables()
 
 
-class RestrictedExistentialQuantifier(Formula):
+class RestrictedExistentialFormula(Formula):
     """
-    Represents a restricted existential quantifier ∃̌xφ(x) from Ferguson (2024).
+    Represents a restricted existential formula [∃X φ(X)]ψ(X) from Ferguson (2021).
     
-    This implements the restricted Kleene existential quantifier which differs from 
-    classical existential quantification in its treatment of undefined values.
+    This has the structure: [∃X antecedent(X)]consequent(X)
+    where both antecedent and consequent are formulas with the same variable X.
+    
+    Example: [∃X Student(X)]Human(X) - "There exists a student who is human"
     """
     
-    def __init__(self, variable: 'Variable', body: Formula):
+    def __init__(self, variable: 'Variable', antecedent: Formula, consequent: Formula):
         if Variable is None:
             raise ValueError("Variable class not available - ensure term.py is imported")
         
         if not isinstance(variable, Variable):
             raise ValueError("Variable must be an instance of Variable class")
         
-        if not isinstance(body, Formula):
-            raise ValueError("Body must be a Formula")
+        if not isinstance(antecedent, Formula):
+            raise ValueError("Antecedent must be a Formula")
+            
+        if not isinstance(consequent, Formula):
+            raise ValueError("Consequent must be a Formula")
         
         self.variable = variable
-        self.body = body
+        self.antecedent = antecedent  # φ(X) in [∃X φ(X)]ψ(X)
+        self.consequent = consequent  # ψ(X) in [∃X φ(X)]ψ(X)
         self.quantifier_type = "restricted_existential"
     
     def __str__(self) -> str:
-        return f"∃̌{self.variable.name}({self.body})"
+        return f"[∃{self.variable.name} {self.antecedent}]{self.consequent}"
     
     def is_atomic(self) -> bool:
         return False
@@ -287,10 +293,12 @@ class RestrictedExistentialQuantifier(Formula):
         return False
     
     def get_variables(self) -> Set[str]:
-        """Get free variables (bound variable excluded)"""
-        body_vars = self.body.get_variables()
-        body_vars.discard(self.variable.name)  # Remove bound variable
-        return body_vars
+        """Get free variables (bound variable excluded from both antecedent and consequent)"""
+        ante_vars = self.antecedent.get_variables()
+        cons_vars = self.consequent.get_variables()
+        all_vars = ante_vars | cons_vars
+        all_vars.discard(self.variable.name)  # Remove bound variable
+        return all_vars
     
     def substitute(self, old_var: 'Variable', new_term: 'Term') -> 'Formula':
         """Apply substitution, avoiding variable capture"""
@@ -298,45 +306,58 @@ class RestrictedExistentialQuantifier(Formula):
             # Bound variable matches - no substitution needed
             return self
         
-        # Substitute in body if the variable doesn't conflict with bound variable
-        if hasattr(self.body, 'substitute'):
-            new_body = self.body.substitute(old_var, new_term)
-            return RestrictedExistentialQuantifier(self.variable, new_body)
-        else:
-            return self
+        # Substitute in both antecedent and consequent
+        new_antecedent = self.antecedent
+        new_consequent = self.consequent
+        
+        if hasattr(self.antecedent, 'substitute'):
+            new_antecedent = self.antecedent.substitute(old_var, new_term)
+        
+        if hasattr(self.consequent, 'substitute'):
+            new_consequent = self.consequent.substitute(old_var, new_term)
+            
+        return RestrictedExistentialFormula(self.variable, new_antecedent, new_consequent)
     
     def __eq__(self, other):
-        return (isinstance(other, RestrictedExistentialQuantifier) and 
-                self.variable == other.variable and self.body == other.body)
+        return (isinstance(other, RestrictedExistentialFormula) and 
+                self.variable == other.variable and 
+                self.antecedent == other.antecedent and 
+                self.consequent == other.consequent)
     
     def __hash__(self):
-        return hash(('restricted_exists', self.variable, self.body))
+        return hash(('restricted_exists', self.variable, self.antecedent, self.consequent))
 
 
-class RestrictedUniversalQuantifier(Formula):
+class RestrictedUniversalFormula(Formula):
     """
-    Represents a restricted universal quantifier ∀̌xφ(x) from Ferguson (2024).
+    Represents a restricted universal formula [∀X φ(X)]ψ(X) from Ferguson (2021).
     
-    This implements the restricted Kleene universal quantifier which differs from 
-    classical universal quantification in its treatment of undefined values.
+    This has the structure: [∀X antecedent(X)]consequent(X)
+    where both antecedent and consequent are formulas with the same variable X.
+    
+    Example: [∀X Bachelor(X)]UnmarriedMale(X) - "Every bachelor is an unmarried male"
     """
     
-    def __init__(self, variable: 'Variable', body: Formula):
+    def __init__(self, variable: 'Variable', antecedent: Formula, consequent: Formula):
         if Variable is None:
             raise ValueError("Variable class not available - ensure term.py is imported")
         
         if not isinstance(variable, Variable):
             raise ValueError("Variable must be an instance of Variable class")
         
-        if not isinstance(body, Formula):
-            raise ValueError("Body must be a Formula")
+        if not isinstance(antecedent, Formula):
+            raise ValueError("Antecedent must be a Formula")
+            
+        if not isinstance(consequent, Formula):
+            raise ValueError("Consequent must be a Formula")
         
         self.variable = variable
-        self.body = body
+        self.antecedent = antecedent  # φ(X) in [∀X φ(X)]ψ(X)
+        self.consequent = consequent  # ψ(X) in [∀X φ(X)]ψ(X)
         self.quantifier_type = "restricted_universal"
     
     def __str__(self) -> str:
-        return f"∀̌{self.variable.name}({self.body})"
+        return f"[∀{self.variable.name} {self.antecedent}]{self.consequent}"
     
     def is_atomic(self) -> bool:
         return False
@@ -349,10 +370,12 @@ class RestrictedUniversalQuantifier(Formula):
         return False
     
     def get_variables(self) -> Set[str]:
-        """Get free variables (bound variable excluded)"""
-        body_vars = self.body.get_variables()
-        body_vars.discard(self.variable.name)  # Remove bound variable
-        return body_vars
+        """Get free variables (bound variable excluded from both antecedent and consequent)"""
+        ante_vars = self.antecedent.get_variables()
+        cons_vars = self.consequent.get_variables()
+        all_vars = ante_vars | cons_vars
+        all_vars.discard(self.variable.name)  # Remove bound variable
+        return all_vars
     
     def substitute(self, old_var: 'Variable', new_term: 'Term') -> 'Formula':
         """Apply substitution, avoiding variable capture"""
@@ -360,19 +383,26 @@ class RestrictedUniversalQuantifier(Formula):
             # Bound variable matches - no substitution needed
             return self
         
-        # Substitute in body if the variable doesn't conflict with bound variable
-        if hasattr(self.body, 'substitute'):
-            new_body = self.body.substitute(old_var, new_term)
-            return RestrictedUniversalQuantifier(self.variable, new_body)
-        else:
-            return self
+        # Substitute in both antecedent and consequent
+        new_antecedent = self.antecedent
+        new_consequent = self.consequent
+        
+        if hasattr(self.antecedent, 'substitute'):
+            new_antecedent = self.antecedent.substitute(old_var, new_term)
+        
+        if hasattr(self.consequent, 'substitute'):
+            new_consequent = self.consequent.substitute(old_var, new_term)
+            
+        return RestrictedUniversalFormula(self.variable, new_antecedent, new_consequent)
     
     def __eq__(self, other):
-        return (isinstance(other, RestrictedUniversalQuantifier) and 
-                self.variable == other.variable and self.body == other.body)
+        return (isinstance(other, RestrictedUniversalFormula) and 
+                self.variable == other.variable and 
+                self.antecedent == other.antecedent and 
+                self.consequent == other.consequent)
     
     def __hash__(self):
-        return hash(('restricted_forall', self.variable, self.body))
+        return hash(('restricted_forall', self.variable, self.antecedent, self.consequent))
 
 
 # Tableau data structures
