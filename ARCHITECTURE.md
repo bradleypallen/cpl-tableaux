@@ -1,7 +1,7 @@
 # Architecture Documentation: Semantic Tableau System
 
 **Version**: 2.0 (Componentized Architecture)  
-**Last Updated**: 2024  
+**Last Updated**: 2025  
 **License**: MIT  
 
 ## Table of Contents
