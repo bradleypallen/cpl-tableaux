@@ -115,6 +115,19 @@ class RestrictedExistentialRule(TableauRule):
         
         return constants
     
+    def _get_domain_constants(self, branch: BranchInterface) -> List[Constant]:
+        """Get all constants that should be in the quantification domain"""
+        # Try to use branch's domain if available
+        if hasattr(branch, 'get_domain_constants'):
+            return branch.get_domain_constants()
+        
+        # Fallback: extract constants from all formulas in branch
+        constant_names = set()
+        for formula in branch.formulas:
+            constant_names.update(self._extract_constants_from_formula(formula))
+        
+        return [Constant(name) for name in sorted(constant_names)]
+    
     def _extract_constants_from_formula(self, formula: Formula) -> Set[str]:
         """Recursively extract constant names from a formula"""
         from formula import Predicate, Negation, Conjunction, Disjunction, Implication
@@ -296,19 +309,6 @@ class RestrictedUniversalRule(TableauRule):
     def _extract_constants_from_formula(self, formula: Formula) -> Set[str]:
         """Extract constants (reuse from existential rule)"""
         return RestrictedExistentialRule()._extract_constants_from_formula(formula)
-    
-    def _get_domain_constants(self, branch: BranchInterface) -> List[Constant]:
-        """Get all constants that should be in the quantification domain"""
-        # Try to use branch's domain if available
-        if hasattr(branch, 'get_domain_constants'):
-            return branch.get_domain_constants()
-        
-        # Fallback: extract constants from all formulas in branch
-        constant_names = set()
-        for formula in branch.formulas:
-            constant_names.update(self._extract_constants_from_formula(formula))
-        
-        return [Constant(name) for name in sorted(constant_names)]
     
     def _substitute_in_formula(self, formula: Formula, substitution: Dict[str, Term]) -> Formula:
         """Apply substitution (reuse from existential rule)"""

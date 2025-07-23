@@ -47,12 +47,16 @@ def get_wkrq_rules() -> List[TableauRule]:
 
 def create_wkrq_components() -> Dict[str, Any]:
     """Create wKrQ-specific component implementations"""
+    # Import WK3 components to inherit from them
+    from wk3_components import create_wk3_components
+    wk3_components = create_wk3_components()
+    
     return {
         'branch_factory': WKrQ_BranchFactory(),
         'closure_detector': WKrQ_ClosureDetector(),
         'model_extractor': WKrQ_ModelExtractor(),
-        'literal_recognizer': None,  # Use default or WK3 implementation
-        'subsumption_detector': None  # Use default or WK3 implementation
+        'literal_recognizer': wk3_components['literal_recognizer'],  # Inherit from WK3
+        'subsumption_detector': wk3_components['subsumption_detector']  # Inherit from WK3
     }
 
 

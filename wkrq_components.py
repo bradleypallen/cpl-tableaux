@@ -66,6 +66,13 @@ class WKrQ_Branch(BranchInterface):
             self._formulas.append(formula)
             self._check_closure()
     
+    def add_formulas(self, formulas: List[Formula]) -> None:
+        """Add multiple formulas and check for closure"""
+        for formula in formulas:
+            if formula not in self._formulas:
+                self._formulas.append(formula)
+        self._check_closure()
+    
     def copy(self) -> 'WKrQ_Branch':
         """Create deep copy of this branch"""
         new_branch = WKrQ_Branch(self._id, self._formulas.copy())
