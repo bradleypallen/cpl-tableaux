@@ -81,6 +81,66 @@ def demo_quantifier_semantics_with_evaluation():
     print(f"  Domain size: {stats.get('domain_size', 'N/A')}")
 
 
+def demo_existential_robustness():
+    """Demonstrate existential quantifier robustness with conflicting background"""
+    print_header("EXISTENTIAL QUANTIFIER ROBUSTNESS TEST")
+    
+    x = Variable("X")
+    alice = Constant("alice")
+    
+    # Background: Alice is a student but not human (hypothetical)
+    alice_is_student = Predicate("Student", [alice])
+    alice_not_human = Negation(Predicate("Human", [alice]))
+    background = Conjunction(alice_is_student, alice_not_human)
+    
+    # Existential claim: Some student is human
+    student_x = Predicate(\"Student\", [x])
+    human_x = Predicate(\"Human\", [x])
+    some_students_are_human = RestrictedExistentialFormula(x, student_x, human_x)
+    
+    print(\"Scenario: Testing existential independence from background facts\")
+    print(f\"Background: Alice is a student but not human\")
+    print(f\"Claim: {some_students_are_human}\")
+    print()
+    
+    # Test the combination
+    combined = Conjunction(background, some_students_are_human)
+    tableau = wkrq_tableau(combined)
+    is_sat = tableau.build()
+    
+    print(f\"Result: {'SATISFIABLE' if is_sat else 'UNSATISFIABLE'}\")
+    print(\"Expected: SATISFIABLE (existential creates fresh witness)\")
+    
+    if is_sat:
+        models = tableau.extract_all_models()
+        if models:
+            model = models[0]
+            print(f\"\\nDomain: {list(model.domain.keys())}\")
+            print(\"Assignments:\")
+            for pred, value in sorted(model.predicate_assignments.items()):
+                print(f\"  {pred} = {value}\")
+            
+            print(\"\\nAnalysis:\")
+            alice_student = model.predicate_assignments.get('Student(alice)')
+            alice_human = model.predicate_assignments.get('Human(alice)')
+            print(f\"Alice: Student={alice_student}, Human={alice_human}\")
+            
+            # Find witness
+            for const in model.domain.keys():
+                if const != 'alice':
+                    student_val = model.predicate_assignments.get(f'Student({const})')
+                    human_val = model.predicate_assignments.get(f'Human({const})')
+                    print(f\"Witness {const}: Student={student_val}, Human={human_val}\")
+                    if str(student_val) == 'TruthValue.TRUE' and str(human_val) == 'TruthValue.TRUE':
+                        print(f\"✓ Fresh witness {const} independently satisfies the existential\")
+                        break
+            
+            print(\"\\nKey insight: Existentials create independent witnesses,\")
+            print(\"unaffected by contradictory background knowledge about other individuals.\")
+    else:
+        print(\"❌ Unexpected unsatisfiable result!\")
+
+
 def demo_subsumption_tableaux():
     """Demonstrate subsumption relationships through tableau construction"""
     print_header("SUBSUMPTION RELATIONSHIPS VIA TABLEAUX")

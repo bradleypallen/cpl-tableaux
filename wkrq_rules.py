@@ -50,58 +50,36 @@ class RestrictedExistentialRule(TableauRule):
         2. Evaluate the restricted quantifier truth function
         3. Add the result as a truth value constraint
         """
-        # Get all constants in current domain
-        domain_constants = self._get_domain_constants(context.branch)
+        # For existential quantifiers, we ALWAYS generate a fresh witness
+        # This ensures the existential can be satisfied independently of existing constants
+        witness = self._generate_fresh_constant(context)
         
-        if not domain_constants:
-            # No constants yet - generate fresh constant for witness
-            fresh_constant = self._generate_fresh_constant(context)
-            domain_constants = [fresh_constant]
-            
-            # Add to domain if branch supports it
-            if hasattr(context.branch, 'add_to_domain'):
-                context.branch.add_to_domain(fresh_constant)
-        
-        # For existential quantifiers, we need to ensure satisfiability
-        # by creating a witness that makes the formula true
-        witness = None
-        if not domain_constants:
-            witness = self._generate_fresh_constant(context)
-            domain_constants = [witness]
-            if hasattr(context.branch, 'add_to_domain'):
-                context.branch.add_to_domain(witness)
+        # Add witness to domain if branch supports it
+        if hasattr(context.branch, 'add_to_domain'):
+            context.branch.add_to_domain(witness)
         
         # Create instantiation for the witness (existential needs one satisfying instance)
-        if domain_constants:
-            witness = domain_constants[0]  # Use first available constant as witness
-            substitution = {formula.variable.name: witness}
-            
-            # Create φ(witness) and ψ(witness)
-            phi_witness = self._substitute_in_formula(formula.antecedent, substitution)
-            psi_witness = self._substitute_in_formula(formula.consequent, substitution)
-            
-            # For existential, we need φ(witness) ∧ ψ(witness) to be true
-            # This ensures ⟨t, t⟩ ∈ pairs, making ∃̌(pairs) = t
-            from formula import Conjunction
-            witness_constraint = Conjunction(phi_witness, psi_witness)
-            
-            return RuleApplication(
-                formulas_for_branches=[[witness_constraint]],
-                branch_count=1,
-                metadata={
-                    'rule_name': 'restricted_existential',
-                    'quantifier_type': 'restricted_existential',
-                    'variable': formula.variable.name,
-                    'witness': witness.name,
-                    'constraint': str(witness_constraint)
-                }
-            )
+        substitution = {formula.variable.name: witness}
         
-        # Fallback: empty domain case
+        # Create φ(witness) and ψ(witness)
+        phi_witness = self._substitute_in_formula(formula.antecedent, substitution)
+        psi_witness = self._substitute_in_formula(formula.consequent, substitution)
+        
+        # For existential, we need φ(witness) ∧ ψ(witness) to be true
+        # This ensures ⟨t, t⟩ ∈ pairs, making ∃̌(pairs) = t
+        from formula import Conjunction
+        witness_constraint = Conjunction(phi_witness, psi_witness)
+        
         return RuleApplication(
-            formulas_for_branches=[[]],
+            formulas_for_branches=[[witness_constraint]],
             branch_count=1,
-            metadata={'rule_name': 'restricted_existential', 'domain': 'empty'}
+            metadata={
+                'rule_name': 'restricted_existential',
+                'quantifier_type': 'restricted_existential',
+                'variable': formula.variable.name,
+                'witness': witness.name,
+                'constraint': str(witness_constraint)
+            }
         )
     
     def _generate_fresh_constant(self, context: RuleContext) -> Constant:
