@@ -42,10 +42,13 @@ class RestrictedExistentialRule(TableauRule):
     def apply(self, formula: RestrictedExistentialFormula, context: RuleContext) -> RuleApplication:
         """
         Apply restricted existential rule for [∃X φ(X)]ψ(X):
-        This creates a branch with instantiations for all constants in the domain,
-        then evaluates using the restricted existential truth function ∃̌
         
-        The evaluation is: ∃̌({⟨φ(c), ψ(c)⟩ | c ∈ domain})
+        Ferguson's semantics: ∃̌({⟨φ(c), ψ(c)⟩ | c ∈ domain})
+        
+        Instead of just adding instantiations, we:
+        1. Generate witness if domain is empty
+        2. Evaluate the restricted quantifier truth function
+        3. Add the result as a truth value constraint
         """
         # Get all constants in current domain
         domain_constants = self._get_domain_constants(context.branch)
@@ -59,35 +62,46 @@ class RestrictedExistentialRule(TableauRule):
             if hasattr(context.branch, 'add_to_domain'):
                 context.branch.add_to_domain(fresh_constant)
         
-        # For tableau construction, we need to create the appropriate branches
-        # The restricted existential creates instantiations where we need
-        # to track the truth value pairs ⟨φ(c), ψ(c)⟩
+        # For existential quantifiers, we need to ensure satisfiability
+        # by creating a witness that makes the formula true
+        witness = None
+        if not domain_constants:
+            witness = self._generate_fresh_constant(context)
+            domain_constants = [witness]
+            if hasattr(context.branch, 'add_to_domain'):
+                context.branch.add_to_domain(witness)
         
-        instantiated_formulas = []
-        for constant in domain_constants:
-            substitution = {formula.variable.name: constant}
+        # Create instantiation for the witness (existential needs one satisfying instance)
+        if domain_constants:
+            witness = domain_constants[0]  # Use first available constant as witness
+            substitution = {formula.variable.name: witness}
             
-            # Create φ(c) and ψ(c) 
-            phi_c = self._substitute_in_formula(formula.antecedent, substitution)
-            psi_c = self._substitute_in_formula(formula.consequent, substitution)
+            # Create φ(witness) and ψ(witness)
+            phi_witness = self._substitute_in_formula(formula.antecedent, substitution)
+            psi_witness = self._substitute_in_formula(formula.consequent, substitution)
             
-            # For now, add both to the branch - the evaluation logic
-            # will be handled by the model extractor using the ∃̌ truth function
-            instantiated_formulas.extend([phi_c, psi_c])
+            # For existential, we need φ(witness) ∧ ψ(witness) to be true
+            # This ensures ⟨t, t⟩ ∈ pairs, making ∃̌(pairs) = t
+            from formula import Conjunction
+            witness_constraint = Conjunction(phi_witness, psi_witness)
+            
+            return RuleApplication(
+                formulas_for_branches=[[witness_constraint]],
+                branch_count=1,
+                metadata={
+                    'rule_name': 'restricted_existential',
+                    'quantifier_type': 'restricted_existential',
+                    'variable': formula.variable.name,
+                    'witness': witness.name,
+                    'constraint': str(witness_constraint)
+                }
+            )
         
-        # Return single branch with all instantiations
-        # The restricted quantifier evaluation happens during model extraction
+        # Fallback: empty domain case
         return RuleApplication(
-            formulas_for_branches=[instantiated_formulas],
+            formulas_for_branches=[[]],
             branch_count=1,
-            metadata={
-                'rule_name': 'restricted_existential',
-                'quantifier_type': 'restricted_existential',
-                'variable': formula.variable.name,
-                'domain_constants': [c.name for c in domain_constants],
-                'antecedent': str(formula.antecedent),
-                'consequent': str(formula.consequent)
-            }
+            metadata={'rule_name': 'restricted_existential', 'domain': 'empty'}
         )
     
     def _generate_fresh_constant(self, context: RuleContext) -> Constant:
@@ -117,14 +131,16 @@ class RestrictedExistentialRule(TableauRule):
     
     def _get_domain_constants(self, branch: BranchInterface) -> List[Constant]:
         """Get all constants that should be in the quantification domain"""
-        # Try to use branch's domain if available
-        if hasattr(branch, 'get_domain_constants'):
-            return branch.get_domain_constants()
-        
-        # Fallback: extract constants from all formulas in branch
         constant_names = set()
+        
+        # Always extract constants from formulas - this is the authoritative source
         for formula in branch.formulas:
             constant_names.update(self._extract_constants_from_formula(formula))
+        
+        # Also check branch's explicit domain if available
+        if hasattr(branch, 'get_domain_constants'):
+            domain_constants = branch.get_domain_constants()
+            constant_names.update(c.name for c in domain_constants)
         
         return [Constant(name) for name in sorted(constant_names)]
     
@@ -235,10 +251,11 @@ class RestrictedUniversalRule(TableauRule):
     def apply(self, formula: RestrictedUniversalFormula, context: RuleContext) -> RuleApplication:
         """
         Apply restricted universal rule for [∀X φ(X)]ψ(X):
-        This creates instantiations for all constants in the domain,
-        then evaluates using the restricted universal truth function ∀̌
         
-        The evaluation is: ∀̌({⟨φ(c), ψ(c)⟩ | c ∈ domain})
+        Ferguson's semantics: ∀̌({⟨φ(c), ψ(c)⟩ | c ∈ domain})
+        
+        For universals, we need to check all domain elements.
+        If any gives us a critical pair ⟨t,f⟩ or ⟨t,e⟩, the formula is false.
         """
         # Get all constants in current domain
         domain_constants = self._get_domain_constants(context.branch)
@@ -252,8 +269,10 @@ class RestrictedUniversalRule(TableauRule):
             if hasattr(context.branch, 'add_to_domain'):
                 context.branch.add_to_domain(fresh_constant)
         
-        # Create instantiations for the antecedent and consequent pairs
-        instantiated_formulas = []
+        # For universal quantifiers, we need to ensure ALL instances satisfy φ(c) → ψ(c)
+        # This means for each constant c: φ(c) → ψ(c)
+        instantiated_implications = []
+        
         for constant in domain_constants:
             substitution = {formula.variable.name: constant}
             
@@ -261,35 +280,38 @@ class RestrictedUniversalRule(TableauRule):
             phi_c = self._substitute_in_formula(formula.antecedent, substitution)
             psi_c = self._substitute_in_formula(formula.consequent, substitution)
             
-            # For now, add both to the branch - the evaluation logic
-            # will be handled by the model extractor using the ∀̌ truth function
-            instantiated_formulas.extend([phi_c, psi_c])
+            # Create the implication φ(c) → ψ(c)
+            # This ensures that if φ(c) is true, then ψ(c) must also be true
+            # This prevents the critical pair ⟨t,f⟩
+            from formula import Implication
+            implication = Implication(phi_c, psi_c)
+            instantiated_implications.append(implication)
         
-        # Universal quantifier creates single branch with all instantiations
-        # The restricted quantifier evaluation happens during model extraction
+        # All implications must hold for the universal to be true
         return RuleApplication(
-            formulas_for_branches=[instantiated_formulas],
+            formulas_for_branches=[instantiated_implications],
             branch_count=1,
             metadata={
                 'rule_name': 'restricted_universal',
                 'quantifier_type': 'restricted_universal',
                 'variable': formula.variable.name,
                 'domain_constants': [c.name for c in domain_constants],
-                'antecedent': str(formula.antecedent),
-                'consequent': str(formula.consequent)
+                'implications': [str(imp) for imp in instantiated_implications]
             }
         )
     
     def _get_domain_constants(self, branch: BranchInterface) -> List[Constant]:
         """Get all constants that should be in the quantification domain"""
-        # Try to use branch's domain if available
-        if hasattr(branch, 'get_domain_constants'):
-            return branch.get_domain_constants()
-        
-        # Fallback: extract constants from all formulas in branch
         constant_names = set()
+        
+        # Always extract constants from formulas - this is the authoritative source
         for formula in branch.formulas:
             constant_names.update(self._extract_constants_from_formula(formula))
+        
+        # Also check branch's explicit domain if available
+        if hasattr(branch, 'get_domain_constants'):
+            domain_constants = branch.get_domain_constants()
+            constant_names.update(c.name for c in domain_constants)
         
         return [Constant(name) for name in sorted(constant_names)]
     

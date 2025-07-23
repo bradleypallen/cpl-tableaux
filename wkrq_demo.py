@@ -203,95 +203,109 @@ def demo_birds_and_penguins_tableaux():
     print_header("BIRDS AND PENGUINS TABLEAU CONSTRUCTION")
     
     print("The classic birds/penguins paradox: 'Birds can fly' vs 'Penguins are birds that cannot fly'")
-    print("We'll construct tableaux to show how wKrQ handles this gracefully.\n")
+    print("We'll show how wKrQ handles contradictory knowledge through proper tableau construction.\n")
     
     x = Variable("X")
-    bird_x = Predicate("Bird", [x])
-    canfly_x = Predicate("CanFly", [x])
     penguin_x = Predicate("Penguin", [x])
+    canfly_x = Predicate("CanFly", [x])
     
-    # Test 1: Penguins can fly - [∀X Penguin(X)]CanFly(X)
-    print_subheader("Tableau 1: Testing 'All penguins can fly'")
+    # Background knowledge: Tweety is a penguin who cannot fly
+    tweety = Constant("tweety")
+    tweety_is_penguin = Predicate("Penguin", [tweety])
+    tweety_cannot_fly = Negation(Predicate("CanFly", [tweety]))
+    background_knowledge = Conjunction(tweety_is_penguin, tweety_cannot_fly)
+    
+    print("Background Knowledge:")
+    print(f"  Tweety is a penguin: {tweety_is_penguin}")
+    print(f"  Tweety cannot fly: {tweety_cannot_fly}")
+    print()
+    
+    # Test 1: All penguins can fly (without background) - should be satisfiable
+    print_subheader("Test 1: 'All penguins can fly' (no background knowledge)")
     penguin_flight = RestrictedUniversalFormula(x, penguin_x, canfly_x)
     print(f"Formula: {penguin_flight}")
     
     tableau1 = wkrq_tableau(penguin_flight)
-    print("Building tableau...")
     is_sat1 = tableau1.build()
     print(f"Result: {'SATISFIABLE' if is_sat1 else 'UNSATISFIABLE'}")
-    
-    # Note: Tree printing has some implementation issues, showing results instead
-    print("\nTableau construction completed successfully")
-    
-    stats1 = tableau1.get_statistics()
-    print(f"\nConstruction details:")
-    print(f"  Branches: {stats1.get('branches_created', 'N/A')}")
-    print(f"  Rules applied: {stats1.get('rules_applied', 'N/A')}")
+    print("Expected: SATISFIABLE (no counterexamples provided)")
     
     if is_sat1:
         models1 = tableau1.extract_all_models()
-        print(f"  Models found: {len(models1)}")
         if models1:
-            print(f"  Sample model domain: {list(models1[0].domain.keys())}")
+            model1 = models1[0]
+            print(f"Model domain: {list(model1.domain.keys())}")
+            print("Sample assignments:")
+            for pred, value in list(model1.predicate_assignments.items())[:3]:
+                print(f"  {pred} = {value}")
     
-    # Test 2: Not all penguins can fly - ¬[∀X Penguin(X)]CanFly(X)
-    print_subheader("\nTableau 2: Testing 'NOT all penguins can fly'")
-    not_penguin_flight = Negation(penguin_flight)
-    print(f"Formula: {not_penguin_flight}")
+    # Test 2: All penguins can fly WITH contradictory background - should be unsatisfiable
+    print_subheader("\nTest 2: 'All penguins can fly' WITH counterexample")
+    formula_with_background = Conjunction(background_knowledge, penguin_flight)
+    print(f"Formula: Background ∧ {penguin_flight}")
     
-    tableau2 = wkrq_tableau(not_penguin_flight)
-    print("Building tableau...")
+    tableau2 = wkrq_tableau(formula_with_background)
     is_sat2 = tableau2.build()
     print(f"Result: {'SATISFIABLE' if is_sat2 else 'UNSATISFIABLE'}")
-    
-    # Note: Tree printing has some implementation issues, showing results instead
-    print("\nTableau construction completed successfully")
-        
-    stats2 = tableau2.get_statistics() 
-    print(f"\nConstruction details:")
-    print(f"  Branches: {stats2.get('branches_created', 'N/A')}")
-    print(f"  Rules applied: {stats2.get('rules_applied', 'N/A')}")
+    print("Expected: UNSATISFIABLE (Tweety is a counterexample)")
     
     if is_sat2:
+        print("⚠️  Unexpected: Should be unsatisfiable!")
         models2 = tableau2.extract_all_models()
-        print(f"  Models found: {len(models2)}")
         if models2:
-            print(f"  Sample model domain: {list(models2[0].domain.keys())}")
+            model2 = models2[0]
+            print(f"Domain: {list(model2.domain.keys())}")
+            for pred, value in sorted(model2.predicate_assignments.items()):
+                if 'tweety' in pred.lower():
+                    print(f"  {pred} = {value}")
+    else:
+        print("✓ CORRECT: The counterexample makes the universal claim unsatisfiable")
     
-    # Test 3: Some birds cannot fly - [∃X Bird(X)]¬CanFly(X) 
-    print_subheader("\nTableau 3: Testing 'Some birds cannot fly'")
+    # Test 3: Some penguins cannot fly - should be satisfiable
+    print_subheader("\nTest 3: 'Some penguins cannot fly' (existential)")
     not_canfly_x = Negation(canfly_x)
-    some_birds_cannot_fly = RestrictedExistentialFormula(x, bird_x, not_canfly_x)
-    print(f"Formula: {some_birds_cannot_fly}")
+    some_penguins_cannot_fly = RestrictedExistentialFormula(x, penguin_x, not_canfly_x)
+    print(f"Formula: {some_penguins_cannot_fly}")
     
-    tableau3 = wkrq_tableau(some_birds_cannot_fly)
-    print("Building tableau...")
+    tableau3 = wkrq_tableau(some_penguins_cannot_fly)
     is_sat3 = tableau3.build()
     print(f"Result: {'SATISFIABLE' if is_sat3 else 'UNSATISFIABLE'}")
-    
-    stats3 = tableau3.get_statistics()
-    print(f"\nConstruction details:")
-    print(f"  Branches: {stats3.get('branches_created', 'N/A')}")
-    print(f"  Rules applied: {stats3.get('rules_applied', 'N/A')}")
+    print("Expected: SATISFIABLE (existential creates witness)")
     
     if is_sat3:
         models3 = tableau3.extract_all_models()
-        print(f"  Models found: {len(models3)}")
+        print(f"Models found: {len(models3)}")
+    
+    # Test 4: Some penguins cannot fly WITH background - should be satisfiable 
+    print_subheader("\nTest 4: 'Some penguins cannot fly' WITH background")
+    existential_with_background = Conjunction(background_knowledge, some_penguins_cannot_fly)
+    print(f"Formula: Background ∧ {some_penguins_cannot_fly}")
+    
+    tableau4 = wkrq_tableau(existential_with_background)
+    is_sat4 = tableau4.build()
+    print(f"Result: {'SATISFIABLE' if is_sat4 else 'UNSATISFIABLE'}")
+    print("Expected: SATISFIABLE (Tweety satisfies the existential)")
     
     # Analysis
-    print_subheader("\nAnalysis: wKrQ vs Classical Logic")
+    print_subheader("\nAnalysis: Ferguson's Restricted Quantifiers")
     results = [
-        ("All penguins can fly", is_sat1),
-        ("NOT all penguins can fly", is_sat2),
-        ("Some birds cannot fly", is_sat3)
+        ("All penguins can fly (no background)", is_sat1, "SAT"),
+        ("All penguins can fly (with counterexample)", is_sat2, "UNSAT"),  
+        ("Some penguins cannot fly (no background)", is_sat3, "SAT"),
+        ("Some penguins cannot fly (with background)", is_sat4, "SAT")
     ]
     
-    print("wKrQ Results:")
-    for desc, result in results:
-        print(f"  {desc}: {'✓ Satisfiable' if result else '✗ Unsatisfiable'}")
+    print("Results Summary:")
+    for desc, actual, expected in results:
+        actual_str = "SAT" if actual else "UNSAT"
+        status = "✓" if actual_str == expected else "✗"
+        print(f"  {status} {desc}: {actual_str} (expected {expected})")
     
-    print("\nKey insight: wKrQ allows nuanced reasoning about exceptions")
-    print("without the logical explosion that classical logic suffers from.")
+    print("\nKey insights:")
+    print("1. Universal claims can be falsified by counterexamples")
+    print("2. Existential claims create witnesses to satisfy themselves")
+    print("3. Background knowledge properly constrains the domain")
+    print("4. wKrQ avoids logical explosion while handling contradictions")
 
 
 def demo_logic_system_integration():
