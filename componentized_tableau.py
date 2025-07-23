@@ -333,8 +333,10 @@ class ComponentizedTableau:
     
     def _print_node(self, node: TableauNode, prefix: str):
         """Recursively print tree nodes"""
-        formula_strs = [str(f) for f in node.formulas]
-        print(f"{prefix}[{node.depth}] {', '.join(formula_strs)}")
+        # Show the single formula for this node
+        formula_str = str(node.formula)
+        rule_str = f" ({node.rule_applied.name})" if hasattr(node.rule_applied, 'name') else f" ({node.rule_applied})" if node.rule_applied else ""
+        print(f"{prefix}├─ {formula_str}{rule_str}")
         
         for i, child in enumerate(node.children):
             is_last = (i == len(node.children) - 1)
