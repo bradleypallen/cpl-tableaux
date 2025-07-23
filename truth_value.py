@@ -73,7 +73,7 @@ e = TruthValue.UNDEFINED
 
 
 class WeakKleeneOperators:
-    """Implementation of weak Kleene logic truth tables"""
+    """Implementation of weak Kleene logic truth tables (true WK3)"""
     
     @staticmethod
     def negation(a: TruthValue) -> TruthValue:
@@ -113,6 +113,74 @@ class WeakKleeneOperators:
     
     @staticmethod
     def implication(a: TruthValue, b: TruthValue) -> TruthValue:
+        """Weak Kleene implication: A → B"""
+        # In weak Kleene, any operation with 'e' returns 'e'
+        if a == e or b == e:
+            return e
+        # If antecedent is false, result is true
+        elif a == f:
+            return t
+        # If antecedent is true and consequent is true, result is true
+        elif a == t and b == t:
+            return t
+        # If antecedent is true and consequent is false, result is false
+        elif a == t and b == f:
+            return f
+        else:
+            return e  # Should not reach here
+
+
+class StrongKleeneOperators:
+    """Implementation of strong Kleene (K3) logic truth tables"""
+    
+    @staticmethod
+    def negation(a: TruthValue) -> TruthValue:
+        """Strong Kleene negation: ¬A (same as weak Kleene)"""
+        if a == t:
+            return f
+        elif a == f:
+            return t
+        else:  # a == e
+            return e
+    
+    @staticmethod
+    def conjunction(a: TruthValue, b: TruthValue) -> TruthValue:
+        """Strong Kleene (K3) conjunction: A ∧ B"""
+        # False is infectious: if either operand is false, result is false
+        if a == f or b == f:
+            return f
+        # If both are true, result is true
+        elif a == t and b == t:
+            return t
+        # Otherwise (at least one is undefined, none false), result is undefined
+        else:
+            return e
+    
+    @staticmethod
+    def disjunction(a: TruthValue, b: TruthValue) -> TruthValue:
+        """Strong Kleene (K3) disjunction: A ∨ B"""
+        # True is infectious: if either operand is true, result is true
+        if a == t or b == t:
+            return t
+        # If both are false, result is false
+        elif a == f and b == f:
+            return f
+        # Otherwise (at least one is undefined, none true), result is undefined
+        else:
+            return e
+    
+    @staticmethod
+    def implication(a: TruthValue, b: TruthValue) -> TruthValue:
+        """Strong Kleene implication: A → B"""
+        # Strong Kleene implication follows the same pattern as disjunction ¬A ∨ B
+        # First negate A, then disjunctive with B
+        neg_a = StrongKleeneOperators.negation(a)
+        return StrongKleeneOperators.disjunction(neg_a, b)
+
+
+    # Keep the old standalone implication method for backward compatibility    
+    @staticmethod
+    def _old_implication(a: TruthValue, b: TruthValue) -> TruthValue:
         """Weak Kleene implication: A → B"""
         # In weak Kleene, any operation with 'e' returns 'e'
         if a == e or b == e:

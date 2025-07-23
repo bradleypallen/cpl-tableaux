@@ -44,6 +44,10 @@ class Formula(ABC):
     def get_variables(self) -> Set[str]:
         """Get all variable names in this formula"""
         return set()  # Default implementation for propositional formulas
+    
+    def get_complexity(self) -> int:
+        """Get formula complexity for prioritization (default implementation)"""
+        return 1  # Default complexity for atomic formulas
 
 class Predicate(Formula):
     """
@@ -147,7 +151,7 @@ class Negation(Formula):
         return f"¬({self.operand})"
     
     def is_atomic(self) -> bool:
-        return isinstance(self.operand, (Atom, Predicate)) and self.operand.is_atomic()
+        return False  # Negations are never atomic, even of atoms
     
     def is_literal(self) -> bool:
         return isinstance(self.operand, (Atom, Predicate)) and self.operand.is_atomic()
@@ -159,6 +163,10 @@ class Negation(Formula):
     def get_variables(self) -> Set[str]:
         """Get all variable names in this formula"""
         return self.operand.get_variables()
+    
+    def get_complexity(self) -> int:
+        """Get formula complexity for prioritization"""
+        return 1 + self.operand.get_complexity()
     
     def __eq__(self, other):
         return isinstance(other, Negation) and self.operand == other.operand
@@ -193,6 +201,10 @@ class Conjunction(Formula):
     def get_variables(self) -> Set[str]:
         """Get all variable names in this formula"""
         return self.left.get_variables() | self.right.get_variables()
+    
+    def get_complexity(self) -> int:
+        """Get formula complexity for prioritization"""
+        return 1 + self.left.get_complexity() + self.right.get_complexity()
 
 class Disjunction(Formula):
     def __init__(self, left: Formula, right: Formula):
@@ -221,6 +233,10 @@ class Disjunction(Formula):
     def get_variables(self) -> Set[str]:
         """Get all variable names in this formula"""
         return self.left.get_variables() | self.right.get_variables()
+    
+    def get_complexity(self) -> int:
+        """Get formula complexity for prioritization"""
+        return 1 + self.left.get_complexity() + self.right.get_complexity()
 
 class Implication(Formula):
     def __init__(self, antecedent: Formula, consequent: Formula):
@@ -249,6 +265,10 @@ class Implication(Formula):
     def get_variables(self) -> Set[str]:
         """Get all variable names in this formula"""
         return self.antecedent.get_variables() | self.consequent.get_variables()
+    
+    def get_complexity(self) -> int:
+        """Get formula complexity for prioritization"""
+        return 1 + self.antecedent.get_complexity() + self.consequent.get_complexity()
 
 
 class RestrictedExistentialFormula(Formula):
@@ -299,6 +319,10 @@ class RestrictedExistentialFormula(Formula):
         all_vars = ante_vars | cons_vars
         all_vars.discard(self.variable.name)  # Remove bound variable
         return all_vars
+    
+    def get_complexity(self) -> int:
+        """Get formula complexity for prioritization"""
+        return 3 + self.antecedent.get_complexity() + self.consequent.get_complexity()
     
     def substitute(self, old_var: 'Variable', new_term: 'Term') -> 'Formula':
         """Apply substitution, avoiding variable capture"""
@@ -376,6 +400,10 @@ class RestrictedUniversalFormula(Formula):
         all_vars = ante_vars | cons_vars
         all_vars.discard(self.variable.name)  # Remove bound variable
         return all_vars
+    
+    def get_complexity(self) -> int:
+        """Get formula complexity for prioritization"""
+        return 3 + self.antecedent.get_complexity() + self.consequent.get_complexity()
     
     def substitute(self, old_var: 'Variable', new_term: 'Term') -> 'Formula':
         """Apply substitution, avoiding variable capture"""
