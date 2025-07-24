@@ -217,10 +217,6 @@ class SignedTableau:
         while True:
             expansion_occurred = False
             
-            # Early satisfiability check
-            if self._has_satisfying_branch():
-                break
-            
             # Process each branch
             branches_to_process = self.branches.copy()
             
@@ -411,9 +407,13 @@ def three_valued_signed_tableau(signed_formulas: Union[SignedFormula, List[Signe
     """Create a three-valued signed tableau"""  
     return SignedTableau(signed_formulas, "three_valued")
 
+def wkrq_signed_tableau(signed_formulas: Union[SignedFormula, List[SignedFormula]]) -> SignedTableau:
+    """Create a wKrQ signed tableau"""
+    return SignedTableau(signed_formulas, "wkrq")
+
 
 # Export main classes
 __all__ = [
     'SignedModel', 'SignedBranch', 'SignedTableau',
-    'classical_signed_tableau', 'three_valued_signed_tableau'
+    'classical_signed_tableau', 'three_valued_signed_tableau', 'wkrq_signed_tableau'
 ]

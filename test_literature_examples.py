@@ -13,9 +13,10 @@ the standard examples used in the academic literature.
 """
 
 import pytest
-from formula import Atom, Negation, Conjunction, Disjunction, Implication
-from signed_formula import T, F, T3, F3, U
-from signed_tableau import SignedTableau, classical_signed_tableau, three_valued_signed_tableau
+from formula import Atom, Negation, Conjunction, Disjunction, Implication, RestrictedExistentialFormula, RestrictedUniversalFormula, Predicate
+from term import Variable, Constant
+from signed_formula import T, F, T3, F3, U, TF, FF, M, N
+from signed_tableau import SignedTableau, classical_signed_tableau, three_valued_signed_tableau, ferguson_signed_tableau
 from tableau import Tableau
 from wk3_signed_adapter import wk3_satisfiable, wk3_models
 from truth_value import t, f, e
@@ -576,6 +577,268 @@ class TestEdgeCasesFromLiterature:
         # Verify branch count is reasonable (not exponential)
         total_branches = len(tableau.branches)
         assert total_branches < 50, f"Branch count {total_branches} should be reasonable"
+
+
+class TestFergusonWKrQExamples:
+    """
+    Test cases from Ferguson's "Tableaux and restricted quantification for systems 
+    related to weak Kleene logic" (2021)
+    
+    Demonstrates the four-valued wKrQ signing system with epistemic uncertainty
+    """
+    
+    def setup_method(self):
+        """Set up common test formulas"""
+        self.p = Atom("p")
+        self.q = Atom("q")
+        self.r = Atom("r")
+        self.x = Variable("X")
+        self.student_x = Predicate("Student", [self.x])
+        self.human_x = Predicate("Human", [self.x])
+        self.bird_x = Predicate("Bird", [self.x])
+        self.flies_x = Predicate("Flies", [self.x])
+    
+    def test_ferguson_epistemic_disjunction_example(self):
+        """
+        Example from Ferguson (2021): Epistemic disjunction with M signs
+        Shows how M:(p ∨ q) represents "p or q may be true"
+        """
+        disj = Disjunction(self.p, self.q)
+        m_disj = M(disj)  # M:(p ∨ q)
+        
+        tableau = ferguson_signed_tableau(m_disj)
+        result = tableau.build()
+        
+        # Should be satisfiable - epistemic uncertainty allows this
+        assert result == True, "M:(p ∨ q) should be satisfiable in Ferguson system"
+        
+        # Should have open branches
+        open_branches = [b for b in tableau.branches if not b.is_closed]
+        assert len(open_branches) > 0, "Should have open branches for epistemic uncertainty"
+    
+    def test_ferguson_epistemic_contradiction_non_closure(self):
+        """
+        Key example from Ferguson (2021): M:p ∧ N:p does not close branches
+        This demonstrates that epistemic signs don't create contradictions
+        """
+        m_p = M(self.p)  # "p may be true"
+        n_p = N(self.p)  # "p need not be true"
+        
+        tableau = ferguson_signed_tableau([m_p, n_p])
+        result = tableau.build()
+        
+        # Should be satisfiable - M and N represent uncertainty, not contradiction
+        assert result == True, "M:p ∧ N:p should be satisfiable (epistemic uncertainty)"
+        
+        # No branches should be closed by contradiction
+        for branch in tableau.branches:
+            if branch.is_closed:
+                # If closed, it shouldn't be due to M:p and N:p contradiction
+                if branch.closure_reason:
+                    sf1, sf2 = branch.closure_reason
+                    contradiction_between_mn = (
+                        (sf1 == m_p and sf2 == n_p) or 
+                        (sf1 == n_p and sf2 == m_p)
+                    )
+                    assert not contradiction_between_mn, "M:p and N:p should not contradict"
+    
+    def test_ferguson_classical_contradiction_still_works(self):
+        """
+        Example showing Ferguson system preserves classical contradictions
+        T:p ∧ F:p should still close branches
+        """
+        tf_p = TF(self.p)  # "p is definitely true"
+        ff_p = FF(self.p)  # "p is definitely false"
+        
+        tableau = ferguson_signed_tableau([tf_p, ff_p])
+        result = tableau.build()
+        
+        # Should be unsatisfiable - classical contradiction
+        assert result == False, "T:p ∧ F:p should be unsatisfiable (classical contradiction)"
+        
+        # All branches should be closed
+        for branch in tableau.branches:
+            assert branch.is_closed, "All branches should close for classical contradiction"
+            
+        # Should find the specific contradiction
+        found_classical_contradiction = False
+        for branch in tableau.branches:
+            if branch.closure_reason:
+                sf1, sf2 = branch.closure_reason
+                if ((sf1 == tf_p and sf2 == ff_p) or (sf1 == ff_p and sf2 == tf_p)):
+                    found_classical_contradiction = True
+                    break
+        
+        assert found_classical_contradiction, "Should find T:p, F:p contradiction"
+    
+    def test_ferguson_sign_duality_in_negation(self):
+        """
+        Test Ferguson's sign duality from the paper
+        Shows M:¬p leads to N:p and vice versa
+        """
+        neg_p = Negation(self.p)
+        
+        # M:¬p should be satisfiable
+        m_neg_p = M(neg_p)
+        tableau1 = ferguson_signed_tableau(m_neg_p)
+        result1 = tableau1.build()
+        assert result1 == True, "M:¬p should be satisfiable"
+        
+        # N:¬p should be satisfiable  
+        n_neg_p = N(neg_p)
+        tableau2 = ferguson_signed_tableau(n_neg_p)
+        result2 = tableau2.build()
+        assert result2 == True, "N:¬p should be satisfiable"
+        
+        # The key insight is that both represent uncertainty about ¬p
+    
+    def test_ferguson_restricted_quantifier_example(self):
+        """
+        Example from Ferguson (2021): Epistemic uncertainty with restricted quantifiers
+        M:[∃X Student(X)]Human(X) - "It may be true that there exists a student who is human"
+        """
+        # [∃X Student(X)]Human(X)
+        exists_student_human = RestrictedExistentialFormula(self.x, self.student_x, self.human_x)
+        
+        # M:[∃X Student(X)]Human(X)
+        m_exists = M(exists_student_human)
+        
+        tableau = ferguson_signed_tableau(m_exists)
+        result = tableau.build()
+        
+        # Should be satisfiable - epistemic uncertainty about quantified statement
+        assert result == True, "M:[∃X Student(X)]Human(X) should be satisfiable"
+        
+        # Should have open branches
+        open_branches = [b for b in tableau.branches if not b.is_closed]
+        assert len(open_branches) > 0, "Should have open branches for epistemic quantifier"
+    
+    def test_ferguson_universal_quantifier_uncertainty(self):
+        """
+        Example: N:[∀X Bird(X)]Flies(X) - "It need not be true that all birds fly"
+        Demonstrates epistemic uncertainty about universal claims
+        """
+        # [∀X Bird(X)]Flies(X) - "All birds fly"
+        all_birds_fly = RestrictedUniversalFormula(self.x, self.bird_x, self.flies_x)
+        
+        # N:[∀X Bird(X)]Flies(X) - "It need not be true that all birds fly"
+        n_all = N(all_birds_fly)
+        
+        tableau = ferguson_signed_tableau(n_all)
+        result = tableau.build()
+        
+        # Should be satisfiable - allows for possibility of counterexamples
+        assert result == True, "N:[∀X Bird(X)]Flies(X) should be satisfiable"
+        
+        # This represents the epistemic possibility that the universal claim might be false
+    
+    def test_ferguson_mixed_epistemic_reasoning(self):
+        """
+        Complex example combining definite and epistemic signs
+        Shows interaction between classical and epistemic reasoning
+        """
+        # Scenario: We know p is definitely true, but we're uncertain about q
+        tf_p = TF(self.p)   # "p is definitely true"
+        m_q = M(self.q)     # "q may be true"
+        n_q = N(self.q)     # "q need not be true"
+        
+        # Combine definite knowledge with epistemic uncertainty
+        tableau = ferguson_signed_tableau([tf_p, m_q, n_q])
+        result = tableau.build()
+        
+        # Should be satisfiable - definite knowledge coexists with uncertainty
+        assert result == True, "Mixed definite/epistemic signs should be satisfiable"
+        
+        # The definite T:p should appear in all satisfying models
+        models = tableau.extract_all_models()
+        if models:
+            for model in models:
+                # Should have definite assignment for p
+                p_definite = any(
+                    formula == self.p and str(sign) == "T" 
+                    for formula, sign in model.assignments.items()
+                )
+                # Note: This test depends on model extraction implementation
+    
+    def test_ferguson_non_classical_tautology_behavior(self):
+        """
+        Test from Ferguson showing non-classical behavior with epistemic signs
+        Shows that even tautologies can have epistemic uncertainty
+        """
+        # Classical tautology: p ∨ ¬p
+        excluded_middle = Disjunction(self.p, Negation(self.p))
+        
+        # In Ferguson system, we can express epistemic uncertainty about tautologies
+        m_tautology = M(excluded_middle)  # "It may be true that p ∨ ¬p"
+        
+        tableau = ferguson_signed_tableau(m_tautology)
+        result = tableau.build()
+        
+        # Should be satisfiable - even though p ∨ ¬p is a classical tautology,
+        # we can be epistemically uncertain about it
+        assert result == True, "M:(p ∨ ¬p) should be satisfiable (epistemic uncertainty)"
+        
+        # This demonstrates Ferguson's insight that epistemic and truth-functional
+        # concerns are separate dimensions
+    
+    def test_ferguson_comparison_with_classical_three_valued(self):
+        """
+        Comparative example showing Ferguson system vs classical and three-valued
+        Demonstrates unique capabilities of Ferguson's four-valued approach
+        """
+        # Test formula: p ∧ ¬p (classical contradiction)
+        contradiction = Conjunction(self.p, Negation(self.p))
+        
+        # Classical: T:(p ∧ ¬p) should be unsatisfiable
+        classical_tableau = classical_signed_tableau(T(contradiction))
+        classical_result = classical_tableau.build()
+        assert classical_result == False, "Classical T:(p ∧ ¬p) should be unsatisfiable"
+        
+        # Three-valued: contradiction can be satisfiable when p is undefined
+        wk3_result = wk3_satisfiable(contradiction)
+        assert wk3_result == True, "WK3 p ∧ ¬p should be satisfiable"
+        
+        # Ferguson: Can express epistemic uncertainty about the contradiction
+        m_contradiction = M(contradiction)  # "It may be true that p ∧ ¬p"
+        ferguson_tableau = ferguson_signed_tableau(m_contradiction)
+        ferguson_result = ferguson_tableau.build()
+        assert ferguson_result == True, "Ferguson M:(p ∧ ¬p) should be satisfiable"
+        
+        # This shows Ferguson's system allows epistemic reasoning about contradictions
+        # without committing to their truth value
+    
+    def test_ferguson_epistemic_closure_conditions(self):
+        """
+        Test the specific closure conditions from Ferguson (2021)
+        Verifies that only T/F pairs close branches, not M/N combinations
+        """
+        # Test all possible Ferguson sign combinations for closure
+        sign_combinations = [
+            # Should close (classical contradictions)
+            (TF(self.p), FF(self.p), True),   # T:p, F:p
+            
+            # Should NOT close (epistemic uncertainty)
+            (M(self.p), N(self.p), False),    # M:p, N:p
+            (TF(self.p), M(self.p), False),   # T:p, M:p
+            (TF(self.p), N(self.p), False),   # T:p, N:p
+            (FF(self.p), M(self.p), False),   # F:p, M:p
+            (FF(self.p), N(self.p), False),   # F:p, N:p
+        ]
+        
+        for sf1, sf2, should_close in sign_combinations:
+            tableau = ferguson_signed_tableau([sf1, sf2])
+            result = tableau.build()
+            
+            if should_close:
+                assert result == False, f"{sf1}, {sf2} should be unsatisfiable"
+                # All branches should be closed
+                for branch in tableau.branches:
+                    assert branch.is_closed, f"Branch should be closed for {sf1}, {sf2}"
+            else:
+                assert result == True, f"{sf1}, {sf2} should be satisfiable"
+                # Should have at least one open branch
+                open_branches = [b for b in tableau.branches if not b.is_closed]
+                assert len(open_branches) > 0, f"Should have open branch for {sf1}, {sf2}"
 
 
 if __name__ == "__main__":

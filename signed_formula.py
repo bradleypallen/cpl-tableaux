@@ -145,6 +145,85 @@ class FourValuedSign(Sign):
         return None
 
 
+class WkrqSign(Sign):
+    """
+    Ferguson's wKrQ signs: T, F, M (may be true), N (need not be true)
+    
+    From Ferguson (2021): "Tableaux and restricted quantification for systems 
+    related to weak Kleene logic"
+    
+    The signing system includes:
+    - T: definitely true (classical true)
+    - F: definitely false (classical false)  
+    - M: may be true (possibly true, not necessarily false)
+    - N: need not be true (possibly false, not necessarily true)
+    """
+    
+    def __init__(self, designation: str):
+        if designation not in {"T", "F", "M", "N"}:
+            raise ValueError(f"Invalid Ferguson sign: {designation}")
+        self.designation = designation
+    
+    def __str__(self) -> str:
+        return self.designation
+    
+    def __eq__(self, other) -> bool:
+        return isinstance(other, WkrqSign) and self.designation == other.designation
+    
+    def __hash__(self) -> int:
+        return hash(("ferguson", self.designation))
+    
+    def is_contradictory_with(self, other: 'Sign') -> bool:
+        """
+        Ferguson wKrQ closure rules:
+        - T and F are contradictory (classical)
+        - M and N represent epistemic uncertainty and don't create contradictions
+        - T contradicts F, but M and N allow for uncertainty
+        
+        Based on Ferguson (2021) tableau closure conditions.
+        """
+        if not isinstance(other, WkrqSign):
+            return False
+        
+        # Only T and F create contradictions in Ferguson's system
+        # M and N represent uncertainty and don't close branches by themselves
+        contradictory_pairs = {("T", "F"), ("F", "T")}
+        return (self.designation, other.designation) in contradictory_pairs
+    
+    def get_truth_value(self) -> Optional[TruthValue]:
+        """
+        Map Ferguson signs to truth values where possible:
+        - T maps to true (t)
+        - F maps to false (f)
+        - M and N represent uncertainty and map to undefined (e)
+        """
+        mapping = {
+            "T": t,
+            "F": f,
+            "M": e,  # May be true -> undefined
+            "N": e   # Need not be true -> undefined
+        }
+        return mapping.get(self.designation, e)
+    
+    def is_definite(self) -> bool:
+        """Check if this is a definite sign (T or F)"""
+        return self.designation in {"T", "F"}
+    
+    def is_epistemic(self) -> bool:
+        """Check if this is an epistemic sign (M or N)"""
+        return self.designation in {"M", "N"}
+    
+    def dual(self) -> 'WkrqSign':
+        """Get the dual of this sign for negation rules"""
+        dual_mapping = {
+            "T": "F",
+            "F": "T", 
+            "M": "N",
+            "N": "M"
+        }
+        return WkrqSign(dual_mapping[self.designation])
+
+
 @dataclass(frozen=True)
 class SignedFormula:
     """
@@ -251,10 +330,35 @@ def F3(formula: Formula) -> SignedFormula:
     """Create F:formula for three-valued logic"""
     return SignedFormula(ThreeValuedSign(f), formula)
 
+# Ferguson wKrQ sign functions
+def TF(formula: Formula) -> SignedFormula:
+    """Create T:formula for Ferguson's wKrQ logic (definitely true)"""
+    return SignedFormula(WkrqSign("T"), formula)
+
+def FF(formula: Formula) -> SignedFormula:
+    """Create F:formula for Ferguson's wKrQ logic (definitely false)"""
+    return SignedFormula(WkrqSign("F"), formula)
+
+def M(formula: Formula) -> SignedFormula:
+    """Create M:formula for Ferguson's wKrQ logic (may be true)"""
+    return SignedFormula(WkrqSign("M"), formula)
+
+def N(formula: Formula) -> SignedFormula:
+    """Create N:formula for Ferguson's wKrQ logic (need not be true)"""
+    return SignedFormula(WkrqSign("N"), formula)
+
+
+# Register Ferguson sign system
+def _create_ferguson_signs() -> List[Sign]:
+    """Create Ferguson wKrQ T/F/M/N signs"""
+    return [WkrqSign("T"), WkrqSign("F"), WkrqSign("M"), WkrqSign("N")]
+
+SignRegistry.register_sign_system("ferguson", WkrqSign, _create_ferguson_signs)
+
 
 # Export main classes and functions
 __all__ = [
-    'Sign', 'ClassicalSign', 'ThreeValuedSign', 'FourValuedSign',
+    'Sign', 'ClassicalSign', 'ThreeValuedSign', 'FourValuedSign', 'WkrqSign',
     'SignedFormula', 'SignRegistry',
-    'T', 'F', 'U', 'T3', 'F3'
+    'T', 'F', 'U', 'T3', 'F3', 'TF', 'FF', 'M', 'N'
 ]

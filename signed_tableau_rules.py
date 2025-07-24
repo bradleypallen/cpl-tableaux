@@ -12,7 +12,7 @@ from typing import List, Dict, Set, Optional, Union, Tuple
 from enum import Enum
 
 from formula import Formula, Atom, Negation, Conjunction, Disjunction, Implication
-from signed_formula import SignedFormula, Sign, ClassicalSign, ThreeValuedSign
+from signed_formula import SignedFormula, Sign, ClassicalSign, ThreeValuedSign, WkrqSign
 from truth_value import t, f, e
 
 
@@ -40,6 +40,16 @@ class SignedRuleType(Enum):
     U_DISJUNCTION = "U∨"          # U:(A∨B) → various patterns
     U_IMPLICATION = "U→"          # U:(A→B) → various patterns
     U_NEGATION = "U¬"             # U:¬A → U:A
+    
+    # wKrQ specific rules
+    M_CONJUNCTION = "M∧"          # M:(A∧B) → M:A, M:B  
+    N_CONJUNCTION = "N∧"          # N:(A∧B) → N:A | N:B
+    M_DISJUNCTION = "M∨"          # M:(A∨B) → M:A | M:B
+    N_DISJUNCTION = "N∨"          # N:(A∨B) → N:A, N:B
+    M_NEGATION = "M¬"             # M:¬A → N:A
+    N_NEGATION = "N¬"             # N:¬A → M:A
+    M_IMPLICATION = "M→"          # M:(A→B) → N:A | M:B
+    N_IMPLICATION = "N→"          # N:(A→B) → M:A, N:B
 
 
 class SignedRuleResult:
@@ -93,7 +103,10 @@ class SignedTableauRule(ABC):
             SignedRuleType.T_CONJUNCTION, SignedRuleType.F_DISJUNCTION,
             SignedRuleType.F_IMPLICATION, SignedRuleType.T_DOUBLE_NEGATION,
             SignedRuleType.F_DOUBLE_NEGATION, SignedRuleType.T_NEGATION,
-            SignedRuleType.F_NEGATION, SignedRuleType.U_NEGATION
+            SignedRuleType.F_NEGATION, SignedRuleType.U_NEGATION,
+            SignedRuleType.M_CONJUNCTION, SignedRuleType.N_DISJUNCTION,
+            SignedRuleType.M_NEGATION, SignedRuleType.N_NEGATION,
+            SignedRuleType.N_IMPLICATION
         }
     
     def is_beta_rule(self) -> bool:
@@ -319,6 +332,330 @@ class UConjunctionRule(SignedTableauRule):
         return SignedRuleResult.alpha_rule(left_u, right_u)
 
 
+# wKrQ Rules
+
+class WkrqTConjunctionRule(SignedTableauRule):
+    """T:(A∧B) rule for wKrQ signs (same as classical T)"""
+    
+    def __init__(self):
+        super().__init__(SignedRuleType.T_CONJUNCTION, ["wkrq"])
+    
+    def applies_to(self, signed_formula: SignedFormula) -> bool:
+        return (isinstance(signed_formula.sign, WkrqSign) and
+                signed_formula.sign.designation == "T" and
+                isinstance(signed_formula.formula, Conjunction))
+    
+    def apply(self, signed_formula: SignedFormula) -> SignedRuleResult:
+        """T:(A∧B) → T:A, T:B (α-rule)"""
+        conj = signed_formula.formula
+        t_sign = WkrqSign("T")
+        left_t = SignedFormula(t_sign, conj.left)
+        right_t = SignedFormula(t_sign, conj.right)
+        return SignedRuleResult.alpha_rule(left_t, right_t)
+
+
+class WkrqFConjunctionRule(SignedTableauRule):
+    """F:(A∧B) rule for wKrQ signs (same as classical F)"""
+    
+    def __init__(self):
+        super().__init__(SignedRuleType.F_CONJUNCTION, ["wkrq"])
+    
+    def applies_to(self, signed_formula: SignedFormula) -> bool:
+        return (isinstance(signed_formula.sign, WkrqSign) and
+                signed_formula.sign.designation == "F" and
+                isinstance(signed_formula.formula, Conjunction))
+    
+    def apply(self, signed_formula: SignedFormula) -> SignedRuleResult:
+        """F:(A∧B) → F:A | F:B (β-rule)"""
+        conj = signed_formula.formula
+        f_sign = WkrqSign("F")
+        left_f = SignedFormula(f_sign, conj.left)
+        right_f = SignedFormula(f_sign, conj.right)
+        return SignedRuleResult.beta_rule([left_f], [right_f])
+
+
+class WkrqMConjunctionRule(SignedTableauRule):
+    """M:(A∧B) rule for wKrQ signs - epistemic "may be true" conjunction"""
+    
+    def __init__(self):
+        super().__init__(SignedRuleType.M_CONJUNCTION, ["wkrq"])
+    
+    def applies_to(self, signed_formula: SignedFormula) -> bool:
+        return (isinstance(signed_formula.sign, WkrqSign) and
+                signed_formula.sign.designation == "M" and
+                isinstance(signed_formula.formula, Conjunction))
+    
+    def apply(self, signed_formula: SignedFormula) -> SignedRuleResult:
+        """M:(A∧B) → M:A, M:B (α-rule)"""
+        conj = signed_formula.formula
+        m_sign = WkrqSign("M")
+        left_m = SignedFormula(m_sign, conj.left)
+        right_m = SignedFormula(m_sign, conj.right)
+        return SignedRuleResult.alpha_rule(left_m, right_m)
+
+
+class WkrqNConjunctionRule(SignedTableauRule):
+    """N:(A∧B) rule for wKrQ signs - epistemic "need not be true" conjunction"""
+    
+    def __init__(self):
+        super().__init__(SignedRuleType.N_CONJUNCTION, ["wkrq"])
+    
+    def applies_to(self, signed_formula: SignedFormula) -> bool:
+        return (isinstance(signed_formula.sign, WkrqSign) and
+                signed_formula.sign.designation == "N" and
+                isinstance(signed_formula.formula, Conjunction))
+    
+    def apply(self, signed_formula: SignedFormula) -> SignedRuleResult:
+        """N:(A∧B) → N:A | N:B (β-rule)"""
+        conj = signed_formula.formula
+        n_sign = WkrqSign("N")
+        left_n = SignedFormula(n_sign, conj.left)
+        right_n = SignedFormula(n_sign, conj.right)
+        return SignedRuleResult.beta_rule([left_n], [right_n])
+
+
+class WkrqTDisjunctionRule(SignedTableauRule):
+    """T:(A∨B) rule for wKrQ signs (same as classical T)"""
+    
+    def __init__(self):
+        super().__init__(SignedRuleType.T_DISJUNCTION, ["wkrq"])
+    
+    def applies_to(self, signed_formula: SignedFormula) -> bool:
+        return (isinstance(signed_formula.sign, WkrqSign) and
+                signed_formula.sign.designation == "T" and
+                isinstance(signed_formula.formula, Disjunction))
+    
+    def apply(self, signed_formula: SignedFormula) -> SignedRuleResult:
+        """T:(A∨B) → T:A | T:B (β-rule)"""
+        disj = signed_formula.formula
+        t_sign = WkrqSign("T")
+        left_t = SignedFormula(t_sign, disj.left)
+        right_t = SignedFormula(t_sign, disj.right)
+        return SignedRuleResult.beta_rule([left_t], [right_t])
+
+
+class WkrqFDisjunctionRule(SignedTableauRule):
+    """F:(A∨B) rule for wKrQ signs (same as classical F)"""
+    
+    def __init__(self):
+        super().__init__(SignedRuleType.F_DISJUNCTION, ["wkrq"])
+    
+    def applies_to(self, signed_formula: SignedFormula) -> bool:
+        return (isinstance(signed_formula.sign, WkrqSign) and
+                signed_formula.sign.designation == "F" and
+                isinstance(signed_formula.formula, Disjunction))
+    
+    def apply(self, signed_formula: SignedFormula) -> SignedRuleResult:
+        """F:(A∨B) → F:A, F:B (α-rule)"""
+        disj = signed_formula.formula
+        f_sign = WkrqSign("F")
+        left_f = SignedFormula(f_sign, disj.left)
+        right_f = SignedFormula(f_sign, disj.right)
+        return SignedRuleResult.alpha_rule(left_f, right_f)
+
+
+class WkrqMDisjunctionRule(SignedTableauRule):
+    """M:(A∨B) rule for wKrQ signs - epistemic "may be true" disjunction"""
+    
+    def __init__(self):
+        super().__init__(SignedRuleType.M_DISJUNCTION, ["wkrq"])
+    
+    def applies_to(self, signed_formula: SignedFormula) -> bool:
+        return (isinstance(signed_formula.sign, WkrqSign) and
+                signed_formula.sign.designation == "M" and
+                isinstance(signed_formula.formula, Disjunction))
+    
+    def apply(self, signed_formula: SignedFormula) -> SignedRuleResult:
+        """M:(A∨B) → M:A | M:B (β-rule)"""
+        disj = signed_formula.formula
+        m_sign = WkrqSign("M")
+        left_m = SignedFormula(m_sign, disj.left)
+        right_m = SignedFormula(m_sign, disj.right)
+        return SignedRuleResult.beta_rule([left_m], [right_m])
+
+
+class WkrqNDisjunctionRule(SignedTableauRule):
+    """N:(A∨B) rule for wKrQ signs - epistemic "need not be true" disjunction"""
+    
+    def __init__(self):
+        super().__init__(SignedRuleType.N_DISJUNCTION, ["wkrq"])
+    
+    def applies_to(self, signed_formula: SignedFormula) -> bool:
+        return (isinstance(signed_formula.sign, WkrqSign) and
+                signed_formula.sign.designation == "N" and
+                isinstance(signed_formula.formula, Disjunction))
+    
+    def apply(self, signed_formula: SignedFormula) -> SignedRuleResult:
+        """N:(A∨B) → N:A, N:B (α-rule)"""
+        disj = signed_formula.formula
+        n_sign = WkrqSign("N")
+        left_n = SignedFormula(n_sign, disj.left)
+        right_n = SignedFormula(n_sign, disj.right)
+        return SignedRuleResult.alpha_rule(left_n, right_n)
+
+
+class WkrqMNegationRule(SignedTableauRule):
+    """M:¬A rule for wKrQ signs - uses sign duality"""
+    
+    def __init__(self):
+        super().__init__(SignedRuleType.M_NEGATION, ["wkrq"])
+    
+    def applies_to(self, signed_formula: SignedFormula) -> bool:
+        return (isinstance(signed_formula.sign, WkrqSign) and
+                signed_formula.sign.designation == "M" and
+                isinstance(signed_formula.formula, Negation))
+    
+    def apply(self, signed_formula: SignedFormula) -> SignedRuleResult:
+        """M:¬A → N:A (α-rule, by duality)"""
+        neg = signed_formula.formula
+        n_sign = WkrqSign("N")
+        n_inner = SignedFormula(n_sign, neg.operand)
+        return SignedRuleResult.alpha_rule(n_inner)
+
+
+class WkrqNNegationRule(SignedTableauRule):
+    """N:¬A rule for wKrQ signs - uses sign duality"""
+    
+    def __init__(self):
+        super().__init__(SignedRuleType.N_NEGATION, ["wkrq"])
+    
+    def applies_to(self, signed_formula: SignedFormula) -> bool:
+        return (isinstance(signed_formula.sign, WkrqSign) and
+                signed_formula.sign.designation == "N" and
+                isinstance(signed_formula.formula, Negation))
+    
+    def apply(self, signed_formula: SignedFormula) -> SignedRuleResult:
+        """N:¬A → M:A (α-rule, by duality)"""
+        neg = signed_formula.formula
+        m_sign = WkrqSign("M")
+        m_inner = SignedFormula(m_sign, neg.operand)
+        return SignedRuleResult.alpha_rule(m_inner)
+
+
+class WkrqTNegationRule(SignedTableauRule):
+    """T:¬A rule for wKrQ signs (same as classical)"""
+    
+    def __init__(self):
+        super().__init__(SignedRuleType.T_NEGATION, ["wkrq"])
+    
+    def applies_to(self, signed_formula: SignedFormula) -> bool:
+        return (isinstance(signed_formula.sign, WkrqSign) and
+                signed_formula.sign.designation == "T" and
+                isinstance(signed_formula.formula, Negation))
+    
+    def apply(self, signed_formula: SignedFormula) -> SignedRuleResult:
+        """T:¬A → F:A (α-rule)"""
+        neg = signed_formula.formula
+        f_sign = WkrqSign("F")
+        f_inner = SignedFormula(f_sign, neg.operand)
+        return SignedRuleResult.alpha_rule(f_inner)
+
+
+class WkrqFNegationRule(SignedTableauRule):
+    """F:¬A rule for wKrQ signs (same as classical)"""
+    
+    def __init__(self):
+        super().__init__(SignedRuleType.F_NEGATION, ["wkrq"])
+    
+    def applies_to(self, signed_formula: SignedFormula) -> bool:
+        return (isinstance(signed_formula.sign, WkrqSign) and
+                signed_formula.sign.designation == "F" and
+                isinstance(signed_formula.formula, Negation))
+    
+    def apply(self, signed_formula: SignedFormula) -> SignedRuleResult:
+        """F:¬A → T:A (α-rule)"""
+        neg = signed_formula.formula
+        t_sign = WkrqSign("T")
+        t_inner = SignedFormula(t_sign, neg.operand)
+        return SignedRuleResult.alpha_rule(t_inner)
+
+
+# Ferguson Implication Rules
+
+class WkrqTImplicationRule(SignedTableauRule):
+    """T:(A→B) rule for wKrQ signs (same as classical T)"""
+    
+    def __init__(self):
+        super().__init__(SignedRuleType.T_IMPLICATION, ["wkrq"])
+    
+    def applies_to(self, signed_formula: SignedFormula) -> bool:
+        return (isinstance(signed_formula.sign, WkrqSign) and
+                signed_formula.sign.designation == "T" and
+                isinstance(signed_formula.formula, Implication))
+    
+    def apply(self, signed_formula: SignedFormula) -> SignedRuleResult:
+        """T:(A→B) → F:A | T:B (β-rule)"""
+        impl = signed_formula.formula
+        f_sign = WkrqSign("F")
+        t_sign = WkrqSign("T")
+        left_f = SignedFormula(f_sign, impl.antecedent)
+        right_t = SignedFormula(t_sign, impl.consequent)
+        return SignedRuleResult.beta_rule([left_f], [right_t])
+
+
+class WkrqFImplicationRule(SignedTableauRule):
+    """F:(A→B) rule for wKrQ signs (same as classical F)"""
+    
+    def __init__(self):
+        super().__init__(SignedRuleType.F_IMPLICATION, ["wkrq"])
+    
+    def applies_to(self, signed_formula: SignedFormula) -> bool:
+        return (isinstance(signed_formula.sign, WkrqSign) and
+                signed_formula.sign.designation == "F" and
+                isinstance(signed_formula.formula, Implication))
+    
+    def apply(self, signed_formula: SignedFormula) -> SignedRuleResult:
+        """F:(A→B) → T:A, F:B (α-rule)"""
+        impl = signed_formula.formula
+        t_sign = WkrqSign("T")
+        f_sign = WkrqSign("F")
+        ant_t = SignedFormula(t_sign, impl.antecedent)
+        cons_f = SignedFormula(f_sign, impl.consequent)
+        return SignedRuleResult.alpha_rule(ant_t, cons_f)
+
+
+class WkrqMImplicationRule(SignedTableauRule):
+    """M:(A→B) rule for wKrQ signs - epistemic "may be true" implication"""
+    
+    def __init__(self):
+        super().__init__(SignedRuleType.M_IMPLICATION, ["wkrq"])
+    
+    def applies_to(self, signed_formula: SignedFormula) -> bool:
+        return (isinstance(signed_formula.sign, WkrqSign) and
+                signed_formula.sign.designation == "M" and
+                isinstance(signed_formula.formula, Implication))
+    
+    def apply(self, signed_formula: SignedFormula) -> SignedRuleResult:
+        """M:(A→B) → N:A | M:B (β-rule, following epistemic semantics)"""
+        impl = signed_formula.formula
+        n_sign = WkrqSign("N")
+        m_sign = WkrqSign("M")
+        ant_n = SignedFormula(n_sign, impl.antecedent)
+        cons_m = SignedFormula(m_sign, impl.consequent)
+        return SignedRuleResult.beta_rule([ant_n], [cons_m])
+
+
+class WkrqNImplicationRule(SignedTableauRule):
+    """N:(A→B) rule for wKrQ signs - epistemic "need not be true" implication"""
+    
+    def __init__(self):
+        super().__init__(SignedRuleType.N_IMPLICATION, ["wkrq"])
+    
+    def applies_to(self, signed_formula: SignedFormula) -> bool:
+        return (isinstance(signed_formula.sign, WkrqSign) and
+                signed_formula.sign.designation == "N" and
+                isinstance(signed_formula.formula, Implication))
+    
+    def apply(self, signed_formula: SignedFormula) -> SignedRuleResult:
+        """N:(A→B) → M:A, N:B (α-rule, following epistemic semantics)"""
+        impl = signed_formula.formula
+        m_sign = WkrqSign("M")
+        n_sign = WkrqSign("N")
+        ant_m = SignedFormula(m_sign, impl.antecedent)
+        cons_n = SignedFormula(n_sign, impl.consequent)
+        return SignedRuleResult.alpha_rule(ant_m, cons_n)
+
+
 # Rule Registry
 
 class SignedRuleRegistry:
@@ -344,6 +681,24 @@ class SignedRuleRegistry:
             # Three-valued rules
             UNegationRule(),
             UConjunctionRule(),
+            
+            # Ferguson wKrQ rules
+            FergusonTConjunctionRule(),
+            WkrqFConjunctionRule(),
+            WkrqMConjunctionRule(),
+            WkrqNConjunctionRule(),
+            WkrqTDisjunctionRule(),
+            WkrqFDisjunctionRule(),
+            WkrqMDisjunctionRule(),
+            WkrqNDisjunctionRule(),
+            WkrqTImplicationRule(),
+            WkrqFImplicationRule(),
+            WkrqMImplicationRule(),
+            WkrqNImplicationRule(),
+            WkrqTNegationRule(),
+            WkrqFNegationRule(),
+            WkrqMNegationRule(),
+            WkrqNNegationRule(),
         ]
     
     def find_applicable_rules(self, signed_formula: SignedFormula, 
@@ -374,5 +729,9 @@ __all__ = [
     'SignedRuleType', 'SignedRuleResult', 'SignedTableauRule',
     'TConjunctionRule', 'FConjunctionRule', 'TDisjunctionRule', 'FDisjunctionRule',
     'TImplicationRule', 'FImplicationRule', 'NegationRule', 'DoubleNegationRule',
-    'UNegationRule', 'UConjunctionRule', 'SignedRuleRegistry'
+    'UNegationRule', 'UConjunctionRule', 'SignedRuleRegistry',
+    'FergusonTConjunctionRule', 'WkrqFConjunctionRule', 'WkrqMConjunctionRule', 'WkrqNConjunctionRule',
+    'WkrqTDisjunctionRule', 'WkrqFDisjunctionRule', 'WkrqMDisjunctionRule', 'WkrqNDisjunctionRule',
+    'WkrqTImplicationRule', 'WkrqFImplicationRule', 'WkrqMImplicationRule', 'WkrqNImplicationRule',
+    'WkrqTNegationRule', 'WkrqFNegationRule', 'WkrqMNegationRule', 'WkrqNNegationRule'
 ]

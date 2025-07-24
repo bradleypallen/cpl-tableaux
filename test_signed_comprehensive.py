@@ -22,7 +22,8 @@ from typing import List, Dict, Any
 # Import all migrated test suites
 from test_classical_signed import TestClassicalSignedTableau, test_signed_classical_integration
 from test_wk3_signed import TestWK3SignedTableau, test_wk3_signed_integration, test_wk3_basic_functionality_signed
-from test_literature_examples import TestPriestExamples, TestFittingExamples, TestSmullyanExamples, TestHandbookExamples, TestEdgeCasesFromLiterature
+from test_literature_examples import TestPriestExamples, TestFittingExamples, TestSmullyanExamples, TestHandbookExamples, TestEdgeCasesFromLiterature, TestFergusonWKrQExamples
+from test_wkrq_signs import TestWkrqSign, TestWkrqSignedFormulas, TestWkrqTableau, TestWkrqIntegration, test_wkrq_comprehensive
 
 # Import signed tableau components for integration testing
 from signed_tableau import SignedTableau, classical_signed_tableau, three_valued_signed_tableau
@@ -219,6 +220,7 @@ def run_all_signed_tests():
     results = {
         'classical_signed': 0,
         'wk3_signed': 0, 
+        'ferguson_signed': 0,
         'literature_examples': 0,
         'integration_tests': 0,
         'total_failures': 0
@@ -258,6 +260,22 @@ def run_all_signed_tests():
             print(f"  ❌ WK3 signed tests: FAILED - {e}")
             results['total_failures'] += 1
         
+        # Run wKrQ signed tests
+        print("🔍 Running wKrQ Signed Tests...")
+        wkrq_test = TestWkrqSign()
+        
+        try:
+            wkrq_test.test_wkrq_sign_creation()
+            wkrq_test.test_wkrq_sign_contradiction()
+            wkrq_test.test_wkrq_sign_properties()
+            wkrq_test.test_wkrq_sign_duals()
+            test_wkrq_comprehensive()
+            results['ferguson_signed'] += 5
+            print("  ✅ wKrQ signed tests: PASSED")
+        except Exception as e:
+            print(f"  ❌ wKrQ signed tests: FAILED - {e}")
+            results['total_failures'] += 1
+        
         # Run integration tests
         print("🔍 Running Integration Tests...")
         integration_test = TestSignedTableauIntegration()
@@ -286,6 +304,19 @@ def run_all_signed_tests():
             print(f"  ❌ Basic functionality tests: FAILED - {e}")
             results['total_failures'] += 1
         
+        # Run literature examples including Ferguson
+        print("🔍 Running Literature Examples...")
+        try:
+            literature_success = run_literature_examples()
+            if literature_success:
+                results['literature_examples'] += 6  # Priest(2) + Fitting(2) + Ferguson(3)
+                print("  ✅ Literature examples: PASSED")
+            else:
+                results['total_failures'] += 1
+        except Exception as e:
+            print(f"  ❌ Literature examples: FAILED - {e}")
+            results['total_failures'] += 1
+        
     except Exception as e:
         print(f"❌ Critical error during test execution: {e}")
         results['total_failures'] += 1
@@ -297,6 +328,7 @@ def run_all_signed_tests():
     print("=" * 80)
     print(f"Classical Signed Tests:    {results['classical_signed']} passed")
     print(f"WK3 Signed Tests:          {results['wk3_signed']} passed")
+    print(f"wKrQ Tests:       {results['ferguson_signed']} passed")
     print(f"Literature Examples:       {results['literature_examples']} passed")
     print(f"Integration Tests:         {results['integration_tests']} passed")
     print(f"Total Failures:            {results['total_failures']}")
@@ -328,7 +360,14 @@ def run_literature_examples():
         fitting_test.test_fitting_basic_expansion_example()
         fitting_test.test_fitting_closure_example()
         
-        print("  ✅ Literature examples: PASSED")
+        # Test wKrQ examples
+        ferguson_lit_test = TestFergusonWKrQExamples()
+        ferguson_lit_test.setup_method()
+        ferguson_lit_test.test_ferguson_epistemic_contradiction_non_closure()
+        ferguson_lit_test.test_ferguson_classical_contradiction_still_works()
+        ferguson_lit_test.test_ferguson_epistemic_closure_conditions()
+        
+        print("  ✅ Literature examples (including wKrQ): PASSED")
         return True
         
     except Exception as e:

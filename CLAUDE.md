@@ -170,3 +170,8 @@ When extending this research platform:
    - Include complete working examples for each logic system
    - Provide clear extension points for new research directions
    - Maintain backward compatibility to preserve existing research results
+
+## Coding Principles and Best Practices
+
+### Fundamental Principles
+- **Do not, under any circumstances, add a workaround to a demo when there is an underlying bug; fix the bug so that the demo works correctly.**
