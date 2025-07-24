@@ -1,7 +1,7 @@
 # Tableau System Tutorials
 
 **Version**: 3.0 (Consolidated Architecture)  
-**Last Updated**: January 2025  
+**Last Updated**: July 2025  
 **License**: MIT  
 
 ## Table of Contents
@@ -1202,6 +1202,764 @@ if __name__ == "__main__":
 1. Write a function to check if two formulas are logically equivalent by comparing their models
 2. Create a model minimizer that finds the simplest satisfying assignment
 3. Implement a model counter for formulas in CNF
+
+## Tutorial 6: Performance Optimization
+
+**Goal**: Learn to optimize tableau performance for complex formulas and large-scale reasoning.
+
+### Step 1: Understanding Performance Characteristics
+
+```python
+#!/usr/bin/env python3
+"""Tutorial 6: Performance Optimization"""
+
+from tableau_core import *
+import time
+import sys
+
+def measure_performance(formula, description=""):
+    """Measure tableau construction performance"""
+    print(f"\n=== PERFORMANCE TEST: {description} ===")
+    print(f"Formula: {formula}")
+    
+    # Measure construction time
+    start_time = time.time()
+    tableau = classical_signed_tableau(T(formula))
+    build_result = tableau.build()
+    end_time = time.time()
+    
+    construction_time = end_time - start_time
+    
+    # Get statistics
+    stats = tableau.get_statistics()
+    
+    print(f"Result: {'SAT' if build_result else 'UNSAT'}")
+    print(f"Construction time: {construction_time:.4f} seconds")
+    print(f"Rule applications: {stats.get('rule_applications', 0)}")
+    print(f"Total branches: {stats.get('total_branches', 0)}")
+    
+    # Measure model extraction time if satisfiable
+    if build_result:
+        start_time = time.time()
+        models = tableau.extract_all_models()
+        end_time = time.time()
+        
+        extraction_time = end_time - start_time
+        print(f"Model extraction time: {extraction_time:.4f} seconds")
+        print(f"Models found: {len(models)}")
+    
+    return construction_time, stats
+
+def demonstrate_performance_characteristics():
+    """Show how formula structure affects performance"""
+    
+    p = Atom("p")
+    q = Atom("q") 
+    r = Atom("r")
+    s = Atom("s")
+    
+    # Simple formula - fast
+    simple = Conjunction(p, q)
+    measure_performance(simple, "Simple conjunction")
+    
+    # Medium complexity - moderate performance
+    medium = Conjunction(
+        Disjunction(p, q),
+        Disjunction(Negation(p), r)
+    )
+    measure_performance(medium, "Medium complexity")
+    
+    # High branching factor - slower
+    high_branching = Conjunction(
+        Disjunction(Disjunction(p, q), Disjunction(r, s)),
+        Conjunction(
+            Disjunction(Negation(p), Negation(q)),
+            Disjunction(Negation(r), Negation(s))
+        )
+    )
+    measure_performance(high_branching, "High branching factor")
+    
+    # Deep nesting - can be expensive
+    deep_nesting = p
+    for i in range(5):
+        deep_nesting = Implication(deep_nesting, Conjunction(p, q))
+    measure_performance(deep_nesting, "Deep nesting")
+
+if __name__ == "__main__":
+    demonstrate_performance_characteristics()
+```
+
+### Step 2: Optimization Strategies
+
+```python
+def optimize_formula_representation():
+    """Learn techniques for optimizing formula representation"""
+    
+    print("=== FORMULA OPTIMIZATION STRATEGIES ===\n")
+    
+    p = Atom("p")
+    q = Atom("q")
+    r = Atom("r")
+    
+    # Strategy 1: Convert to CNF for some cases
+    print("Strategy 1: CNF Conversion Benefits")
+    
+    # Original formula
+    original = Disjunction(
+        Conjunction(p, q),
+        Conjunction(Negation(p), r)
+    )
+    
+    # CNF equivalent: (p ∨ ¬p ∨ r) ∧ (p ∨ r) ∧ (q ∨ ¬p ∨ r) ∧ (q ∨ r)
+    # For demonstration, we'll test the original
+    print(f"Original formula: {original}")
+    time1, stats1 = measure_performance(original, "Original form")
+    
+    # Strategy 2: Factoring common subformulas
+    print("\nStrategy 2: Factor Common Subformulas")
+    
+    # Instead of: (p ∧ q ∧ r) ∨ (p ∧ q ∧ s)
+    # Use: p ∧ q ∧ (r ∨ s)
+    s = Atom("s")
+    
+    unfactored = Disjunction(
+        Conjunction(Conjunction(p, q), r),
+        Conjunction(Conjunction(p, q), s)
+    )
+    
+    factored = Conjunction(
+        Conjunction(p, q),
+        Disjunction(r, s)
+    )
+    
+    print(f"Unfactored: {unfactored}")
+    time2, stats2 = measure_performance(unfactored, "Unfactored")
+    
+    print(f"Factored: {factored}")
+    time3, stats3 = measure_performance(factored, "Factored")
+    
+    improvement = ((time2 - time3) / time2) * 100 if time2 > 0 else 0
+    print(f"\nFactoring improvement: {improvement:.1f}% faster")
+
+def demonstrate_early_termination():
+    """Show how early termination can improve performance"""
+    
+    print("\n=== EARLY TERMINATION STRATEGIES ===\n")
+    
+    p = Atom("p")
+    q = Atom("q")
+    
+    # Create a formula that becomes unsatisfiable quickly
+    contradiction = Conjunction(
+        Conjunction(p, Negation(p)),  # This will close branches early
+        Disjunction(q, Negation(q))   # This won't need to be processed
+    )
+    
+    print("Early termination on contradiction:")
+    measure_performance(contradiction, "Early contradiction detection")
+    
+    # Compare with a formula that requires full expansion
+    tautology = Disjunction(
+        Conjunction(p, q),
+        Conjunction(Negation(p), Negation(q))
+    )
+    
+    print("\nFull expansion required:")
+    measure_performance(tautology, "Requires full expansion")
+
+if __name__ == "__main__":
+    optimize_formula_representation()
+    demonstrate_early_termination()
+```
+
+### Step 3: Memory and Scaling Optimization
+
+```python
+def analyze_memory_usage():
+    """Analyze memory usage patterns"""
+    
+    print("=== MEMORY USAGE ANALYSIS ===\n")
+    
+    import psutil
+    import os
+    
+    def get_memory_usage():
+        """Get current memory usage in MB"""
+        process = psutil.Process(os.getpid())
+        return process.memory_info().rss / 1024 / 1024
+    
+    p = Atom("p")
+    q = Atom("q")
+    r = Atom("r")
+    
+    initial_memory = get_memory_usage()
+    print(f"Initial memory usage: {initial_memory:.1f} MB")
+    
+    # Test with increasing formula complexity
+    formulas = []
+    
+    # Build progressively larger formulas
+    current_formula = p
+    for i in range(3):
+        # Create more complex formula
+        current_formula = Conjunction(
+            Disjunction(current_formula, q),
+            Disjunction(Negation(current_formula), r)
+        )
+        formulas.append((f"Level {i+1}", current_formula))
+    
+    for description, formula in formulas:
+        memory_before = get_memory_usage()
+        
+        tableau = classical_signed_tableau(T(formula))
+        result = tableau.build()
+        
+        if result:
+            models = tableau.extract_all_models()
+            model_count = len(models)
+        else:
+            model_count = 0
+        
+        memory_after = get_memory_usage()
+        memory_used = memory_after - memory_before
+        
+        print(f"{description}:")
+        print(f"  Memory used: {memory_used:.1f} MB")
+        print(f"  Models: {model_count}")
+        print(f"  Result: {'SAT' if result else 'UNSAT'}")
+
+def demonstrate_batch_optimization():
+    """Show optimization techniques for processing multiple formulas"""
+    
+    print("\n=== BATCH PROCESSING OPTIMIZATION ===\n")
+    
+    # Create a batch of related formulas
+    formulas = []
+    atoms = [Atom(f"p{i}") for i in range(4)]
+    
+    # Generate various combinations
+    for i in range(len(atoms)):
+        for j in range(i+1, len(atoms)):
+            # Create implications between pairs
+            formula = Implication(atoms[i], atoms[j])
+            formulas.append(formula)
+    
+    print(f"Processing batch of {len(formulas)} formulas...")
+    
+    # Method 1: Process each individually
+    start_time = time.time()
+    individual_results = []
+    
+    for formula in formulas:
+        tableau = classical_signed_tableau(T(formula))
+        result = tableau.build()
+        individual_results.append(result)
+    
+    individual_time = time.time() - start_time
+    
+    print(f"Individual processing: {individual_time:.4f} seconds")
+    print(f"Average per formula: {individual_time/len(formulas):.6f} seconds")
+    print(f"Results: {sum(individual_results)} satisfiable out of {len(formulas)}")
+
+if __name__ == "__main__":
+    try:
+        analyze_memory_usage()
+    except ImportError:
+        print("psutil not available - skipping memory analysis")
+    
+    demonstrate_batch_optimization()
+```
+
+### Exercise 6
+
+1. Implement a tableau performance profiler that identifies bottlenecks
+2. Create a formula complexity estimator that predicts construction time
+3. Build an adaptive timeout system that adjusts based on formula characteristics
+
+## Tutorial 7: Extending with New Logic Systems
+
+**Goal**: Learn to extend the tableau system with new non-classical logics beyond WK3.
+
+### Step 1: Understanding the Extension Architecture
+
+```python
+#!/usr/bin/env python3
+"""Tutorial 7: Extending with New Logic Systems"""
+
+from tableau_core import *
+from unified_model import UnifiedModel
+from typing import Dict, List, Union
+import copy
+
+class FourValuedTruthValue:
+    """Four-valued truth system: TRUE, FALSE, BOTH, NEITHER"""
+    
+    def __init__(self, value: str):
+        if value not in {'TRUE', 'FALSE', 'BOTH', 'NEITHER'}:
+            raise ValueError(f"Invalid four-valued truth value: {value}")
+        self.value = value
+    
+    def __str__(self):
+        return self.value
+    
+    def __repr__(self):
+        return f"FourValuedTruthValue('{self.value}')"
+    
+    def __eq__(self, other):
+        return isinstance(other, FourValuedTruthValue) and self.value == other.value
+    
+    def __hash__(self):
+        return hash(self.value)
+
+# Four-valued truth constants
+TRUE = FourValuedTruthValue('TRUE')
+FALSE = FourValuedTruthValue('FALSE')
+BOTH = FourValuedTruthValue('BOTH')
+NEITHER = FourValuedTruthValue('NEITHER')
+
+class FourValuedOperators:
+    """Truth table operations for four-valued logic"""
+    
+    @staticmethod
+    def negation(a: FourValuedTruthValue) -> FourValuedTruthValue:
+        """Four-valued negation"""
+        negation_table = {
+            'TRUE': FALSE,   # ¬TRUE = FALSE
+            'FALSE': TRUE,   # ¬FALSE = TRUE
+            'BOTH': BOTH,    # ¬BOTH = BOTH (both true and false)
+            'NEITHER': NEITHER  # ¬NEITHER = NEITHER (neither true nor false)
+        }
+        return negation_table[a.value]
+    
+    @staticmethod
+    def conjunction(a: FourValuedTruthValue, b: FourValuedTruthValue) -> FourValuedTruthValue:
+        """Four-valued conjunction"""
+        # Truth table for A ∧ B
+        table = {
+            ('TRUE', 'TRUE'): TRUE,  ('TRUE', 'FALSE'): FALSE,  ('TRUE', 'BOTH'): BOTH,  ('TRUE', 'NEITHER'): NEITHER,
+            ('FALSE', 'TRUE'): FALSE,  ('FALSE', 'FALSE'): FALSE,  ('FALSE', 'BOTH'): FALSE,  ('FALSE', 'NEITHER'): FALSE,
+            ('BOTH', 'TRUE'): BOTH,  ('BOTH', 'FALSE'): FALSE,  ('BOTH', 'BOTH'): BOTH,  ('BOTH', 'NEITHER'): FALSE,
+            ('NEITHER', 'TRUE'): NEITHER,  ('NEITHER', 'FALSE'): FALSE,  ('NEITHER', 'BOTH'): FALSE,  ('NEITHER', 'NEITHER'): NEITHER,
+        }
+        return table[(a.value, b.value)]
+    
+    @staticmethod
+    def disjunction(a: FourValuedTruthValue, b: FourValuedTruthValue) -> FourValuedTruthValue:
+        """Four-valued disjunction"""
+        # Truth table for A ∨ B
+        table = {
+            ('TRUE', 'TRUE'): TRUE,  ('TRUE', 'FALSE'): TRUE,  ('TRUE', 'BOTH'): TRUE,  ('TRUE', 'NEITHER'): TRUE,
+            ('FALSE', 'TRUE'): TRUE,  ('FALSE', 'FALSE'): FALSE,  ('FALSE', 'BOTH'): BOTH,  ('FALSE', 'NEITHER'): NEITHER,
+            ('BOTH', 'TRUE'): TRUE,  ('BOTH', 'FALSE'): BOTH,  ('BOTH', 'BOTH'): BOTH,  ('BOTH', 'NEITHER'): BOTH,
+            ('NEITHER', 'TRUE'): TRUE,  ('NEITHER', 'FALSE'): NEITHER,  ('NEITHER', 'BOTH'): BOTH,  ('NEITHER', 'NEITHER'): NEITHER,
+        }
+        return table[(a.value, b.value)]
+
+def demonstrate_four_valued_logic():
+    """Demonstrate four-valued logic truth tables"""
+    
+    print("=== FOUR-VALUED LOGIC DEMONSTRATION ===\n")
+    
+    values = [TRUE, FALSE, BOTH, NEITHER]
+    value_names = ['TRUE', 'FALSE', 'BOTH', 'NEITHER']
+    
+    print("Truth values:")
+    print("  TRUE = true only")
+    print("  FALSE = false only") 
+    print("  BOTH = both true and false")
+    print("  NEITHER = neither true nor false")
+    print()
+    
+    # Negation table
+    print("Negation (¬):")
+    for val, name in zip(values, value_names):
+        neg_val = FourValuedOperators.negation(val)
+        print(f"  ¬{name} = {neg_val}")
+    print()
+    
+    # Conjunction table
+    print("Conjunction (∧):")
+    print("         | TRUE  | FALSE | BOTH  | NEITHER")
+    print("  ---|---|---|---|---")
+    for a, a_name in zip(values, value_names):
+        row = f"   {a_name} |"
+        for b in values:
+            result = FourValuedOperators.conjunction(a, b)
+            row += f" {result} |"
+        print(row)
+    print()
+    
+    # Disjunction table  
+    print("Disjunction (∨):")
+    print("     | T | F | B | N")
+    print("  ---|---|---|---|---")
+    for a, a_name in zip(values, value_names):
+        row = f"   {a_name} |"
+        for b in values:
+            result = FourValuedOperators.disjunction(a, b)
+            row += f" {result} |"
+        print(row)
+
+if __name__ == "__main__":
+    demonstrate_four_valued_logic()
+```
+
+### Step 2: Implementing a Custom Model System
+
+```python
+class FourValuedModel(UnifiedModel):
+    """Model for four-valued logic system"""
+    
+    def __init__(self, assignments: Dict[str, Union[FourValuedTruthValue, str]]):
+        """Initialize with four-valued assignments"""
+        self._assignments = {}
+        for atom, value in assignments.items():
+            if isinstance(value, FourValuedTruthValue):
+                self._assignments[atom] = value
+            elif isinstance(value, str) and value in ['T', 'F', 'B', 'N']:
+                self._assignments[atom] = FourValuedTruthValue(value)
+            else:
+                raise ValueError(f"Invalid four-valued assignment: {atom}={value}")
+    
+    def satisfies(self, formula) -> FourValuedTruthValue:
+        """Evaluate formula under four-valued semantics"""
+        return self._evaluate_four_valued(formula)
+    
+    def is_satisfying(self, formula) -> bool:
+        """Check if formula evaluates to TRUE or BOTH"""
+        result = self._evaluate_four_valued(formula)
+        return result.value in {'TRUE', 'BOTH'}
+    
+    def get_assignment(self, atom_name: str) -> FourValuedTruthValue:
+        """Get four-valued assignment for atom"""
+        return self._assignments.get(atom_name, NEITHER)
+    
+    @property
+    def assignments(self) -> Dict[str, FourValuedTruthValue]:
+        """Get all assignments"""
+        return self._assignments.copy()
+    
+    def _evaluate_four_valued(self, formula) -> FourValuedTruthValue:
+        """Evaluate formula using four-valued semantics"""
+        # Get core types dynamically to handle different formula hierarchies
+        from unified_model import _get_core_types
+        CoreFormula, CoreAtom, CoreNegation, CoreConjunction, CoreDisjunction, CoreImplication = _get_core_types()
+        
+        # Handle both formula hierarchies
+        atom_types = (Atom,) + ((CoreAtom,) if CoreAtom else ())
+        negation_types = (Negation,) + ((CoreNegation,) if CoreNegation else ())
+        conjunction_types = (Conjunction,) + ((CoreConjunction,) if CoreConjunction else ())
+        disjunction_types = (Disjunction,) + ((CoreDisjunction,) if CoreDisjunction else ())
+        
+        if isinstance(formula, atom_types):
+            return self._assignments.get(formula.name, NEITHER)
+        elif isinstance(formula, negation_types):
+            operand_value = self._evaluate_four_valued(formula.operand)
+            return FourValuedOperators.negation(operand_value)
+        elif isinstance(formula, conjunction_types):
+            left_value = self._evaluate_four_valued(formula.left)
+            right_value = self._evaluate_four_valued(formula.right)
+            return FourValuedOperators.conjunction(left_value, right_value)
+        elif isinstance(formula, disjunction_types):
+            left_value = self._evaluate_four_valued(formula.left)
+            right_value = self._evaluate_four_valued(formula.right)
+            return FourValuedOperators.disjunction(left_value, right_value)
+        else:
+            # Default for unknown types
+            return NEITHER
+    
+    def __str__(self) -> str:
+        if not self._assignments:
+            return "{}"
+        
+        sorted_items = sorted(self._assignments.items())
+        assignment_strs = [f"{atom}={value}" for atom, value in sorted_items]
+        return "{" + ", ".join(assignment_strs) + "}"
+    
+    def __repr__(self) -> str:
+        return f"FourValuedModel({self._assignments})"
+
+def demonstrate_four_valued_models():
+    """Demonstrate four-valued model evaluation"""
+    
+    print("\n=== FOUR-VALUED MODEL EVALUATION ===\n")
+    
+    p = Atom("p")
+    q = Atom("q")
+    
+    # Test different assignments
+    test_assignments = [
+        ("Both true", {"p": "TRUE", "q": "TRUE"}),
+        ("Mixed values", {"p": "BOTH", "q": "FALSE"}),
+        ("Neither values", {"p": "NEITHER", "q": "NEITHER"}),
+        ("Inconsistent", {"p": "BOTH", "q": "BOTH"}),
+    ]
+    
+    formula = Conjunction(p, q)
+    print(f"Testing formula: {formula}")
+    print()
+    
+    for description, assignment in test_assignments:
+        model = FourValuedModel(assignment)
+        result = model.satisfies(formula)
+        
+        print(f"{description}: {model}")
+        print(f"  Formula evaluates to: {result}")
+        print(f"  Classically satisfying: {model.is_satisfying(formula)}")
+        print()
+
+if __name__ == "__main__":
+    demonstrate_four_valued_models()
+```
+
+### Step 3: Modal Logic Extension
+
+```python
+# Modal logic extension from Tutorial 7
+class ModalFormula(Formula):
+    """Base class for modal formulas"""
+    pass
+
+class Box(ModalFormula):
+    """Necessity operator (□φ)"""
+    
+    def __init__(self, operand: Formula):
+        self.operand = operand
+    
+    def is_atomic(self) -> bool:
+        """Modal operators are not atomic"""
+        return False
+    
+    def is_literal(self) -> bool:
+        """Modal operators are not literals"""
+        return False
+    
+    def __str__(self):
+        return f"□{self.operand}"
+    
+    def __repr__(self):
+        return f"Box({self.operand!r})"
+    
+    def __eq__(self, other):
+        return isinstance(other, Box) and self.operand == other.operand
+    
+    def __hash__(self):
+        return hash(('Box', self.operand))
+
+class Diamond(ModalFormula):
+    """Possibility operator (◇φ)"""
+    
+    def __init__(self, operand: Formula):
+        self.operand = operand
+    
+    def is_atomic(self) -> bool:
+        """Modal operators are not atomic"""
+        return False
+    
+    def is_literal(self) -> bool:
+        """Modal operators are not literals"""
+        return False
+    
+    def __str__(self):
+        return f"◇{self.operand}"
+    
+    def __repr__(self):
+        return f"Diamond({self.operand!r})"
+    
+    def __eq__(self, other):
+        return isinstance(other, Diamond) and self.operand == other.operand
+    
+    def __hash__(self):
+        return hash(('Diamond', self.operand))
+
+class ModalModel(UnifiedModel):
+    """Simplified modal model with possible worlds"""
+    
+    def __init__(self, worlds: Dict[str, Dict[str, bool]], accessibility: Dict[str, List[str]], current_world: str = "w0"):
+        self.worlds = worlds  # world -> {atom -> bool}
+        self.accessibility = accessibility  # world -> [accessible_worlds]  
+        self.current_world = current_world
+    
+    def add_world(self, world_name: str):
+        """Add a possible world"""
+        self.worlds.add(world_name)
+        if world_name not in self.accessibility:
+            self.accessibility[world_name] = set()
+        if world_name not in self.valuations:
+            self.valuations[world_name] = {}
+    
+    def add_accessibility(self, from_world: str, to_world: str):
+        """Add accessibility relation between worlds"""
+        if from_world not in self.worlds:
+            self.add_world(from_world)
+        if to_world not in self.worlds:
+            self.add_world(to_world)
+        self.accessibility[from_world].add(to_world)
+    
+    def set_valuation(self, world: str, atom: str, value: bool):
+        """Set truth value of atom in a world"""
+        if world not in self.worlds:
+            self.add_world(world)
+        self.valuations[world][atom] = value
+    
+    def evaluate_at_world(self, formula, world: str) -> bool:
+        """Evaluate formula at a specific world"""
+        if isinstance(formula, Atom):
+            return self.valuations[world].get(formula.name, False)
+        elif isinstance(formula, Negation):
+            return not self.evaluate_at_world(formula.operand, world)
+        elif isinstance(formula, Conjunction):
+            return (self.evaluate_at_world(formula.left, world) and
+                   self.evaluate_at_world(formula.right, world))
+        elif isinstance(formula, Disjunction):
+            return (self.evaluate_at_world(formula.left, world) or
+                   self.evaluate_at_world(formula.right, world))
+        # Add modal operators here when formula classes support them
+        else:
+            return False
+    
+    def demonstrate_modal_evaluation(self):
+        """Show modal logic evaluation"""
+        print("=== MODAL LOGIC EXTENSION DEMO ===\n")
+        
+        # Create a simple modal model
+        self.add_world("w1")
+        self.add_world("w2") 
+        self.add_world("w3")
+        
+        # Add accessibility relations
+        self.add_accessibility("w1", "w2")
+        self.add_accessibility("w1", "w3")
+        self.add_accessibility("w2", "w3")
+        
+        # Set valuations
+        self.set_valuation("w1", "p", True)
+        self.set_valuation("w2", "p", False)
+        self.set_valuation("w3", "p", True)
+        
+        print("Modal model:")
+        print(f"Worlds: {sorted(self.worlds)}")
+        for world in sorted(self.worlds):
+            accessible = sorted(self.accessibility[world])
+            print(f"  {world} → {accessible}")
+        print()
+        
+        print("Valuations:")
+        for world in sorted(self.worlds):
+            p_val = self.valuations[world].get("p", False)
+            print(f"  {world}: p = {p_val}")
+        print()
+        
+        # Test basic formula evaluation
+        p = Atom("p")
+        for world in sorted(self.worlds):
+            result = self.evaluate_at_world(p, world)
+            print(f"p at {world}: {result}")
+
+def demonstrate_logic_system_comparison():
+    """Compare different logic systems on the same formulas"""
+    
+    print("\n=== LOGIC SYSTEM COMPARISON ===\n")
+    
+    p = Atom("p")
+    test_formulas = [
+        ("Simple atom", p),
+        ("Contradiction", Conjunction(p, Negation(p))),
+        ("Tautology", Disjunction(p, Negation(p))),
+    ]
+    
+    for description, formula in test_formulas:
+        print(f"Testing: {description} ({formula})")
+        
+        # Classical logic
+        classical_tableau = classical_signed_tableau(T(formula))
+        classical_sat = classical_tableau.build()
+        
+        # WK3 logic
+        from wk3_tableau import WK3Tableau
+        wk3_tableau = WK3Tableau(formula)
+        wk3_sat = wk3_tableau.build()
+        
+        # Four-valued logic (simplified - just test with one assignment)
+        fv_model = FourValuedModel({"p": "B"})  # Both true and false
+        fv_result = fv_model.satisfies(formula)
+        
+        print(f"  Classical: {'SAT' if classical_sat else 'UNSAT'}")
+        print(f"  WK3: {'SAT' if wk3_sat else 'UNSAT'}")
+        print(f"  Four-valued (p=B): {fv_result}")
+        print()
+
+if __name__ == "__main__":
+    # Demonstrate modal logic
+    modal = ModalLogicExtension()
+    modal.demonstrate_modal_evaluation()
+    
+    # Compare logic systems
+    demonstrate_logic_system_comparison()
+```
+
+### Exercise 7
+
+1. Implement a complete many-valued logic system (e.g., Łukasiewicz three-valued logic)
+2. Add modal operators (□ and ◇) to the formula hierarchy and implement tableau rules
+3. Create a logic system registry that allows dynamic loading of new logic systems
+4. Build a tableau rule generator that creates rules based on truth table specifications
+
+### Advanced Integration Example
+
+```python
+def create_custom_logic_system():
+    """Example of creating a complete custom logic system"""
+    
+    print("=== CUSTOM LOGIC SYSTEM INTEGRATION ===\n")
+    
+    # This would integrate with the existing tableau framework
+    # For now, we demonstrate the concept
+    
+    class CustomLogicRegistry:
+        """Registry for custom logic systems"""
+        
+        def __init__(self):
+            self.systems = {}
+        
+        def register_system(self, name: str, model_class, operators):
+            """Register a new logic system"""
+            self.systems[name] = {
+                'model_class': model_class,
+                'operators': operators,
+                'description': f"Custom logic system: {name}"
+            }
+        
+        def list_systems(self):
+            """List all registered systems"""
+            print("Available logic systems:")
+            for name, info in self.systems.items():
+                print(f"  {name}: {info['description']}")
+    
+    # Create registry and register our four-valued system
+    registry = CustomLogicRegistry()
+    registry.register_system("four_valued", FourValuedModel, FourValuedOperators)
+    registry.register_system("classical", ClassicalModel, None)
+    
+    registry.list_systems()
+    
+    print("\nCustom logic systems can be seamlessly integrated")
+    print("with the existing tableau framework through:")
+    print("1. Unified model interface")
+    print("2. Pluggable truth value systems") 
+    print("3. Extensible rule systems")
+    print("4. Consistent API across all logics")
+
+if __name__ == "__main__":
+    create_custom_logic_system()
+```
+
+### Exercise 7
+
+1. Implement tableau rules for your four-valued logic system
+2. Create a complete modal logic extension with □ and ◇ operators
+3. Build a fuzzy logic system with continuous truth values [0,1]
+4. Design a temporal logic system with "next" and "until" operators
 
 ## CLI Usage Guide
 

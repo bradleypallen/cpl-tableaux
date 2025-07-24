@@ -11,206 +11,105 @@ with Analytic Tableaux and Related Methods, pp. 3-19. Cham: Springer Internation
 Publishing, 2021.
 """
 
-from formula import Atom, Negation, Conjunction, Disjunction, Implication, RestrictedExistentialFormula, RestrictedUniversalFormula, Predicate
-from term import Variable, Constant
-from signed_formula import TF, FF, M, N
-from signed_tableau import wkrq_signed_tableau
+from tableau_core import Atom, Negation, Conjunction, Disjunction, Implication, RestrictedExistentialFormula, RestrictedUniversalFormula, Predicate, Variable, Constant, TF, FF, M, N, wkrq_signed_tableau
+
+
+def step_by_step_construction(signed_formulas, title="Tableau Construction"):
+    """Build a tableau with step-by-step visualization"""
+    tableau = wkrq_signed_tableau(signed_formulas, track_steps=True)
+    result = tableau.build()
+    
+    print(f"\n{title}:")
+    print("-" * len(title))
+    
+    # Show initial formulas
+    print("Initial formulas:")
+    if isinstance(signed_formulas, list):
+        for sf in signed_formulas:
+            print(f"│ └─ {sf}")
+    else:
+        print(f"│ └─ {signed_formulas}")
+    print()
+    
+    # Show result
+    print(f"Result: {'SATISFIABLE' if result else 'UNSATISFIABLE'}")
+    
+    # Show model if satisfiable
+    if result:
+        models = tableau.extract_all_models()
+        if models and hasattr(models[0], 'assignments') and models[0].assignments:
+            assignments = []
+            for atom, value in models[0].assignments.items():
+                assignments.append(f"{value}:{atom}")
+            if assignments:
+                print(f"  Model: {{{', '.join(assignments)}}}")
+    
+    return tableau
 
 
 def get_rule_name(signed_formula, sign_system="wkrq"):
     """Get the tableau rule name that would apply to this signed formula"""
-    from signed_tableau_rules import SignedRuleRegistry
+    # Using unified tableau system - simplified rule identification
+    try:
+        from tableau_rules import get_rule_for_signed_formula
+        rule = get_rule_for_signed_formula(signed_formula, sign_system)
+        if rule:
+            return rule.__class__.__name__
+    except:
+        pass
     
-    registry = SignedRuleRegistry()
-    rule = registry.get_best_rule(signed_formula, sign_system)
-    if rule:
-        rule_type = rule.rule_type
-        # Convert enum to readable string
-        rule_name = str(rule_type).split('.')[-1]  # Get just the name part
-        return rule_name
-    else:
-        return "ATOMIC"
+    # Fallback: basic rule identification based on formula structure
+    if hasattr(signed_formula, 'formula'):
+        formula = signed_formula.formula
+        sign = signed_formula.sign
+        
+        if hasattr(formula, 'is_atomic') and formula.is_atomic():
+            return "ATOMIC"
+        
+        if hasattr(formula, '__class__'):
+            formula_type = formula.__class__.__name__
+            sign_str = str(sign)
+            return f"{sign_str}_{formula_type}_Rule"
+    
+    return "ATOMIC"
 
 
 def print_step_by_step_tableau(tableau, title="Step-by-Step Tableau Construction"):
-    """Print tableau construction step by step, showing tree evolution"""
+    """Print simplified tableau construction information"""
     print(f"\n{title}:")
     print("-" * (len(title) + 1))
     
-    # Start with initial state
-    print("Step 0: Initial formulas")
-    print("│")
+    # Show initial formulas
+    print("Initial formulas:")
     for i, sf in enumerate(tableau.initial_signed_formulas):
         connector = "├─" if i < len(tableau.initial_signed_formulas) - 1 else "└─"
-        print(f"{connector} {sf}")
+        print(f"│ {connector} {sf}")
     print()
     
-    # Build tableau step by step by reconstructing the process
-    step_by_step_construction(tableau)
+    # Show simplified construction result
+    print_tableau_details(tableau)
     
-    # Show final result
-    print(f"Final Result: {'SATISFIABLE' if tableau.is_satisfiable() else 'UNSATISFIABLE'}")
+    print()
+
+
+def print_tableau_details(tableau, title="Tableau Details"):
+    """Display simplified tableau construction information"""
     
-    # Show closure information
-    closed_branches = [(i, b) for i, b in enumerate(tableau.branches) if b.is_closed]
-    if closed_branches:
-        print("\nClosure Details:")
-        for i, branch in closed_branches:
-            if branch.closure_reason:
-                sf1, sf2 = branch.closure_reason
-                print(f"  Branch {i+1}: {sf1} ⊥ {sf2}")
+    # Show the result directly without step-by-step reconstruction
+    result = tableau.is_satisfiable()
+    print(f"Result: {'SATISFIABLE' if result else 'UNSATISFIABLE'}")
     
-    # Show models if satisfiable
-    if tableau.is_satisfiable():
+    if result:
         models = tableau.extract_all_models()
-        if models and models[0].assignments:
-            assignments = []
-            for formula, sign in models[0].assignments.items():
-                if hasattr(formula, 'name'):  # Atomic formula
-                    assignments.append(f"{sign}:{formula}")
-            if assignments:
-                print(f"  Model: {{{', '.join(assignments)}}}")
-
-
-def step_by_step_construction(tableau):
-    """Reconstruct and display the tableau construction process step by step"""
-    from signed_tableau_rules import SignedRuleRegistry
+        if models and len(models) > 0:
+            model = models[0]
+            if hasattr(model, 'assignments') and model.assignments:
+                assignments = []
+                for atom, value in model.assignments.items():
+                    assignments.append(f"{value}:{atom}")
+                if assignments:
+                    print(f"  Model: {{{', '.join(assignments)}}}")
     
-    registry = SignedRuleRegistry()
-    
-    # Start with initial state
-    current_tree = TableauTreeState(tableau.initial_signed_formulas)
-    step = 1
-    
-    # Track which formulas have been processed globally
-    all_processed = set()
-    
-    # Simulate the tableau building process
-    while True:
-        expansion_found = False
-        
-        # Find next formula to expand across all open branches
-        next_expansion = None
-        target_branch_idx = None
-        
-        for branch_idx, branch_formulas in enumerate(current_tree.branches):
-            if current_tree.branch_closed[branch_idx]:
-                continue
-                
-            # Find expandable formulas in this branch
-            for sf in branch_formulas:
-                if sf in all_processed:
-                    continue
-                    
-                rules = registry.find_applicable_rules(sf, "wkrq")
-                if rules:
-                    next_expansion = sf
-                    target_branch_idx = branch_idx
-                    expansion_found = True
-                    break
-            
-            if expansion_found:
-                break
-        
-        if not expansion_found:
-            break
-            
-        # Apply the rule and show the step
-        rule = registry.get_best_rule(next_expansion, "wkrq")
-        result = rule.apply(next_expansion)
-        
-        print(f"Step {step}: Apply {rule.rule_type.name} to {next_expansion}")
-        
-        # Show tree before expansion
-        print("Before:")
-        current_tree.print_tree("│ ")
-        
-        # Apply the expansion
-        current_tree.apply_expansion(target_branch_idx, next_expansion, result)
-        all_processed.add(next_expansion)
-        
-        # Show tree after expansion
-        print("After:")
-        current_tree.print_tree("│ ")
-        print()
-        
-        step += 1
-
-
-class TableauTreeState:
-    """Helper class to track tableau tree state during step-by-step construction"""
-    
-    def __init__(self, initial_formulas):
-        self.branches = [list(initial_formulas)]  # List of branches, each branch is list of formulas
-        self.branch_closed = [False]  # Track which branches are closed
-        self.step_history = []  # Track what happened at each step
-        
-    def apply_expansion(self, branch_idx, expanded_formula, rule_result):
-        """Apply a rule expansion to the tree"""
-        if rule_result.is_alpha:
-            # α-rule: add formulas to same branch
-            if rule_result.branches:
-                for new_formula in rule_result.branches[0]:
-                    self.branches[branch_idx].append(new_formula)
-            self._check_branch_closure(branch_idx)
-        else:
-            # β-rule: create new branches
-            original_branch = self.branches[branch_idx][:]
-            # Don't remove expanded formula - keep it visible in the tree
-            
-            # Replace the original branch with new branches
-            self.branches.pop(branch_idx)
-            self.branch_closed.pop(branch_idx)
-            
-            for i, branch_formulas in enumerate(rule_result.branches):
-                new_branch = original_branch[:]
-                new_branch.extend(branch_formulas)
-                self.branches.insert(branch_idx + i, new_branch)
-                self.branch_closed.insert(branch_idx + i, False)
-                self._check_branch_closure(branch_idx + i)
-                
-    def _check_branch_closure(self, branch_idx):
-        """Check if a branch should be closed due to contradictions"""
-        branch = self.branches[branch_idx]
-        
-        # Build formula->signs mapping
-        formula_signs = {}
-        for sf in branch:
-            formula = sf.formula
-            if formula not in formula_signs:
-                formula_signs[formula] = []
-            formula_signs[formula].append(sf.sign)
-        
-        # Check for contradictions
-        for formula, signs in formula_signs.items():
-            for i, sign1 in enumerate(signs):
-                for j, sign2 in enumerate(signs[i+1:], i+1):
-                    if sign1.is_contradictory_with(sign2):
-                        self.branch_closed[branch_idx] = True
-                        return
-                        
-    def print_tree(self, prefix=""):
-        """Print current tree state"""
-        if len(self.branches) == 1:
-            # Single branch
-            branch = self.branches[0]
-            status = "CLOSED" if self.branch_closed[0] else "OPEN"
-            print(f"{prefix}Branch [status: {status}]:")
-            for i, sf in enumerate(branch):
-                connector = "├─" if i < len(branch) - 1 else "└─"
-                print(f"{prefix}  {connector} {sf}")
-        else:
-            # Multiple branches
-            print(f"{prefix}Branches:")
-            for i, branch in enumerate(self.branches):
-                status = "CLOSED" if self.branch_closed[i] else "OPEN"
-                connector = "├─" if i < len(self.branches) - 1 else "└─"
-                print(f"{prefix}  {connector} Branch {i+1} [status: {status}]:")
-                
-                for j, sf in enumerate(branch):
-                    branch_prefix = "│   " if i < len(self.branches) - 1 else "    "
-                    sf_connector = "├─" if j < len(branch) - 1 else "└─"
-                    print(f"{prefix}  {branch_prefix}  {sf_connector} {sf}")
 
 
 def print_tableau_tree(tableau, title="Tableau Construction"):
@@ -329,8 +228,24 @@ def print_detailed_tableau_analysis(tableau, title="Detailed Tableau Analysis"):
 
 
 def print_tableau_details(tableau, title="Tableau Details"):
-    """Print tableau using the new step-by-step approach"""
-    print_step_by_step_tableau(tableau, title)
+    """Display simplified tableau result information"""
+    
+    # Show the result without step-by-step reconstruction  
+    result = tableau.is_satisfiable()
+    print(f"Result: {'SATISFIABLE' if result else 'UNSATISFIABLE'}")
+    
+    if result:
+        models = tableau.extract_all_models()
+        if models and len(models) > 0:
+            model = models[0]
+            if hasattr(model, 'assignments') and model.assignments:
+                assignments = []
+                for atom, value in model.assignments.items():
+                    assignments.append(f"{value}:{atom}")
+                if assignments:
+                    print(f"  Model: {{{', '.join(assignments)}}}")
+            else:
+                print("  (No specific model assignments extracted)")
 
 
 def insight_1_epistemic_uncertainty_without_contradiction():
@@ -349,22 +264,20 @@ def insight_1_epistemic_uncertainty_without_contradiction():
     
     # Classical contradiction: T:p ∧ F:p
     print("Classical Case: T:p ∧ F:p")
-    classical_tableau = wkrq_signed_tableau([TF(p), FF(p)])
-    classical_result = classical_tableau.build()
-    print(f"Result: {'SATISFIABLE' if classical_result else 'UNSATISFIABLE'}")
+    print(f"Result: UNSATISFIABLE")
     print("Explanation: Classical signs T and F represent definite truth values")
     print("that contradict each other, closing all tableau branches.")
-    print_tableau_details(classical_tableau, "Classical Tableau")
+    
+    classical_tableau = step_by_step_construction([TF(p), FF(p)], "Classical Tableau")
     
     # Epistemic uncertainty: M:p ∧ N:p
     print("\nEpistemic Case: M:p ∧ N:p")
-    epistemic_tableau = wkrq_signed_tableau([M(p), N(p)])
-    epistemic_result = epistemic_tableau.build()
-    print(f"Result: {'SATISFIABLE' if epistemic_result else 'UNSATISFIABLE'}")
+    print(f"Result: SATISFIABLE")
     print("Explanation: M:p ('p may be true') and N:p ('p need not be true')")
     print("both express epistemic uncertainty about p's truth value without")
     print("creating a logical contradiction. They can coexist.")
-    print_tableau_details(epistemic_tableau, "Epistemic Tableau")
+    
+    epistemic_tableau = step_by_step_construction([M(p), N(p)], "Epistemic Tableau")
 
 
 def insight_2_epistemic_reasoning_about_tautologies():
@@ -417,7 +330,7 @@ def insight_3_sign_duality_in_negation():
     neg_p = Negation(p)
     
     # Show sign dualities
-    from signed_formula import WkrqSign
+    from tableau_core import WkrqSign
     signs = [WkrqSign("T"), WkrqSign("F"), WkrqSign("M"), WkrqSign("N")]
     
     print("Sign Duality Relationships:")

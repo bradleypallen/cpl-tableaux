@@ -23,18 +23,11 @@ from tableau_core import (
     Constant, Variable, FunctionApplication, Predicate,
     T, F, T3, F3, U, TF, FF, M, N,
     classical_signed_tableau, three_valued_signed_tableau, wkrq_signed_tableau,
-    wk3_satisfiable, wk3_models
+    wk3_satisfiable
 )
-from truth_value import TruthValue, t, f, e
-from wk3_model import WK3Model
-from tableau_engine import TableauEngine
-from inference_api import is_satisfiable, is_theorem, find_models, analyze_formula
-
-# Mode-aware imports
-from logic_mode import LogicMode, ModeError
-from mode_aware_parser import ModeAwareParser
-# Import formula types that ModeAwareParser actually returns
-from formula import Conjunction as FormulaConjunction, Predicate as FormulaPredicate, Atom as FormulaAtom
+from tableau_core import TruthValue, t, f, e
+from unified_model import WK3Model
+# Unified system imports only - removed legacy components
 
 
 class TestClassicalPropositionalLogic:
@@ -48,9 +41,9 @@ class TestClassicalPropositionalLogic:
         assert tableau.build() == True
         models = tableau.extract_all_models()
         assert len(models) > 0
-        # Convert TruthValue to boolean for classical logic
-        p_value = models[0]["p"]
-        assert p_value == TruthValue.TRUE or p_value == True
+        # Get value using unified model interface
+        p_value = models[0].get_assignment("p")
+        assert p_value == True
     
     def test_simple_negation(self):
         """Test satisfiability of negated atom"""
@@ -60,9 +53,9 @@ class TestClassicalPropositionalLogic:
         assert tableau.build() == True
         models = tableau.extract_all_models()
         assert len(models) > 0
-        # Convert TruthValue to boolean for classical logic
-        p_value = models[0]["p"]
-        assert p_value == TruthValue.FALSE or p_value == False
+        # Get value using unified model interface
+        p_value = models[0].get_assignment("p")
+        assert p_value == False
     
     # Contradiction tests
     def test_contradiction_basic(self):
@@ -138,8 +131,8 @@ class TestClassicalPropositionalLogic:
         models = tableau.extract_all_models()
         assert len(models) > 0
         model = models[0]
-        assert model["p"] == TruthValue.TRUE
-        assert model["q"] == TruthValue.TRUE
+        assert model.get_assignment("p") == True
+        assert model.get_assignment("q") == True
     
     def test_satisfiable_disjunction(self):
         """Test satisfiable disjunction"""
@@ -179,7 +172,7 @@ class TestClassicalPropositionalLogic:
         models = tableau.extract_all_models()
         # All models should have s = True
         for model in models:
-            assert model.get("s", TruthValue.FALSE) == TruthValue.TRUE
+            assert model.get_assignment("s") == True
     
     def test_de_morgan_laws(self):
         """Test De Morgan's laws"""
@@ -216,9 +209,9 @@ class TestClassicalPropositionalLogic:
         models = tableau.extract_all_models()
         # All models should have p, q, r = True
         for model in models:
-            assert model.get("p", TruthValue.FALSE) == TruthValue.TRUE
-            assert model.get("q", TruthValue.FALSE) == TruthValue.TRUE
-            assert model.get("r", TruthValue.FALSE) == TruthValue.TRUE
+            assert model.get_assignment("p") == True
+            assert model.get_assignment("q") == True
+            assert model.get_assignment("r") == True
     
     def test_multiple_formulas_inconsistent(self):
         """Test inconsistent set of multiple formulas"""
@@ -254,7 +247,7 @@ class TestWeakKleeneLogic:
     
     def test_wk3_truth_values(self):
         """Test WK3 truth value system"""
-        from truth_value import WeakKleeneOperators
+        from tableau_core import WeakKleeneOperators
         
         # Test truth value operations using WeakKleeneOperators
         assert WeakKleeneOperators.negation(t) == f
@@ -381,44 +374,27 @@ class TestModeAwareSystem:
     
     def test_mode_detection(self):
         """Test automatic mode detection"""
-        # Propositional formulas
+        from tableau_core import LogicMode
+        
+        # Test propositional mode aliases
         assert LogicMode.from_string("prop") == LogicMode.PROPOSITIONAL
         assert LogicMode.from_string("propositional") == LogicMode.PROPOSITIONAL
         
-        # First-order formulas  
+        # Test first-order mode aliases  
         assert LogicMode.from_string("fol") == LogicMode.FIRST_ORDER
         assert LogicMode.from_string("first-order") == LogicMode.FIRST_ORDER
+        
+        # Test invalid mode
+        with pytest.raises(ValueError):
+            LogicMode.from_string("invalid")
     
-    def test_propositional_parser(self):
-        """Test mode-aware propositional parsing"""
-        parser = ModeAwareParser(LogicMode.PROPOSITIONAL)
-        
-        formula = parser.parse("p & q")
-        # ModeAwareParser uses formula module, not tableau_core
-        assert isinstance(formula, FormulaConjunction)
-        assert isinstance(formula.left, FormulaAtom)
-        assert isinstance(formula.right, FormulaAtom)
-        
-        # Should reject FOL syntax
-        with pytest.raises(ModeError):
-            parser.parse("Student(john)")
-    
-    def test_first_order_parser(self):
-        """Test mode-aware first-order parsing"""
-        parser = ModeAwareParser(LogicMode.FIRST_ORDER)
-        
-        formula = parser.parse("Student(john)")
-        assert isinstance(formula, FormulaPredicate)
-        assert formula.predicate_name == "Student"
-        assert formula.arity == 1
-        
-        # Should reject propositional atoms
-        with pytest.raises(ModeError):
-            parser.parse("p & q")
+    # Removed: test_propositional_parser and test_first_order_parser (legacy parser removed)
     
     def test_mode_aware_api(self):
         """Test mode-aware programmatic API"""
-        # Propositional builder
+        from tableau_core import PropositionalBuilder, FirstOrderBuilder, propositional_tableau, first_order_tableau
+        
+        # Test propositional builder
         p = PropositionalBuilder.atom("p")
         q = PropositionalBuilder.atom("q")
         formula = PropositionalBuilder.conjunction(p, q)
@@ -426,7 +402,7 @@ class TestModeAwareSystem:
         tableau = propositional_tableau(formula)
         assert tableau.build() == True
         
-        # First-order builder
+        # Test first-order builder
         student = FirstOrderBuilder.predicate("Student", "john")
         smart = FirstOrderBuilder.predicate("Smart", "john")
         fol_formula = FirstOrderBuilder.implication(student, smart)
@@ -436,13 +412,16 @@ class TestModeAwareSystem:
     
     def test_mixed_mode_prevention(self):
         """Test that mixing modes is prevented"""
+        from tableau_core import ModeError, propositional_tableau, first_order_tableau
+        
         p = Atom("p")
         john = Constant("john")
         pred = Predicate("Student", [john])
         
-        # Should prevent mixing in direct construction
+        # Create mixed formula (propositional atom + first-order predicate)
         mixed = Conjunction(p, pred)
         
+        # Should prevent mixing in mode-aware tableaux
         with pytest.raises(ModeError):
             propositional_tableau(mixed)
         
@@ -670,7 +649,7 @@ class TestEdgeCasesAndRegressions:
         assert len(models) > 0
         model = models[0]
         for atom in atoms:
-            assert model[atom.name] == TruthValue.TRUE
+            assert model.get_assignment(atom.name) == True
 
 
 # Utility functions for running specific test categories

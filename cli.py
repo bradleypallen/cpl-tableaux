@@ -1,21 +1,25 @@
 #!/usr/bin/env python3
 """
-Command Line Interface for the Tableau System
+Enhanced Command Line Interface for the Tableau System
 
-Allows users to input propositional logic formulas and test their satisfiability
-using the semantic tableau method.
+Provides comprehensive CLI functionality matching CLI_GUIDE.md specifications
+including argument parsing, multiple output formats, and advanced features.
 """
 
 import sys
-import re
-from typing import List, Optional
-from formula import *
-from tableau import Tableau
-from wk3_tableau import WK3Tableau
-from truth_value import TruthValue, t, f, e
+import argparse
+import json
+import csv
+import time
+from typing import List, Dict, Any, Optional
+from io import StringIO
 
-class FormulaParser:
-    """Parse string formulas into Formula objects"""
+# Import unified tableau components
+from tableau_core import *
+from unified_model import UnifiedModel, ClassicalModel, WK3Model, WkrqModel
+
+class EnhancedFormulaParser:
+    """Enhanced parser supporting the syntax described in CLI_GUIDE.md"""
     
     def __init__(self):
         self.tokens = []
@@ -23,6 +27,12 @@ class FormulaParser:
     
     def parse(self, formula_str: str) -> Formula:
         """Parse a formula string into a Formula object"""
+        # Handle special constants
+        if formula_str.upper() == 'T':
+            return Atom("T")  # Boolean true constant
+        if formula_str.upper() == 'F':
+            return Atom("F")  # Boolean false constant
+            
         # Tokenize
         self.tokens = self._tokenize(formula_str)
         self.pos = 0
@@ -39,7 +49,7 @@ class FormulaParser:
     
     def _tokenize(self, formula_str: str) -> List[str]:
         """Convert formula string to tokens"""
-        # Replace symbols with words for easier parsing
+        # Replace symbols with standard operators
         formula_str = formula_str.replace('¬', '~')
         formula_str = formula_str.replace('∧', '&')
         formula_str = formula_str.replace('∨', '|')
@@ -47,35 +57,19 @@ class FormulaParser:
         formula_str = formula_str.replace('↔', '<->')
         
         # Tokenize using regex
+        import re
         pattern = r'(\w+|->|<->|[()&|~])'
         tokens = re.findall(pattern, formula_str)
-        return [t for t in tokens if t.strip()]
-    
-    def _current_token(self) -> Optional[str]:
-        """Get current token"""
-        if self.pos < len(self.tokens):
-            return self.tokens[self.pos]
-        return None
-    
-    def _consume(self, expected: str = None) -> str:
-        """Consume and return current token"""
-        if self.pos >= len(self.tokens):
-            raise ValueError("Unexpected end of formula")
         
-        token = self.tokens[self.pos]
-        self.pos += 1
-        
-        if expected and token != expected:
-            raise ValueError(f"Expected '{expected}', got '{token}'")
-        
-        return token
+        # Filter out empty tokens
+        return [token for token in tokens if token.strip()]
     
     def _parse_implication(self) -> Formula:
         """Parse implication (lowest precedence)"""
         left = self._parse_disjunction()
         
-        while self._current_token() == '->':
-            self._consume('->')
+        while self.pos < len(self.tokens) and self.tokens[self.pos] == '->':
+            self.pos += 1
             right = self._parse_disjunction()
             left = Implication(left, right)
         
@@ -85,8 +79,8 @@ class FormulaParser:
         """Parse disjunction"""
         left = self._parse_conjunction()
         
-        while self._current_token() == '|':
-            self._consume('|')
+        while self.pos < len(self.tokens) and self.tokens[self.pos] == '|':
+            self.pos += 1
             right = self._parse_conjunction()
             left = Disjunction(left, right)
         
@@ -96,8 +90,8 @@ class FormulaParser:
         """Parse conjunction"""
         left = self._parse_negation()
         
-        while self._current_token() == '&':
-            self._consume('&')
+        while self.pos < len(self.tokens) and self.tokens[self.pos] == '&':
+            self.pos += 1
             right = self._parse_negation()
             left = Conjunction(left, right)
         
@@ -105,102 +99,421 @@ class FormulaParser:
     
     def _parse_negation(self) -> Formula:
         """Parse negation"""
-        if self._current_token() == '~':
-            self._consume('~')
-            return Negation(self._parse_negation())
+        if self.pos < len(self.tokens) and self.tokens[self.pos] == '~':
+            self.pos += 1
+            operand = self._parse_negation()  # Right-associative
+            return Negation(operand)
         
         return self._parse_atom()
     
     def _parse_atom(self) -> Formula:
         """Parse atomic formula or parenthesized expression"""
-        token = self._current_token()
+        if self.pos >= len(self.tokens):
+            raise ValueError("Unexpected end of formula")
+        
+        token = self.tokens[self.pos]
         
         if token == '(':
-            self._consume('(')
+            self.pos += 1
             result = self._parse_implication()
-            self._consume(')')
+            if self.pos >= len(self.tokens) or self.tokens[self.pos] != ')':
+                raise ValueError("Missing closing parenthesis")
+            self.pos += 1
             return result
-        
-        if token and re.match(r'\w+', token):
-            self._consume()
+        else:
+            # Atom
+            if not token.replace('_', '').replace('0', '').replace('1', '').replace('2', '').replace('3', '').replace('4', '').replace('5', '').replace('6', '').replace('7', '').replace('8', '').replace('9', '').isalpha():
+                raise ValueError(f"Invalid atom name: {token}")
+            self.pos += 1
             return Atom(token)
-        
-        raise ValueError(f"Expected atom or '(', got '{token}'")
 
-class TableauCLI:
-    """Command Line Interface for the tableau system"""
+
+class OutputFormatter:
+    """Handle different output formats"""
     
-    def __init__(self, logic_mode="classical"):
-        self.parser = FormulaParser()
-        self.history = []
-        self.logic_mode = logic_mode  # "classical" or "wk3"
+    @staticmethod
+    def format_result(result_data: Dict[str, Any], format_type: str) -> str:
+        """Format results according to specified format"""
+        if format_type == "json":
+            return json.dumps(result_data, indent=2, default=str)
+        elif format_type == "csv":
+            return OutputFormatter._format_csv(result_data)
+        else:
+            return OutputFormatter._format_default(result_data)
     
-    def run(self):
-        """Main CLI loop"""
-        print("=" * 60)
-        logic_name = "Classical Propositional Logic" if self.logic_mode == "classical" else "Weak Kleene Logic (WK3)"
-        print(f"SEMANTIC TABLEAU SYSTEM - {logic_name}")
-        print("=" * 60)
-        print("Enter propositional logic formulas to test satisfiability.")
+    @staticmethod
+    def _format_csv(result_data: Dict[str, Any]) -> str:
+        """Format as CSV"""
+        output = StringIO()
+        writer = csv.writer(output)
+        
+        # Header
+        header = ["formula", "logic", "satisfiable", "model_count"]
+        if "models" in result_data and result_data["models"]:
+            # Add atom columns based on first model
+            first_model = result_data["models"][0]
+            if isinstance(first_model, dict):
+                atoms = sorted(first_model.keys())
+                header.extend(atoms)
+        writer.writerow(header)
+        
+        # Data rows
+        formula = result_data.get("formula", "")
+        logic = result_data.get("logic", "classical")
+        satisfiable = result_data.get("satisfiable", False)
+        models = result_data.get("models", [])
+        
+        if models:
+            for model in models:
+                row = [formula, logic, satisfiable, len(models)]
+                if isinstance(model, dict):
+                    atoms = sorted(model.keys())
+                    for atom in atoms:
+                        row.append(model[atom])
+                writer.writerow(row)
+        else:
+            row = [formula, logic, satisfiable, 0]
+            writer.writerow(row)
+        
+        return output.getvalue().strip()
+    
+    @staticmethod
+    def _format_default(result_data: Dict[str, Any]) -> str:
+        """Format as default text output"""
+        lines = []
+        lines.append(f"Formula: {result_data.get('formula', 'Unknown')}")
+        lines.append(f"Logic: {result_data.get('logic', 'Classical')}")
+        lines.append(f"Result: {'SATISFIABLE' if result_data.get('satisfiable', False) else 'UNSATISFIABLE'}")
+        
+        models = result_data.get("models", [])
+        if models:
+            lines.append(f"Found {len(models)} model(s):")
+            for i, model in enumerate(models[:5]):  # Show first 5 models
+                lines.append(f"  Model {i+1}: {model}")
+            if len(models) > 5:
+                lines.append(f"  ... and {len(models) - 5} more")
+        
+        stats = result_data.get("statistics", {})
+        if stats:
+            lines.append("Statistics:")
+            for key, value in stats.items():
+                lines.append(f"  {key}: {value}")
+        
+        return "\n".join(lines)
+
+
+class EnhancedTableauCLI:
+    """Enhanced CLI with full argument parsing and features"""
+    
+    def __init__(self):
+        self.parser = EnhancedFormulaParser()
+        self.setup_argument_parser()
+    
+    def setup_argument_parser(self):
+        """Setup command line argument parser"""
+        self.arg_parser = argparse.ArgumentParser(
+            description="Tableau Logic System - Semantic tableau method for automated theorem proving",
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+            epilog="""
+Examples:
+  %(prog)s "p | ~p"                    # Test tautology
+  %(prog)s "p & ~p"                    # Test contradiction  
+  %(prog)s --models "p | q"            # Show all models
+  %(prog)s --wk3 "p & ~p"              # Use three-valued logic
+  %(prog)s --stats "complex_formula"   # Show statistics
+  %(prog)s --format=json "p"           # JSON output
+  %(prog)s --file=formulas.txt         # Process file
+  %(prog)s                             # Interactive mode
+            """
+        )
+        
+        # Positional argument for formula
+        self.arg_parser.add_argument(
+            'formula', 
+            nargs='?', 
+            help='Formula to test (if not provided, enters interactive mode)'
+        )
+        
+        # Logic system options
+        logic_group = self.arg_parser.add_mutually_exclusive_group()
+        logic_group.add_argument(
+            '--classical', 
+            action='store_true', 
+            help='Use classical logic (default)'
+        )
+        logic_group.add_argument(
+            '--wk3', 
+            action='store_true', 
+            help='Use three-valued Weak Kleene logic'
+        )
+        
+        # Output options
+        self.arg_parser.add_argument(
+            '--models', 
+            action='store_true', 
+            help='Show all satisfying models'
+        )
+        self.arg_parser.add_argument(
+            '--stats', 
+            action='store_true', 
+            help='Show performance statistics'
+        )
+        self.arg_parser.add_argument(
+            '--format', 
+            choices=['default', 'json', 'csv'], 
+            default='default',
+            help='Output format (default: default)'
+        )
+        
+        # File processing
+        self.arg_parser.add_argument(
+            '--file', 
+            help='Process formulas from file'
+        )
+        self.arg_parser.add_argument(
+            '--batch', 
+            action='store_true', 
+            help='Process multiple formulas from command line or stdin'
+        )
+        
+        # Advanced options
+        self.arg_parser.add_argument(
+            '--timeout', 
+            type=int, 
+            help='Timeout in seconds for complex formulas'
+        )
+        self.arg_parser.add_argument(
+            '--max-models', 
+            type=int, 
+            default=10,
+            help='Maximum number of models to show (default: 10)'
+        )
+        self.arg_parser.add_argument(
+            '--debug', 
+            action='store_true', 
+            help='Show debugging information'
+        )
+        self.arg_parser.add_argument(
+            '--validate-only', 
+            action='store_true', 
+            help='Only validate formula syntax, don\'t solve'
+        )
+    
+    def run(self, args=None):
+        """Main CLI entry point"""
+        if args is None:
+            args = sys.argv[1:]
+        
+        parsed_args = self.arg_parser.parse_args(args)
+        
+        # Determine logic system
+        if parsed_args.wk3:
+            logic_system = "wk3"
+        else:
+            logic_system = "classical"
+        
+        # Handle different modes
+        if parsed_args.file:
+            self._process_file(parsed_args.file, logic_system, parsed_args)
+        elif parsed_args.batch:
+            self._process_batch(logic_system, parsed_args)
+        elif parsed_args.formula:
+            self._process_single_formula(parsed_args.formula, logic_system, parsed_args)
+        else:
+            self._interactive_mode(logic_system)
+    
+    def _process_single_formula(self, formula_str: str, logic_system: str, args):
+        """Process a single formula"""
+        try:
+            start_time = time.time()
+            
+            # Parse formula
+            formula = self.parser.parse(formula_str)
+            
+            if args.validate_only:
+                result_data = {
+                    "formula": str(formula),
+                    "logic": logic_system,
+                    "valid_syntax": True
+                }
+                print(OutputFormatter.format_result(result_data, args.format))
+                return
+            
+            # Create tableau
+            if logic_system == "wk3":
+                tableau = WK3Tableau(formula)
+                is_satisfiable = tableau.build()
+                models = tableau.extract_all_models() if is_satisfiable and args.models else []
+            else:
+                tableau = Tableau(formula)
+                is_satisfiable = tableau.build()
+                models = tableau.extract_all_models() if is_satisfiable and args.models else []
+            
+            end_time = time.time()
+            
+            # Prepare result data
+            result_data = {
+                "formula": str(formula),
+                "logic": logic_system,
+                "satisfiable": is_satisfiable,
+                "models": models[:args.max_models] if models else []
+            }
+            
+            if args.stats:
+                result_data["statistics"] = {
+                    "construction_time": f"{end_time - start_time:.4f}s",
+                    "total_branches": len(tableau.branches),
+                    "open_branches": len([b for b in tableau.branches if not b.is_closed]),
+                    "closed_branches": len([b for b in tableau.branches if b.is_closed])
+                }
+            
+            # Output result
+            print(OutputFormatter.format_result(result_data, args.format))
+            
+            if args.debug and hasattr(tableau, 'print_tree'):
+                print("\nDEBUG: Tableau tree:")
+                tableau.print_tree()
+        
+        except Exception as e:
+            error_data = {
+                "formula": formula_str,
+                "logic": logic_system,
+                "error": str(e)
+            }
+            print(f"Error: {e}")
+            if args.debug:
+                import traceback
+                traceback.print_exc()
+    
+    def _process_file(self, filename: str, logic_system: str, args):
+        """Process formulas from a file"""
+        try:
+            with open(filename, 'r') as f:
+                lines = f.readlines()
+            
+            formulas = []
+            for line in lines:
+                line = line.strip()
+                if line and not line.startswith('#'):  # Skip empty lines and comments
+                    formulas.append(line)
+            
+            print(f"Processing {len(formulas)} formulas from {filename}")
+            print(f"Logic system: {logic_system}")
+            print("=" * 50)
+            
+            results = []
+            for i, formula_str in enumerate(formulas, 1):
+                print(f"\nFormula {i}: {formula_str}")
+                try:
+                    formula = self.parser.parse(formula_str)
+                    
+                    if logic_system == "wk3":
+                        tableau = WK3Tableau(formula)
+                        is_satisfiable = tableau.build()
+                        models = tableau.extract_all_models() if is_satisfiable and args.models else []
+                    else:
+                        tableau = Tableau(formula)
+                        is_satisfiable = tableau.build()
+                        models = tableau.extract_all_models() if is_satisfiable and args.models else []
+                    
+                    result = {
+                        "formula": str(formula),
+                        "logic": logic_system,
+                        "satisfiable": is_satisfiable,
+                        "models": models[:args.max_models] if models else []
+                    }
+                    results.append(result)
+                    
+                    print(f"  Result: {'SAT' if is_satisfiable else 'UNSAT'}")
+                    if models:
+                        print(f"  Models: {len(models)}")
+                
+                except Exception as e:
+                    print(f"  Error: {e}")
+                    results.append({
+                        "formula": formula_str,
+                        "logic": logic_system,
+                        "error": str(e)
+                    })
+            
+            # Summary output
+            if args.format != "default":
+                for result in results:
+                    print(OutputFormatter.format_result(result, args.format))
+        
+        except FileNotFoundError:
+            print(f"Error: File '{filename}' not found")
+        except Exception as e:
+            print(f"Error processing file: {e}")
+    
+    def _process_batch(self, logic_system: str, args):
+        """Process multiple formulas from stdin or command line"""
+        if sys.stdin.isatty():
+            print("Enter formulas (one per line, Ctrl+D to finish):")
+        
+        formulas = []
+        try:
+            for line in sys.stdin:
+                line = line.strip()
+                if line and not line.startswith('#'):
+                    formulas.append(line)
+        except KeyboardInterrupt:
+            pass
+        
+        if formulas:
+            print(f"\nProcessing {len(formulas)} formulas in batch mode")
+            for i, formula_str in enumerate(formulas, 1):
+                print(f"\n{i}. {formula_str}")
+                self._process_single_formula(formula_str, logic_system, args)
+        else:
+            print("No formulas provided.")
+    
+    def _interactive_mode(self, logic_system: str):
+        """Interactive mode matching CLI_GUIDE.md specifications"""
+        print("Welcome to the Tableau Logic System!")
+        print("Type 'help' for commands, 'quit' to exit.")
         print()
-        print("Syntax:")
-        print("  Atoms: p, q, r, x, y, etc.")
-        print("  Negation: ~p or ¬p")
-        print("  Conjunction: p & q or p ∧ q")
-        print("  Disjunction: p | q or p ∨ q")
-        print("  Implication: p -> q or p → q")
-        print("  Parentheses: (p & q) -> r")
-        print()
-        print("Commands:")
-        print("  help     - Show this help")
-        print("  history  - Show formula history")
-        print("  examples - Show example formulas")
-        print("  multi    - Enter multiple formulas mode")
-        print("  mode     - Switch between classical and WK3 logic")
-        print("  quit     - Exit")
-        print()
-        print("Multiple formulas:")
-        print("  Use commas to separate: p & q, ~p | r, q -> s")
-        print("=" * 60)
         
         while True:
             try:
-                formula_input = input("\nTableau> ").strip()
+                user_input = input("tableau> ").strip()
                 
-                if not formula_input:
+                if not user_input:
                     continue
                 
-                if formula_input.lower() in ['quit', 'exit', 'q']:
+                if user_input.lower() in ['quit', 'exit']:
                     print("Goodbye!")
                     break
                 
-                if formula_input.lower() == 'help':
-                    self._show_help()
-                    continue
+                elif user_input.lower() == 'help':
+                    self._show_interactive_help()
                 
-                if formula_input.lower() == 'history':
-                    self._show_history()
-                    continue
-                
-                if formula_input.lower() == 'examples':
+                elif user_input.lower() == 'examples':
                     self._show_examples()
-                    continue
                 
-                if formula_input.lower() == 'multi':
-                    self._multi_formula_mode()
-                    continue
+                elif user_input.lower() == 'stats':
+                    print("No recent operation to show statistics for.")
                 
-                if formula_input.lower() == 'mode':
-                    self._switch_mode()
-                    continue
+                elif user_input.startswith('test '):
+                    formula_str = user_input[5:].strip()
+                    self._interactive_test(formula_str, logic_system)
                 
-                # Check if input contains commas (multiple formulas)
-                if ',' in formula_input:
-                    self._process_multiple_formulas(formula_input)
+                elif user_input.startswith('models '):
+                    formula_str = user_input[7:].strip()
+                    self._interactive_models(formula_str, logic_system)
+                
+                elif user_input.startswith('wk3 '):
+                    formula_str = user_input[4:].strip()
+                    self._interactive_test(formula_str, "wk3")
+                
+                elif user_input.startswith('classical '):
+                    formula_str = user_input[10:].strip()
+                    self._interactive_test(formula_str, "classical")
+                
                 else:
-                    # Parse and test single formula
-                    self._process_formula(formula_input)
-                
+                    # Treat as formula to test
+                    self._interactive_test(user_input, logic_system)
+            
             except KeyboardInterrupt:
                 print("\nGoodbye!")
                 break
@@ -210,362 +523,100 @@ class TableauCLI:
             except Exception as e:
                 print(f"Error: {e}")
     
-    def _process_formula(self, formula_str: str):
-        """Process a formula string"""
+    def _show_interactive_help(self):
+        """Show interactive help"""
+        print("""Available commands:
+  test <formula>        - Test satisfiability
+  models <formula>      - Show all models
+  wk3 <formula>         - Use WK3 logic
+  classical <formula>   - Use classical logic
+  stats                 - Show performance statistics
+  examples              - Show example formulas
+  help                  - Show this help
+  quit                  - Exit""")
+    
+    def _show_examples(self):
+        """Show example formulas"""
+        print("""Example formulas to try:
+  
+  Basic Formulas:
+    p                    - Simple atom
+    p & q                - Conjunction
+    p | q                - Disjunction
+    ~p                   - Negation
+    p -> q               - Implication
+  
+  Tautologies (always true):
+    p | ~p               - Law of excluded middle
+    (p -> q) | (q -> p)  - One direction must hold
+  
+  Contradictions (always false):
+    p & ~p               - Contradiction
+    (p -> q) & p & ~q    - Modus ponens failure
+  
+  Interesting Cases:
+    (p | q) & (~p | r)   - Satisfiable with constraints
+    (p & q) -> p         - Valid implication""")
+    
+    def _interactive_test(self, formula_str: str, logic_system: str):
+        """Test formula in interactive mode"""
         try:
-            # Parse formula
             formula = self.parser.parse(formula_str)
             
-            # Add to history
-            self.history.append(formula_str)
-            
-            print(f"\nParsed formula: {formula}")
-            print("Testing satisfiability...")
-            print("-" * 40)
-            
-            # Create and run tableau based on logic mode
-            if self.logic_mode == "wk3":
+            if logic_system == "wk3":
                 tableau = WK3Tableau(formula)
                 is_satisfiable = tableau.build()
             else:
                 tableau = Tableau(formula)
                 is_satisfiable = tableau.build()
             
-            # Show results
-            print(f"\nRESULT: {'SATISFIABLE' if is_satisfiable else 'UNSATISFIABLE'}")
-            
-            # Ask if user wants to see the full tableau (only in interactive mode)
-            show_tree = input("\nShow full tableau tree? (y/n): ").strip().lower()
-            if show_tree in ['y', 'yes']:
-                print()
-                tableau.print_tree()
-            else:
-                # Just show summary
-                open_branches = [b for b in tableau.branches if not b.is_closed]
-                closed_branches = [b for b in tableau.branches if b.is_closed]
-                
-                print(f"Summary:")
-                print(f"  Total branches: {len(tableau.branches)}")
-                print(f"  Open branches: {len(open_branches)}")
-                print(f"  Closed branches: {len(closed_branches)}")
-                
-                if open_branches:
-                    print(f"  Open branch IDs: {[b.id for b in open_branches]}")
-                
-                # Show sample models for WK3
-                if self.logic_mode == "wk3" and open_branches:
-                    models = tableau.extract_all_models()
-                    if models:
-                        print(f"  Sample models: {len(models)} found")
-                        for i, model in enumerate(models[:3], 1):  # Show first 3
-                            print(f"    Model {i}: {model}")
-        
-        except Exception as e:
-            print(f"Error processing formula: {e}")
-    
-    def _process_multiple_formulas(self, formulas_str: str):
-        """Process multiple comma-separated formulas"""
-        try:
-            # Split by commas and parse each formula
-            formula_strings = [f.strip() for f in formulas_str.split(',') if f.strip()]
-            
-            if not formula_strings:
-                print("No formulas found.")
-                return
-            
-            formulas = []
-            print(f"\nParsing {len(formula_strings)} formulas:")
-            for i, formula_str in enumerate(formula_strings, 1):
-                try:
-                    formula = self.parser.parse(formula_str)
-                    formulas.append(formula)
-                    print(f"  {i}. {formula}")
-                except Exception as e:
-                    print(f"  {i}. ERROR parsing '{formula_str}': {e}")
-                    return
-            
-            # Add to history
-            self.history.append(formulas_str)
-            
-            print("\nTesting satisfiability of formula set...")
-            print("-" * 40)
-            
-            # Create and run tableau with multiple formulas based on logic mode
-            if self.logic_mode == "wk3":
-                tableau = WK3Tableau(formulas)
-                is_satisfiable = tableau.build()
-            else:
-                tableau = Tableau(formulas)
-                is_satisfiable = tableau.build()
-            
-            # Show results
-            print(f"\nRESULT: {'SATISFIABLE' if is_satisfiable else 'UNSATISFIABLE'}")
+            print(f"Formula: {formula}")
+            print(f"Logic: {logic_system.upper()}")
+            print(f"Result: {'SATISFIABLE' if is_satisfiable else 'UNSATISFIABLE'}")
             
             if is_satisfiable:
-                print("The formula set is consistent - there exists an interpretation")
-                print("that satisfies all formulas simultaneously.")
-            else:
-                print("The formula set is inconsistent - no interpretation can")
-                print("satisfy all formulas simultaneously.")
-            
-            # Always show tableau in command line mode, ask in interactive mode
-            if len(sys.argv) > 1:
-                print()
-                tableau.print_tree()
-            else:
-                # Ask if user wants to see the full tableau
-                show_tree = input("\nShow full tableau tree? (y/n): ").strip().lower()
-                if show_tree in ['y', 'yes']:
-                    print()
-                    tableau.print_tree()
-                else:
-                    # Just show summary
-                    open_branches = [b for b in tableau.branches if not b.is_closed]
-                    closed_branches = [b for b in tableau.branches if b.is_closed]
-                    
-                    print(f"Summary:")
-                    print(f"  Total branches: {len(tableau.branches)}")
-                    print(f"  Open branches: {len(open_branches)}")
-                    print(f"  Closed branches: {len(closed_branches)}")
-                    
-                    if open_branches:
-                        print(f"  Open branch IDs: {[b.id for b in open_branches]}")
+                models = tableau.extract_all_models()
+                print(f"Found {len(models)} model(s)")
         
         except Exception as e:
-            print(f"Error processing formulas: {e}")
+            print(f"Error: {e}")
     
-    def _multi_formula_mode(self):
-        """Enter dedicated multiple formula mode"""
-        print("\n" + "=" * 50)
-        print("MULTIPLE FORMULA MODE")
-        print("=" * 50)
-        print("Enter formulas one by one. Type 'done' when finished.")
-        print("Type 'cancel' to return to main mode.")
-        print()
-        
-        formulas = []
-        formula_strings = []
-        
-        while True:
-            try:
-                formula_input = input(f"Formula {len(formulas) + 1}> ").strip()
-                
-                if formula_input.lower() == 'done':
-                    break
-                elif formula_input.lower() == 'cancel':
-                    print("Cancelled multiple formula mode.")
-                    return
-                elif not formula_input:
-                    continue
-                
-                # Parse formula
-                formula = self.parser.parse(formula_input)
-                formulas.append(formula)
-                formula_strings.append(formula_input)
-                print(f"  Added: {formula}")
-                
-            except Exception as e:
-                print(f"Error: {e}")
-                print("Please try again or type 'cancel' to exit.")
-        
-        if not formulas:
-            print("No formulas entered.")
-            return
-        
-        print(f"\nCollected {len(formulas)} formulas:")
-        for i, formula in enumerate(formulas, 1):
-            print(f"  {i}. {formula}")
-        
-        # Add to history
-        combined_str = ", ".join(formula_strings)
-        self.history.append(f"[MULTI] {combined_str}")
-        
-        print("\nTesting satisfiability of formula set...")
-        print("-" * 40)
-        
-        # Create and run tableau
-        tableau = Tableau(formulas)
-        is_satisfiable = tableau.build()
-        
-        # Show results
-        print(f"\nRESULT: {'SATISFIABLE' if is_satisfiable else 'UNSATISFIABLE'}")
-        
-        if is_satisfiable:
-            print("The formula set is consistent.")
-        else:
-            print("The formula set is inconsistent.")
-        
-        # Always show tree for multi-mode since it was explicitly requested
-        tableau.print_tree()
-    
-    def _show_help(self):
-        """Show help information"""
-        print("\nHELP - Formula Syntax")
-        print("-" * 30)
-        print("Operators (in order of precedence):")
-        print("  ~A      Negation (highest)")
-        print("  A & B   Conjunction")
-        print("  A | B   Disjunction")
-        print("  A -> B  Implication (lowest)")
-        print()
-        print("Alternative symbols:")
-        print("  ¬ for ~  (negation)")
-        print("  ∧ for &  (conjunction)")
-        print("  ∨ for |  (disjunction)")
-        print("  → for -> (implication)")
-        print()
-        print("Examples:")
-        print("  p & q")
-        print("  ~p | q")
-        print("  (p -> q) & p")
-        print("  ~(p & ~q)")
-    
-    def _show_history(self):
-        """Show formula history"""
-        if not self.history:
-            print("\nNo formulas in history.")
-            return
-        
-        print("\nFormula History:")
-        print("-" * 20)
-        for i, formula in enumerate(self.history, 1):
-            print(f"{i:2d}. {formula}")
-    
-    def _show_examples(self):
-        """Show example formulas"""
-        print("\nExample Formulas:")
-        print("-" * 30)
-        print("Contradictions (should be UNSATISFIABLE):")
-        print("  p & ~p")
-        print("  (p -> q) & p & ~q")
-        print()
-        print("Tautologies (should be SATISFIABLE):")
-        print("  p | ~p")
-        print("  (p -> q) -> (~q -> ~p)")
-        print("  ((p -> q) & p) -> q")
-        print()
-        print("Contingent formulas (could be either):")
-        print("  p & q")
-        print("  p -> q")
-        print("  (p | q) & (~p | r)")
-        print()
-        print("Complex formulas:")
-        print("  ~(p & q) -> (~p | ~q)")
-        print("  (p -> (q -> r)) -> ((p -> q) -> (p -> r))")
-        print()
-        print("Multiple formula examples:")
-        print("  p & q, ~p | r")
-        print("  p -> q, q -> r, p, ~r")
-        print("  p | q, ~p, ~q")
-    
-    def _switch_mode(self):
-        """Switch between classical and WK3 logic modes"""
-        print()
-        current_mode = "Classical" if self.logic_mode == "classical" else "Weak Kleene (WK3)"
-        print(f"Current mode: {current_mode}")
-        print()
-        print("Available modes:")
-        print("  1. Classical Propositional Logic")
-        print("  2. Weak Kleene Logic (WK3)")
-        print()
-        
+    def _interactive_models(self, formula_str: str, logic_system: str):
+        """Show models for formula in interactive mode"""
         try:
-            choice = input("Select mode (1 or 2): ").strip()
-            if choice == "1":
-                self.logic_mode = "classical"
-                print("Switched to Classical Propositional Logic mode.")
-            elif choice == "2":
-                self.logic_mode = "wk3"
-                print("Switched to Weak Kleene Logic (WK3) mode.")
-                print("Note: In WK3, atoms can have values t (true), f (false), or e (undefined).")
+            formula = self.parser.parse(formula_str)
+            
+            if logic_system == "wk3":
+                tableau = WK3Tableau(formula)
+                is_satisfiable = tableau.build()
+                models = tableau.extract_all_models() if is_satisfiable else []
             else:
-                print("Invalid choice. Mode unchanged.")
-        except (KeyboardInterrupt, EOFError):
-            print("\nMode unchanged.")
-    
-    def _show_help(self):
-        """Show help information"""
-        print()
-        if self.logic_mode == "wk3":
-            print("Weak Kleene Logic (WK3) - Three-valued logic with t, f, e")
-            print()
-        print("Syntax:")
-        print("  Atoms: p, q, r, x, y, etc.")
-        print("  Negation: ~p or ¬p")
-        print("  Conjunction: p & q or p ∧ q")
-        print("  Disjunction: p | q or p ∨ q")
-        print("  Implication: p -> q or p → q")
-        print("  Parentheses: (p & q) -> r")
-        print()
-        print("Commands:")
-        print("  help     - Show this help")
-        print("  history  - Show formula history")
-        print("  examples - Show example formulas")
-        print("  multi    - Enter multiple formulas mode")
-        print("  mode     - Switch between classical and WK3 logic")
-        print("  quit     - Exit")
-        print()
-        if self.logic_mode == "wk3":
-            print("WK3 Note: Formulas may have three-valued models where atoms can be:")
-            print("  t (true), f (false), or e (undefined)")
+                tableau = Tableau(formula)
+                is_satisfiable = tableau.build()
+                models = tableau.extract_all_models() if is_satisfiable else []
+            
+            print(f"Formula: {formula}")
+            print(f"Logic: {logic_system.upper()}")
+            print(f"Result: {'SATISFIABLE' if is_satisfiable else 'UNSATISFIABLE'}")
+            
+            if models:
+                print(f"Found {len(models)} model(s):")
+                for i, model in enumerate(models[:10], 1):  # Show first 10
+                    print(f"  Model {i}: {model}")
+                if len(models) > 10:
+                    print(f"  ... and {len(models) - 10} more")
+            else:
+                print("No satisfying models exist.")
+        
+        except Exception as e:
+            print(f"Error: {e}")
+
 
 def main():
     """Main entry point"""
-    # Check for logic mode arguments
-    logic_mode = "classical"
-    args = sys.argv[1:]
-    
-    if args and args[0] in ['--wk3', '--weak-kleene']:
-        logic_mode = "wk3"
-        args = args[1:]  # Remove mode flag
-    elif args and args[0] in ['--classical', '--cpl']:
-        logic_mode = "classical"
-        args = args[1:]  # Remove mode flag
-    
-    if len(args) > 0:
-        # Command line mode - process formula(s)
-        formula_str = ' '.join(args)
-        cli = TableauCLI(logic_mode)
-        
-        # Show mode info
-        mode_name = "Weak Kleene Logic (WK3)" if logic_mode == "wk3" else "Classical Propositional Logic"
-        
-        # Check if multiple formulas (comma-separated)
-        if ',' in formula_str:
-            print(f"Tableau System - Multiple Formula Mode ({mode_name})")
-            print("=" * 60)
-            cli._process_multiple_formulas(formula_str)
-        else:
-            print(f"Tableau System - Single Formula Mode ({mode_name})")
-            print("=" * 55)
-            
-            # Process single formula without interactive prompts
-            try:
-                formula = cli.parser.parse(formula_str)
-                print(f"\nParsed formula: {formula}")
-                print("Testing satisfiability...")
-                print("-" * 40)
-                
-                # Create tableau based on logic mode
-                if logic_mode == "wk3":
-                    tableau = WK3Tableau(formula)
-                    is_satisfiable = tableau.build()
-                else:
-                    tableau = Tableau(formula)
-                    is_satisfiable = tableau.build()
-                
-                print(f"\nRESULT: {'SATISFIABLE' if is_satisfiable else 'UNSATISFIABLE'}")
-                
-                # Always show full tableau in command line mode
-                print()
-                tableau.print_tree()
-                
-            except Exception as e:
-                print(f"Error: {e}")
-    else:
-        # Interactive mode
-        cli = TableauCLI(logic_mode)
-        cli.run()
+    cli = EnhancedTableauCLI()
+    cli.run()
+
 
 if __name__ == "__main__":
     main()

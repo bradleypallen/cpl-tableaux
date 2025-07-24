@@ -1,0 +1,20 @@
+# Test formulas for CLI demonstration
+# Lines starting with # are comments
+
+# Basic formulas
+p
+p & q
+p | q
+p -> q
+
+# Tautologies
+p | ~p
+(p -> q) | (q -> p)
+
+# Contradictions
+p & ~p
+(p -> q) & p & ~q
+
+# Complex formulas
+(p | q) & (~p | r)
+((p -> q) -> p) -> p

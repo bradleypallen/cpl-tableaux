@@ -1,7 +1,7 @@
 # Building Tableau Systems: Developer's Guide
 
 **Version**: 3.0 (Consolidated Architecture)  
-**Last Updated**: January 2025  
+**Last Updated**: July 2025  
 **License**: MIT  
 
 ## Table of Contents
