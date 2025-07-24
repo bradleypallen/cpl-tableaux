@@ -7,13 +7,13 @@ tableau literature methods for both classical and three-valued logics.
 """
 
 import pytest
-from formula import Atom, Negation, Conjunction, Disjunction, Implication
-from signed_formula import (
+from tableau_core import (
+    Atom, Negation, Conjunction, Disjunction, Implication,
     SignedFormula, ClassicalSign, ThreeValuedSign, 
-    T, F, U, T3, F3, SignRegistry
+    T, F, U, T3, F3, SignRegistry,
+    classical_signed_tableau, three_valued_signed_tableau
 )
-from signed_tableau import SignedTableau, classical_signed_tableau, three_valued_signed_tableau
-from signed_tableau_rules import SignedRuleRegistry
+from tableau_rules import SignedRuleRegistry
 
 
 class TestSignedFormulas:
@@ -139,8 +139,10 @@ class TestClassicalSignedTableaux:
         
         # Should have T:p in the model
         model = models[0]
-        assert p in model.assignments
-        assert str(model.assignments[p]) == "T"
+        assert "p" in model
+        # Model values are TruthValue objects
+        from tableau_core import TruthValue
+        assert model["p"] == TruthValue.TRUE
     
     def test_contradiction(self):
         """Test T:p, F:p - should be unsatisfiable"""

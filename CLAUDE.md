@@ -175,3 +175,7 @@ When extending this research platform:
 
 ### Fundamental Principles
 - **Do not, under any circumstances, add a workaround to a demo when there is an underlying bug; fix the bug so that the demo works correctly.**
+- **Don't eliminate items for the imports because they are not working. Fix the underlying problem.**
+
+### Documentation and Communication Guidelines
+- In comments and documentation, do not use language that is promotional or self-congratulatory. Keep to fact-based statements that are appropriate for academic exposition.

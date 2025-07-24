@@ -704,7 +704,7 @@ class Tableau:
         return ""
 
 # Test function
-def test_tableau():
+def demo_tableau():
     """Test the tableau with transitivity formulas"""
     from formula import Atom, Implication, Conjunction, Negation
     

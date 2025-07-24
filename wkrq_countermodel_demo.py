@@ -187,7 +187,7 @@ class TableauTreeState:
                     print(f"{prefix}  {branch_prefix}  {sf_connector} {sf}")
 
 
-def test_inference_validity(premises, conclusion, description):
+def check_inference_validity(premises, conclusion, description):
     """
     Test the validity of an inference using signed tableaux.
     
@@ -278,21 +278,21 @@ def demo_classical_vs_epistemic_validity():
     disjunction = Disjunction(p, q)
     
     # Test classical version
-    test_inference_validity(
+    check_inference_validity(
         premises=[TF(p)],
         conclusion=TF(disjunction), 
         description="Classical: T:p ⊢ T:(p ∨ q)"
     )
     
     # Test epistemic version 1: M:p ⊢ T:(p ∨ q)
-    test_inference_validity(
+    check_inference_validity(
         premises=[M(p)],
         conclusion=TF(disjunction),
         description="Epistemic: M:p ⊢ T:(p ∨ q)"
     )
     
     # Test epistemic version 2: T:p ⊢ M:(p ∨ q) 
-    test_inference_validity(
+    check_inference_validity(
         premises=[TF(p)],
         conclusion=M(disjunction),
         description="Epistemic: T:p ⊢ M:(p ∨ q)"
@@ -306,14 +306,14 @@ def demo_classical_vs_epistemic_validity():
     implication = Implication(p, q)
     
     # Test classical modus ponens
-    test_inference_validity(
+    check_inference_validity(
         premises=[TF(p), TF(implication)],
         conclusion=TF(q),
         description="Classical Modus Ponens: T:p, T:(p → q) ⊢ T:q"
     )
     
     # Test epistemic modus ponens failure
-    test_inference_validity(
+    check_inference_validity(
         premises=[M(p), M(implication)],
         conclusion=TF(q),
         description="Epistemic: M:p, M:(p → q) ⊢ T:q"
@@ -335,7 +335,7 @@ def demo_predicate_logic_countermodels():
     p_tweety = Predicate("P", [tweety])  # Generic property P
     q_tweety = Predicate("Q", [tweety])  # Generic property Q
     
-    test_inference_validity(
+    check_inference_validity(
         premises=[TF(p_tweety)],
         conclusion=TF(q_tweety),
         description="Predicate Logic: T:P(tweety) ⊢ T:Q(tweety)"
@@ -353,7 +353,7 @@ def demo_predicate_logic_countermodels():
     print("\n" + "▶" * 3 + " EXAMPLE 4: Epistemic Reasoning about Individuals")
     print("Question: Does epistemic knowledge about humanity entail epistemic knowledge about mortality?")
     
-    test_inference_validity(
+    check_inference_validity(
         premises=[M(human)],
         conclusion=M(mortal),
         description="Epistemic: M:Human(tweety) ⊢ M:Mortal(tweety)"
@@ -377,7 +377,7 @@ def demo_epistemic_sign_relationships():
     # Test: M:p ⊢ N:¬p (should this be valid?)
     neg_p = Negation(p)
     
-    test_inference_validity(
+    check_inference_validity(
         premises=[M(p)],
         conclusion=N(neg_p),
         description="wKrQ Signs: M:p ⊢ N:¬p"

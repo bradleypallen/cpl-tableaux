@@ -10,7 +10,7 @@ from typing import Dict, Set, Optional, Union
 from dataclasses import dataclass
 
 from truth_value import TruthValue, t, f, e, WeakKleeneOperators
-from formula import Formula, Atom, Negation, Conjunction, Disjunction, Implication
+from tableau_core import Formula, Atom, Negation, Conjunction, Disjunction, Implication
 
 
 @dataclass

@@ -13,13 +13,18 @@ the standard examples used in the academic literature.
 """
 
 import pytest
-from formula import Atom, Negation, Conjunction, Disjunction, Implication, RestrictedExistentialFormula, RestrictedUniversalFormula, Predicate
-from term import Variable, Constant
-from signed_formula import T, F, T3, F3, U, TF, FF, M, N
-from signed_tableau import SignedTableau, classical_signed_tableau, three_valued_signed_tableau, ferguson_signed_tableau
+from tableau_core import (
+    Atom, Negation, Conjunction, Disjunction, Implication, Predicate,
+    Variable, Constant,
+    T, F, T3, F3, U, TF, FF, M, N,
+    t, f, e,
+    wk3_satisfiable, wk3_models, 
+    classical_signed_tableau, three_valued_signed_tableau, wkrq_signed_tableau, ferguson_signed_tableau
+)
+from tableau_engine import TableauEngine, check_satisfiability, get_models_for_formulas
 from tableau import Tableau
-from wk3_signed_adapter import wk3_satisfiable, wk3_models
-from truth_value import t, f, e
+from wk3_tableau import WK3Tableau
+from wk3_model import WK3Model
 
 
 class TestPriestExamples:
@@ -248,16 +253,11 @@ class TestFittingExamples:
         # Verify at least one model satisfies the formula
         found_satisfying = False
         for model in models:
-            # Convert signed model to truth assignment for verification
-            assignment = {}
-            for formula_key, sign in model.assignments.items():
-                if hasattr(formula_key, 'name'):  # It's an atom
-                    assignment[formula_key.name] = (str(sign) == "T")
-            
+            # Model is already a dictionary mapping atom names to truth values
             # Manual verification of formula satisfaction
-            p_val = assignment.get(p.name, False)
-            q_val = assignment.get(q.name, False)  
-            r_val = assignment.get(r.name, False)
+            p_val = model.get(p.name, False)
+            q_val = model.get(q.name, False)  
+            r_val = model.get(r.name, False)
             
             left_clause = p_val or q_val  # p ∨ q
             right_clause = (not p_val) or r_val  # ¬p ∨ r
@@ -377,19 +377,14 @@ class TestSmullyanExamples:
         
         for model in models:
             # Check if this model makes p and q both true or both false
-            p_assignments = [sign for formula, sign in model.assignments.items() 
-                           if hasattr(formula, 'name') and formula.name == p.name]
-            q_assignments = [sign for formula, sign in model.assignments.items()
-                           if hasattr(formula, 'name') and formula.name == q.name]
+            # Model is a dictionary mapping atom names to truth values
+            p_val = model.get(p.name, False)
+            q_val = model.get(q.name, False)
             
-            if p_assignments and q_assignments:
-                p_true = str(p_assignments[0]) == "T"
-                q_true = str(q_assignments[0]) == "T"
-                
-                if p_true and q_true:
-                    found_pos_model = True
-                elif not p_true and not q_true:
-                    found_neg_model = True
+            if p_val and q_val:
+                found_pos_model = True
+            elif not p_val and not q_val:
+                found_neg_model = True
         
         # Should find at least one type of model
         assert found_pos_model or found_neg_model, "Should find satisfying models"

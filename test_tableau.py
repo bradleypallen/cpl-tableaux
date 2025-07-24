@@ -10,8 +10,7 @@ Tests 30+ logical formulas across different categories:
 """
 
 import pytest
-from formula import Atom, Negation, Conjunction, Disjunction, Implication
-from tableau import Tableau
+from tableau_core import Atom, Negation, Conjunction, Disjunction, Implication, T, classical_signed_tableau
 
 
 class TestTableau:
@@ -26,12 +25,24 @@ class TestTableau:
     
     def is_satisfiable(self, formula):
         """Helper to test if a formula is satisfiable"""
-        tableau = Tableau(formula)
+        tableau = classical_signed_tableau(T(formula))
         return tableau.build()
     
     def is_unsatisfiable(self, formula):
         """Helper to test if a formula is unsatisfiable"""
         return not self.is_satisfiable(formula)
+    
+    def is_formula_set_satisfiable(self, formulas):
+        """Helper to test if a set of formulas is satisfiable"""
+        if not formulas:
+            return True  # Empty set is satisfiable
+        if len(formulas) == 1:
+            return self.is_satisfiable(formulas[0])
+        # Combine multiple formulas with conjunction
+        combined = formulas[0]
+        for formula in formulas[1:]:
+            combined = Conjunction(combined, formula)
+        return self.is_satisfiable(combined)
     
     def is_tautology(self, formula):
         """Helper to test if a formula is a tautology (¬formula is unsatisfiable)"""
@@ -288,23 +299,20 @@ class TestTableau:
     def test_multiple_01_simple_consistent_set(self):
         """[p, q] should be satisfiable"""
         formulas = [self.p, self.q]
-        tableau = Tableau(formulas)
-        result = tableau.build()
+        result = self.is_formula_set_satisfiable(formulas)
         assert result, "Consistent formula set should be satisfiable"
     
     def test_multiple_02_simple_inconsistent_set(self):
         """[p, ¬p] should be unsatisfiable"""
         formulas = [self.p, Negation(self.p)]
-        tableau = Tableau(formulas)
-        result = tableau.build()
+        result = self.is_formula_set_satisfiable(formulas)
         assert not result, "Inconsistent formula set should be unsatisfiable"
     
     def test_multiple_03_modus_ponens_set(self):
         """[p → q, p, ¬q] should be unsatisfiable"""
         impl = Implication(self.p, self.q)
         formulas = [impl, self.p, Negation(self.q)]
-        tableau = Tableau(formulas)
-        result = tableau.build()
+        result = self.is_formula_set_satisfiable(formulas)
         assert not result, "Modus ponens contradiction set should be unsatisfiable"
     
     def test_multiple_04_satisfiable_complex_set(self):
@@ -313,8 +321,7 @@ class TestTableau:
         impl = Implication(self.r, self.s)
         neg_p = Negation(self.p)
         formulas = [disj, impl, neg_p]
-        tableau = Tableau(formulas)
-        result = tableau.build()
+        result = self.is_formula_set_satisfiable(formulas)
         assert result, "Complex satisfiable set should be satisfiable"
     
     def test_multiple_05_transitivity_chain_inconsistent(self):
@@ -326,16 +333,14 @@ class TestTableau:
             Implication(a, b),
             Implication(b, c)
         ]
-        tableau = Tableau(formulas)
-        result = tableau.build()
+        result = self.is_formula_set_satisfiable(formulas)
         assert not result, "Transitivity chain contradiction should be unsatisfiable"
     
     def test_multiple_06_disjunctive_syllogism_valid_set(self):
         """[p ∨ q, ¬p, ¬q] should be unsatisfiable"""
         disj = Disjunction(self.p, self.q)
         formulas = [disj, Negation(self.p), Negation(self.q)]
-        tableau = Tableau(formulas)
-        result = tableau.build()
+        result = self.is_formula_set_satisfiable(formulas)
         assert not result, "Disjunctive syllogism contradiction should be unsatisfiable"
     
     def test_multiple_07_large_consistent_set(self):
@@ -344,8 +349,7 @@ class TestTableau:
         impl2 = Implication(self.q, self.r)
         impl3 = Implication(self.r, self.s)
         formulas = [self.p, self.q, self.r, self.s, impl1, impl2, impl3]
-        tableau = Tableau(formulas)
-        result = tableau.build()
+        result = self.is_formula_set_satisfiable(formulas)
         assert result, "Large consistent set should be satisfiable"
     
     def test_multiple_08_mixed_operators_set(self):
@@ -353,25 +357,21 @@ class TestTableau:
         conj = Conjunction(self.p, self.q)
         impl = Implication(conj, self.r)
         formulas = [conj, impl, Negation(self.r)]
-        tableau = Tableau(formulas)
-        result = tableau.build()
+        result = self.is_formula_set_satisfiable(formulas)
         assert not result, "Mixed operators contradiction should be unsatisfiable"
     
     def test_multiple_09_empty_list(self):
         """Empty formula list should be satisfiable (trivially)"""
-        tableau = Tableau([])
-        result = tableau.build()
+        result = self.is_formula_set_satisfiable([])
         assert result, "Empty formula set should be satisfiable"
     
     def test_multiple_10_single_formula_list(self):
         """Single formula in list should work same as direct formula"""
         # Test with list containing one formula
-        tableau1 = Tableau([self.p])
-        result1 = tableau1.build()
+        result1 = self.is_formula_set_satisfiable([self.p])
         
         # Test with formula directly
-        tableau2 = Tableau(self.p)
-        result2 = tableau2.build()
+        result2 = self.is_satisfiable(self.p)
         
         assert result1 == result2, "Single formula in list should behave same as direct formula"
 
@@ -397,7 +397,7 @@ def test_parametrized_formulas(formula_desc, formula_func, expected):
     """Parametrized test for multiple formulas"""
     p, q, r, s = Atom("p"), Atom("q"), Atom("r"), Atom("s")
     formula = formula_func(p, q, r, s)
-    tableau = Tableau(formula)
+    tableau = classical_signed_tableau(T(formula))
     result = tableau.build()
     assert result == expected, f"Formula '{formula_desc}' should be {'SATISFIABLE' if expected else 'UNSATISFIABLE'}"
 

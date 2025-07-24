@@ -203,7 +203,7 @@ class TImplicationRule(SignedTableauRule):
         impl = signed_formula.formula
         # Create opposite sign for antecedent
         if isinstance(signed_formula.sign, ClassicalSign):
-            false_sign = ClassicalSign(False)
+            false_sign = ClassicalSign("F")
         else:  # ThreeValuedSign
             false_sign = ThreeValuedSign(f)
         
@@ -227,7 +227,7 @@ class FImplicationRule(SignedTableauRule):
         impl = signed_formula.formula
         # Create opposite sign for consequent
         if isinstance(signed_formula.sign, ClassicalSign):
-            true_sign = ClassicalSign(True)
+            true_sign = ClassicalSign("T")
         else:  # ThreeValuedSign
             true_sign = ThreeValuedSign(t)
         
@@ -252,12 +252,12 @@ class NegationRule(SignedTableauRule):
         # Flip the sign
         if str(signed_formula.sign) == "T":
             if isinstance(signed_formula.sign, ClassicalSign):
-                new_sign = ClassicalSign(False)
+                new_sign = ClassicalSign("F")
             else:  # ThreeValuedSign
                 new_sign = ThreeValuedSign(f)
         else:  # "F"
             if isinstance(signed_formula.sign, ClassicalSign):
-                new_sign = ClassicalSign(True)
+                new_sign = ClassicalSign("T")
             else:  # ThreeValuedSign
                 new_sign = ThreeValuedSign(t)
         

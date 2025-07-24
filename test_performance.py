@@ -9,8 +9,7 @@ Tests complex formulas that would benefit from:
 """
 
 import time
-from formula import Atom, Negation, Conjunction, Disjunction, Implication
-from tableau import Tableau
+from tableau_core import Atom, Negation, Conjunction, Disjunction, Implication, T, classical_signed_tableau
 
 
 def create_complex_formula(depth: int):
@@ -54,7 +53,7 @@ def test_prioritization_benefit():
     formula = Conjunction(Conjunction(conj, disj), neg_p)
     
     start_time = time.time()
-    tableau = Tableau(formula)
+    tableau = classical_signed_tableau(T(formula))
     result = tableau.build()
     end_time = time.time()
     
@@ -81,8 +80,13 @@ def test_subsumption_benefit():
         Negation(r)                 # ¬r
     ]
     
+    # Combine multiple formulas into conjunction
+    combined = formulas[0]
+    for formula in formulas[1:]:
+        combined = Conjunction(combined, formula)
+    
     start_time = time.time()
-    tableau = Tableau(formulas)
+    tableau = classical_signed_tableau(T(combined))
     result = tableau.build()
     end_time = time.time()
     
@@ -101,7 +105,7 @@ def test_complex_formula_performance():
     formula = create_complex_formula(depth)
     
     start_time = time.time()
-    tableau = Tableau(formula)
+    tableau = classical_signed_tableau(T(formula))
     result = tableau.build()
     end_time = time.time()
     
@@ -109,7 +113,6 @@ def test_complex_formula_performance():
     print(f"Result: {'SATISFIABLE' if result else 'UNSATISFIABLE'}")
     print(f"Time: {end_time - start_time:.4f} seconds")
     print(f"Total branches: {len(tableau.branches)}")
-    print(f"All nodes created: {len(tableau.all_nodes)}")
     print()
 
 
@@ -127,7 +130,7 @@ def test_termination_correctness():
         formula = Implication(atom, formula)
     
     start_time = time.time()
-    tableau = Tableau(formula)
+    tableau = classical_signed_tableau(T(formula))
     result = tableau.build()
     end_time = time.time()
     

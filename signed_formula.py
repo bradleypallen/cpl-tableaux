@@ -294,7 +294,7 @@ class SignRegistry:
 # Register built-in sign systems
 def _create_classical_signs() -> List[Sign]:
     """Create classical T/F signs"""
-    return [ClassicalSign(True), ClassicalSign(False)]
+    return [ClassicalSign("T"), ClassicalSign("F")]
 
 def _create_three_valued_signs() -> List[Sign]:
     """Create three-valued T/F/U signs"""  
@@ -312,11 +312,11 @@ SignRegistry.register_sign_system("four_valued", FourValuedSign, _create_four_va
 # Convenience functions for creating signed formulas
 def T(formula: Formula) -> SignedFormula:
     """Create T:formula (true signed formula)"""
-    return SignedFormula(ClassicalSign(True), formula)
+    return SignedFormula(ClassicalSign("T"), formula)
 
 def F(formula: Formula) -> SignedFormula:
     """Create F:formula (false signed formula)"""
-    return SignedFormula(ClassicalSign(False), formula)
+    return SignedFormula(ClassicalSign("F"), formula)
 
 def U(formula: Formula) -> SignedFormula:
     """Create U:formula (undefined signed formula)"""

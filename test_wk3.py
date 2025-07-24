@@ -10,7 +10,7 @@ import pytest
 from truth_value import TruthValue, t, f, e, WeakKleeneOperators
 from wk3_model import WK3Model
 from wk3_tableau import WK3Assignment, WK3Branch, WK3Tableau
-from formula import Atom, Negation, Conjunction, Disjunction, Implication
+from tableau_core import Atom, Negation, Conjunction, Disjunction, Implication, T3, F3, U, three_valued_signed_tableau, wk3_satisfiable, wk3_models
 
 
 class TestTruthValue:
@@ -271,26 +271,24 @@ class TestWK3Tableau:
     def test_simple_atom(self):
         """Test tableau for a simple atom"""
         p = Atom('p')
-        tableau = WK3Tableau(p)
         
         # An atom should be satisfiable in WK3
-        result = tableau.build()
+        result = wk3_satisfiable(p)
         assert result == True
         
-        models = tableau.extract_all_models()
+        models = wk3_models(p)
         assert len(models) > 0
     
     def test_contradiction(self):
         """Test tableau for a contradiction"""
         p = Atom('p')
         contradiction = Conjunction(p, Negation(p))
-        tableau = WK3Tableau(contradiction)
         
         # p ∧ ¬p should be unsatisfiable even in WK3
-        result = tableau.build()
+        result = wk3_satisfiable(contradiction)
         # Note: In weak Kleene, this might behave differently
         # For now, we expect it to be unsatisfiable
-        models = tableau.extract_all_models()
+        models = wk3_models(contradiction)
         
         # Print results for debugging
         print(f"Contradiction result: {result}")

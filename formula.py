@@ -788,7 +788,7 @@ class Tableau:
         return str(f1) == str(f2)
 
 # Example usage and testing
-def test_tableau():
+def demo_tableau():
     """Test the tableau with some example formulas"""
     
     # Example 1: (p ∧ ¬p) - should be unsatisfiable

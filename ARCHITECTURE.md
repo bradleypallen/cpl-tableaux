@@ -1,347 +1,182 @@
-# Architecture Documentation: Semantic Tableau System
+# Architecture Documentation: Consolidated Tableau System
 
-**Version**: 2.0 (Componentized Architecture)  
-**Last Updated**: 2025  
+**Version**: 3.0 (Consolidated Architecture)  
+**Last Updated**: January 2025  
 **License**: MIT  
 
 ## Table of Contents
 
-1. [Executive Summary](#executive-summary)
-2. [System Overview](#system-overview)  
+1. [Overview](#overview)
+2. [System Structure](#system-structure)  
 3. [Core Architecture](#core-architecture)
-4. [Component Design](#component-design)
+4. [Module Design](#module-design)
 5. [Data Structures](#data-structures)
-6. [Control Flow](#control-flow)
-7. [Performance Architecture](#performance-architecture)
-8. [Extensibility Framework](#extensibility-framework)
+6. [Algorithm Implementation](#algorithm-implementation)
+7. [Performance Characteristics](#performance-characteristics)
+8. [Extension Framework](#extension-framework)
 9. [Interface Specifications](#interface-specifications)
-10. [Design Patterns](#design-patterns)
-11. [Migration Architecture](#migration-architecture)
-12. [Quality Assessment](#quality-assessment)
+10. [Implementation Assessment](#implementation-assessment)
 
-## Executive Summary
+## Overview
 
-This document provides a comprehensive architectural analysis of the Semantic Tableau System, a Python-based automated theorem proving framework supporting multiple logic systems through a componentized, plugin-based architecture.
+This document describes the architecture of a consolidated tableau system for automated theorem proving. The system implements semantic tableau methods for multiple logic systems including classical propositional logic and three-valued Weak Kleene logic (WK3).
 
-**Key Architectural Achievements:**
-- **Modular Design**: Transformed monolithic tableau implementations into pluggable components
-- **Performance Preservation**: Maintained O(1) closure detection and optimization strategies
-- **Type Safety**: Protocol-based interfaces with static type checking support
-- **Extensibility**: Clean extension points for new logic systems and reasoning capabilities
-- **Backward Compatibility**: Legacy interfaces preserved for existing code
+The implementation uses a unified signed tableau approach where all logic systems are handled through a common framework of three core modules: data structures, tableau construction engine, and rule system.
 
-**Target Audience**: Software architects, automated reasoning researchers, system maintainers, and code reviewers requiring deep technical understanding.
+## System Structure
 
-## System Overview
+### 2.1 Design Approach
 
-### 2.1 Architecture Evolution
-
-The system has evolved through two major architectural phases:
-
-**Phase 1 - Monolithic Implementation**:
-- Direct tableau implementations (`tableau.py`, `wk3_tableau.py`)
-- Hardcoded rule logic within tableau classes
-- Logic-specific optimizations embedded in implementations
-- Simple but inflexible architecture
-
-**Phase 2 - Componentized Architecture**:
-- Plugin-based rule system with abstract interfaces
-- Modular component architecture with defined protocols
-- Centralized logic system registry and management
-- Extensible framework supporting arbitrary logic systems
+The consolidated architecture uses three core modules instead of the previous componentized system that contained multiple separate files for each logic system. This consolidation reduces complexity while maintaining the ability to support multiple logical systems.
 
 ### 2.2 System Boundaries
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                      SEMANTIC TABLEAU SYSTEM                    │
+│                    CONSOLIDATED TABLEAU SYSTEM                  │
 ├─────────────────────────────────────────────────────────────────┤
-│  Public Interfaces                                              │
-│  • Legacy Interface (tableau.py, wk3_tableau.py)               │
-│  • Componentized Interface (componentized_tableau.py)          │
-│  • Mode-Aware Interface (mode_aware_tableau.py)               │
+│  Public Interface Layer                                         │
+│  • Convenience Functions (classical_signed_tableau, wk3_*, etc) │
+│  • Legacy Support (tableau.py, wk3_tableau.py compatibility)   │
+│  • CLI and Demo Tools                                          │
 ├─────────────────────────────────────────────────────────────────┤
 │  Core Logic Layer                                               │
-│  • Logic System Registry                                        │
-│  • Rule Engine and Component Management                         │
-│  • Formula Representation and Manipulation                      │
+│  • tableau_core.py    - Data structures and formulas           │
+│  • tableau_engine.py  - Tableau construction algorithm         │
+│  • tableau_rules.py   - Rule system and logic implementations  │
 ├─────────────────────────────────────────────────────────────────┤
-│  Logic Implementation Layer                                      │
-│  • Classical Propositional Logic Components                     │
-│  • Weak Kleene Logic (WK3) Components                          │
-│  • First-Order Logic Extensions                                 │
+│  Legacy Implementation Layer (Maintained)                       │
+│  • tableau.py         - Original classical logic implementation│
+│  • wk3_tableau.py     - Original WK3 implementation            │
+│  • wk3_model.py       - WK3 model evaluation                   │
 ├─────────────────────────────────────────────────────────────────┤
 │  Foundation Layer                                               │
-│  • Formula AST (Abstract Syntax Tree)                          │
-│  • Truth Value Systems                                          │
-│  • Term and Predicate Structures                               │
+│  • Formula AST (Atom, Negation, Conjunction, etc.)            │
+│  • Truth Value Systems (Boolean, TruthValue)                   │
+│  • Signed Formula System (T:φ, F:φ, U:φ notation)             │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### 2.3 Key Design Principles
+### 2.3 Design Principles
 
-1. **Separation of Concerns**: Logic rules, branch management, and optimization strategies are independent components
-2. **Open-Closed Principle**: Open for extension (new logics) but closed for modification (existing logic preserved)
-3. **Dependency Inversion**: High-level tableau algorithm depends on abstractions, not concrete implementations
-4. **Interface Segregation**: Components depend only on interfaces they actually use
-5. **Single Responsibility**: Each component has one clear purpose and reason to change
+The implementation follows these architectural principles:
+
+1. **Consolidation**: Single unified system instead of multiple separate implementations
+2. **Direct Implementation**: Algorithms implemented directly rather than through abstraction layers
+3. **Signed Tableau Foundation**: All logic systems use signed tableau notation (T:φ, F:φ, etc.)
+4. **Performance Optimization**: Critical operations implemented for O(1) complexity where possible
+5. **Logical Correctness**: Each logical operator implemented according to standard semantics
 
 ## Core Architecture
 
-### 3.1 Architectural Patterns
+### 3.1 Three-Module Design
 
-The system implements a **Multi-Strategy Architecture** combining several design patterns:
-
-```python
-# Strategy Pattern: Pluggable Rules
-class TableauRule(ABC):
-    @abstractmethod
-    def applies_to(self, formula: Formula) -> bool
-    
-    @abstractmethod  
-    def apply(self, formula: Formula, context: RuleContext) -> RuleApplication
-
-# Factory Pattern: Component Creation
-class BranchFactory(ABC):
-    @abstractmethod
-    def create_branch(self, branch_id: int, formulas: List[Formula] = None) -> BranchInterface
-
-# Registry Pattern: Logic System Management
-_logic_registry: Dict[str, Callable[[], LogicSystem]] = {}
-
-def register_logic_system(name: str, factory: Callable[[], LogicSystem]):
-    _logic_registry[name] = factory
-```
-
-### 3.2 Component Hierarchy
-
-```
-LogicSystem (Composite Root)
-├── LogicSystemConfig (Configuration)
-├── TableauRule[] (Strategy Collection)
-├── BranchFactory (Abstract Factory)
-├── ClosureDetector (Strategy)
-├── ModelExtractor (Strategy)
-├── LiteralRecognizer (Strategy)
-└── SubsumptionDetector (Strategy)
-
-ComponentizedTableau (Context)
-├── LogicSystem (Composition)
-├── BranchInterface[] (Data Structures)
-├── TableauNode[] (Optional Tree Tracking)
-└── Statistics (Metrics Collection)
-```
-
-### 3.3 Interface Dependencies
+The system consists of exactly three core modules:
 
 ```python
-# Protocol-based loose coupling
-class BranchInterface(Protocol):
-    @property def id(self) -> int: ...
-    @property def is_closed(self) -> bool: ...
-    @property def formulas(self) -> List[Formula]: ...
-    def add_formula(self, formula: Formula) -> None: ...
-    def close_branch(self, reason: str = "") -> None: ...
+# Core Module 1: Data Structures
+tableau_core.py
+├── Formula classes (Atom, Negation, Conjunction, Disjunction, Implication)
+├── Truth Value systems (TruthValue.TRUE/FALSE/UNDEFINED)
+├── Signed Formula system (SignedFormula, ClassicalSign, ThreeValuedSign)
+├── Term system (Constant, Variable, FunctionApplication)
+├── Convenience constructors (T, F, U, t, f, e)
+└── Public API functions (classical_signed_tableau, wk3_satisfiable, etc.)
 
-# Component contracts
-class ClosureDetector(ABC):
-    @abstractmethod
-    def detect_closure(self, branch: BranchInterface) -> Optional[str]: ...
+# Core Module 2: Tableau Construction Engine
+tableau_engine.py
+├── TableauEngine - Main tableau construction algorithm
+├── TableauBranch - Branch management with closure detection
+├── TableauStatistics - Performance monitoring and metrics
+├── Model extraction and enumeration
+└── Convenience functions (check_satisfiability, get_models_for_formulas)
 
-class ModelExtractor(ABC):  
-    @abstractmethod
-    def extract_model(self, branch: BranchInterface) -> Any: ...
+# Core Module 3: Rule System and Logic Implementations
+tableau_rules.py
+├── SignedRuleRegistry - Rule lookup and management
+├── Abstract rule classes (SignedTableauRule, AlphaRule, BetaRule)
+├── Classical logic rules (T-conjunction, F-disjunction, etc.)
+├── WK3 logic rules (three-valued rule implementations)
+└── Rule application and expansion logic
 ```
 
-## Component Design
+### 3.2 Signed Tableau Approach
 
-### 4.1 Rule System Architecture
+All logic systems use signed tableau notation:
 
-The rule system implements a **Command Pattern** variant with the following components:
-
-**Rule Interface Hierarchy**:
 ```python
-TableauRule (Abstract Base)
-├── priority: int                    # α-rules: 1-2, β-rules: 3-4
-├── rule_type: RuleType             # Enumerated rule classification
-├── is_alpha_rule: bool             # Non-branching rules
-├── is_beta_rule: bool              # Branching rules
-└── description: str                # Human-readable rule description
+# Classical Logic: T:φ (true), F:φ (false)
+T(Atom("p"))           # T:p - "p is true"
+F(Implication(p, q))   # F:(p→q) - "p→q is false"
 
-# Concrete implementations:
-ClassicalRule
-├── DoubleNegationRule              # ¬¬A → A
-├── ConjunctionRule                 # A∧B → A,B (α-rule)
-├── DisjunctionRule                 # A∨B → A|B (β-rule)
-├── ImplicationRule                 # A→B → ¬A|B (β-rule)
-├── NegatedConjunctionRule          # ¬(A∧B) → ¬A|¬B (β-rule)
-├── NegatedDisjunctionRule          # ¬(A∨B) → ¬A,¬B (α-rule)
-└── NegatedImplicationRule          # ¬(A→B) → A,¬B (α-rule)
+# Three-Valued Logic: T:φ, F:φ, U:φ (undefined)
+T3(Atom("p"))          # T:p - "p is true"  
+F3(Atom("p"))          # F:p - "p is false"
+U(Atom("p"))           # U:p - "p is undefined"
 
-WK3Rule (extends classical with three-valued semantics)
-├── [All classical rules adapted]
-├── AtomAssignmentTrueRule          # A=t
-├── AtomAssignmentFalseRule         # A=f  
-└── AtomAssignmentUndefinedRule     # A=e
+# Rule Application Examples
+# T:(A∧B) → T:A, T:B (same rule structure across logic systems)
+# F:(A∨B) → F:A, F:B (same rule structure across logic systems)
 ```
 
-**Rule Application Protocol**:
+### 3.3 Performance Implementation
+
+Critical operations use optimized algorithms:
+
+1. **Closure Detection**: O(1) using pre-computed literal indices
+2. **Rule Lookup**: Cached lookup by formula type
+3. **Rule Prioritization**: Non-branching rules (α-rules) applied before branching rules (β-rules)
+4. **Early Termination**: Algorithm stops when satisfying assignment found
+5. **Branch Management**: Efficient copying for β-rule expansion
+
 ```python
-@dataclass
-class RuleApplication:
-    formulas_for_branches: List[List[Formula]]  # New formulas per branch
-    branch_count: int                           # 1=α-rule, >1=β-rule
-    metadata: Dict[str, Any] = field(default_factory=dict)
-
-@dataclass
-class RuleContext:
-    tableau: Any                    # ComponentizedTableau instance
-    branch: BranchInterface        # Current branch being processed
-    parent_node: Optional[Any]     # Tree node (if tree tracking enabled)
-    depth: int = 0                 # Current expansion depth
-    applied_rules: List[str]       # History of applied rule names
-```
-
-### 4.2 Branch Management Architecture
-
-**Branch Interface Protocol**:
-```python
-class BranchInterface(Protocol):
-    # Identity and state
-    @property def id(self) -> int
-    @property def is_closed(self) -> bool  
-    @property def closure_reason(self) -> Optional[str]
+class TableauBranch:
+    def __init__(self, branch_id: int):
+        self._signed_formulas: List[SignedFormula] = []
+        
+        # O(1) closure detection indices
+        self._literal_indices: Dict[Formula, Set[Sign]] = defaultdict(set)
+        self._is_closed = False
+        self._closure_reason: Optional[Tuple[SignedFormula, SignedFormula]] = None
     
-    # Formula management
-    @property def formulas(self) -> List[Formula]
-    def add_formula(self, formula: Formula) -> None
-    def add_formulas(self, formulas: List[Formula]) -> None
-    
-    # Branch operations
-    def close_branch(self, reason: str = "") -> None
-    def copy(self, new_id: int) -> 'BranchInterface'
-    
-    # Introspection
-    def __str__(self) -> str
-```
-
-**Concrete Implementations**:
-
-**Classical Branch**:
-```python
-class ClassicalBranch(BranchInterface):
-    _id: int
-    _formulas: List[Formula]           # All formulas on this branch
-    _is_closed: bool                   # Closure state
-    _closure_reason: Optional[str]     # Why branch was closed
-    
-    # Performance optimizations
-    _positive_literals: Set[str]       # Atoms appearing positively
-    _negative_literals: Set[str]       # Atoms appearing negatively
-    _processed_formulas: Set[str]      # Formulas already expanded
-    
-    def _check_closure(self) -> None:
-        # O(1) closure detection via set intersection
-        contradictory = self._positive_literals & self._negative_literals
-        if contradictory:
-            atom = next(iter(contradictory))
-            self.close_branch(f"Contradiction: {atom} and ¬{atom}")
-```
-
-**WK3 Branch**:
-```python
-class WK3Branch(BranchInterface):
-    _id: int
-    _formulas: List[Formula] 
-    _is_closed: bool
-    _closure_reason: Optional[str]
-    
-    # Three-valued assignments
-    _assignments: Dict[str, TruthValue]  # atom_name -> t/f/e
-    
-    def add_assignment(self, atom_name: str, value: TruthValue) -> None:
-        existing = self._assignments.get(atom_name)
-        if existing is not None and existing != value:
-            # Contradiction: atom assigned both t and f
-            if (existing in [t, f]) and (value in [t, f]) and existing != value:
-                self.close_branch(f"Three-valued contradiction: {atom_name}={existing} and {atom_name}={value}")
+    def _update_literal_indices(self, signed_formula: SignedFormula) -> None:
+        """Update indices for O(1) closure detection."""
+        formula = signed_formula.formula
+        sign = signed_formula.sign
+        
+        # Check for contradictions
+        existing_signs = self._literal_indices[formula]
+        if self._signs_contradict(existing_signs, sign):
+            self._close_branch(signed_formula, existing_signs)
         else:
-            self._assignments[atom_name] = value
+            existing_signs.add(sign)
 ```
 
-### 4.3 Logic System Management
+## Module Design
 
-**LogicSystem Architecture**:
-```python
-class LogicSystem:
-    def __init__(self,
-                 config: LogicSystemConfig,
-                 rules: List[TableauRule],
-                 branch_factory: BranchFactory,
-                 closure_detector: ClosureDetector,
-                 model_extractor: ModelExtractor,
-                 literal_recognizer: LiteralRecognizer,
-                 subsumption_detector: SubsumptionDetector):
-        
-        self.config = config
-        self.rules = list(rules)
-        self.branch_factory = branch_factory
-        self.closure_detector = closure_detector  
-        self.model_extractor = model_extractor
-        self.literal_recognizer = literal_recognizer
-        self.subsumption_detector = subsumption_detector
-        
-        # Performance optimization: rule lookup cache
-        self._rule_cache = self._build_rule_cache()
-    
-    def find_applicable_rules(self, formula: Formula) -> List[TableauRule]:
-        """Find rules applicable to formula with O(1) lookup"""
-        formula_type = type(formula).__name__
-        return self._rule_cache.get(formula_type, [])
-```
+### 4.1 tableau_core.py - Data Structures
 
-**Configuration System**:
-```python
-@dataclass  
-class LogicSystemConfig:
-    name: str                          # Human-readable name
-    truth_values: int                  # 2 (classical) or 3 (WK3) or n
-    description: str = ""              # Detailed description
-    supports_quantifiers: bool = False # First-order logic capability
-    aliases: List[str] = field(default_factory=list)  # Alternative names
-```
+This module contains:
+- Formula AST classes with equality and hashing implementations
+- Truth value systems for different logics
+- Signed formula wrapper system
+- Public API convenience functions
 
-## Data Structures
-
-### 5.1 Formula Abstract Syntax Tree
-
-The system uses a **Composite Pattern** for formula representation:
+**Key Classes**:
 
 ```python
-# Abstract base
+# Formula Hierarchy
 class Formula(ABC):
     @abstractmethod
     def __str__(self) -> str: ...
-    @abstractmethod  
+    @abstractmethod
     def __eq__(self, other) -> bool: ...
     @abstractmethod
     def __hash__(self) -> int: ...
 
-# Terminal nodes
 class Atom(Formula):
     def __init__(self, name: str):
         self.name = name
-        
-class Predicate(Formula):
-    def __init__(self, predicate_name: str, args: List[Term] = None):
-        self.predicate_name = predicate_name
-        self.args = list(args) if args else []
-        self.arity = len(self.args)
-
-# Non-terminal nodes
-class Negation(Formula):
-    def __init__(self, operand: Formula):
-        self.operand = operand
 
 class BinaryOperator(Formula):
     def __init__(self, left: Formula, right: Formula):
@@ -349,1281 +184,808 @@ class BinaryOperator(Formula):
         self.right = right
 
 class Conjunction(BinaryOperator): ...
-class Disjunction(BinaryOperator): ...  
+class Disjunction(BinaryOperator): ...
 class Implication(BinaryOperator): ...
-```
 
-### 5.2 Truth Value System
-
-**Two-Valued System** (Classical):
-```python
-# Python built-in bool type
-True, False
-```
-
-**Three-Valued System** (WK3):
-```python
+# Truth Value System
 class TruthValue:
+    TRUE = "TRUE"
+    FALSE = "FALSE" 
+    UNDEFINED = "UNDEFINED"
+    
     def __init__(self, value: str):
-        if value not in ['t', 'f', 'e']:
+        if value not in [self.TRUE, self.FALSE, self.UNDEFINED]:
             raise ValueError(f"Invalid truth value: {value}")
-        self._value = value
+        self.value = value
+
+# Signed Formula System
+class SignedFormula:
+    def __init__(self, sign: Sign, formula: Formula):
+        self.sign = sign
+        self.formula = formula
     
-    def __eq__(self, other) -> bool:
-        return isinstance(other, TruthValue) and self._value == other._value
-        
-    def __hash__(self) -> int:
-        return hash(self._value)
+    def is_contradictory_with(self, other: 'SignedFormula') -> bool:
+        """Check if two signed formulas contradict."""
+        return (self.formula == other.formula and 
+                self.sign.contradicts(other.sign))
 
-# Singleton instances
-t = TruthValue('t')  # true
-f = TruthValue('f')  # false  
-e = TruthValue('e')  # undefined/error
+# Convenience Constructors
+def T(formula: Formula) -> SignedFormula:
+    """Create T:formula (classical true)."""
+    return SignedFormula(ClassicalSign("T"), formula)
 
-# Truth table operations
-class WeakKleeneOperators:
-    @staticmethod
-    def negation(x: TruthValue) -> TruthValue:
-        if x == t: return f
-        if x == f: return t
-        return e  # ¬e = e
-        
-    @staticmethod
-    def conjunction(x: TruthValue, y: TruthValue) -> TruthValue:
-        # False-preserving: f∧x = f, t∧e = e, e∧e = e
-        truth_table = {
-            (t, t): t, (t, f): f, (t, e): e,
-            (f, t): f, (f, f): f, (f, e): f,
-            (e, t): e, (e, f): f, (e, e): e
-        }
-        return truth_table[(x, y)]
+def F(formula: Formula) -> SignedFormula:
+    """Create F:formula (classical false)."""
+    return SignedFormula(ClassicalSign("F"), formula)
 ```
 
-### 5.3 Model Representation
+### 4.2 tableau_engine.py - Tableau Construction
 
-**Classical Models**:
-```python
-class Model:
-    def __init__(self, assignment: Dict[str, bool]):
-        self.assignment = assignment
-    
-    def satisfies(self, formula: Formula) -> bool:
-        """Evaluate formula under this boolean assignment"""
-        return self._evaluate(formula)
-    
-    def _evaluate(self, formula: Formula) -> bool:
-        if isinstance(formula, Atom):
-            return self.assignment.get(formula.name, False)
-        elif isinstance(formula, Negation):
-            return not self._evaluate(formula.operand)
-        elif isinstance(formula, Conjunction):
-            return self._evaluate(formula.left) and self._evaluate(formula.right)
-        # ... other operators
-```
+This module implements:
+- Main tableau construction algorithm
+- Branch management with closure detection
+- Model extraction from satisfying branches
+- Performance statistics collection
 
-**WK3 Models**:
-```python  
-class WK3Model:
-    def __init__(self, assignment: Dict[str, TruthValue]):
-        self.assignment = assignment
-    
-    def satisfies(self, formula: Formula) -> TruthValue:
-        """Evaluate formula under this three-valued assignment"""
-        return self._evaluate(formula)
-        
-    def is_satisfying(self, formula: Formula) -> bool:
-        """Classical satisfiability check (true or undefined)"""
-        result = self.satisfies(formula)
-        return result == t or result == e  # t or e counts as satisfying
-```
-
-## Control Flow
-
-### 6.1 Tableau Construction Algorithm
-
-The **ComponentizedTableau** implements a **Template Method Pattern**:
+**Key Classes**:
 
 ```python
-class ComponentizedTableau:
-    def build(self) -> bool:
-        """Main tableau construction algorithm"""
-        # 1. Initialize data structures
-        self._initialize_branches()
+class TableauEngine:
+    def __init__(self, sign_system: str = "classical"):
+        self.sign_system = sign_system
+        self.rule_registry = SignedRuleRegistry()
+        self.branches: List[TableauBranch] = []
+        self.rule_applications = 0
+        
+    def build_tableau(self, initial_formulas: List[SignedFormula]) -> bool:
+        """Main tableau construction algorithm."""
+        # 1. Initialize with single branch containing all formulas
+        initial_branch = TableauBranch(0)
+        for sf in initial_formulas:
+            initial_branch.add_signed_formula(sf)
+        self.branches = [initial_branch]
         
         # 2. Main expansion loop
-        while self._has_expandable_branches():
-            # 2a. Select branch for expansion
-            branch = self._select_next_branch()
-            
-            # 2b. Find applicable rules  
-            expandable_formulas = self._get_expandable_formulas(branch)
-            if not expandable_formulas:
-                continue
-                
-            # 2c. Apply highest priority rule
-            formula = expandable_formulas[0]  # Pre-sorted by priority
-            applicable_rules = self.logic_system.find_applicable_rules(formula)
-            
-            if applicable_rules:
-                rule = applicable_rules[0]  # Rules pre-sorted by priority
-                self._apply_rule(rule, formula, branch)
-            
-            # 2d. Check for closure and subsumption
-            self._check_closure_all_branches()  
-            self._apply_subsumption_elimination()
-            
-            # 2e. Early termination if satisfiable
-            if self._has_open_branches() and self.early_termination:
+        while True:
+            expandable_branch = self._find_expandable_branch()
+            if not expandable_branch:
                 break
                 
-        # 3. Return satisfiability result
-        return self._has_open_branches()
+            # 3. Find highest priority expandable formula
+            expandable_formula = self._find_expandable_formula(expandable_branch)
+            if not expandable_formula:
+                continue
+                
+            # 4. Apply best rule
+            rule = self.rule_registry.get_best_rule(expandable_formula, self.sign_system)
+            if rule:
+                self._apply_rule(rule, expandable_formula, expandable_branch)
+                self.rule_applications += 1
+        
+        # 5. Return satisfiability result
+        return any(not branch.is_closed for branch in self.branches)
+
+class TableauBranch:
+    def __init__(self, branch_id: int):
+        self.branch_id = branch_id
+        self._signed_formulas: List[SignedFormula] = []
+        self._literal_indices: Dict[Formula, Set[Sign]] = defaultdict(set)
+        self._is_closed = False
+        self._closure_reason: Optional[Tuple[SignedFormula, SignedFormula]] = None
+        self._processed_formulas: Set[SignedFormula] = set()
+    
+    def add_signed_formula(self, signed_formula: SignedFormula) -> None:
+        """Add signed formula with closure detection."""
+        self._signed_formulas.append(signed_formula)
+        self._update_literal_indices(signed_formula)
+        
+    def is_closed(self) -> bool:
+        return self._is_closed
+        
+    def extract_model(self) -> Dict[str, TruthValue]:
+        """Extract satisfying model from open branch."""
+        if self.is_closed:
+            raise ValueError("Cannot extract model from closed branch")
+            
+        model = {}
+        for sf in self._signed_formulas:
+            if isinstance(sf.formula, Atom):
+                atom_name = sf.formula.name
+                if isinstance(sf.sign, ClassicalSign):
+                    model[atom_name] = TruthValue.TRUE if sf.sign.value == "T" else TruthValue.FALSE
+                elif isinstance(sf.sign, ThreeValuedSign):
+                    if sf.sign.value == "T":
+                        model[atom_name] = TruthValue.TRUE
+                    elif sf.sign.value == "F":
+                        model[atom_name] = TruthValue.FALSE
+                    else:  # U
+                        model[atom_name] = TruthValue.UNDEFINED
+        return model
 ```
 
-### 6.2 Rule Application Flow
+### 4.3 tableau_rules.py - Rule System
+
+This module contains:
+- Rule registry and lookup system
+- Abstract rule base classes  
+- Concrete rule implementations for all logic systems
+- Rule application and expansion logic
+
+**Key Classes**:
 
 ```python
-def _apply_rule(self, rule: TableauRule, formula: Formula, branch: BranchInterface) -> None:
-    """Apply tableau rule to formula on given branch"""
+class SignedRuleRegistry:
+    def __init__(self):
+        self._rules: Dict[str, List[SignedTableauRule]] = {
+            "classical": self._create_classical_rules(),
+            "three_valued": self._create_three_valued_rules(),
+            "wkrq": self._create_wkrq_rules()
+        }
     
-    # 1. Create rule context
-    context = RuleContext(
-        tableau=self,
-        branch=branch, 
-        parent_node=self._get_current_node(branch),
-        depth=self._get_depth(branch),
-        applied_rules=self._get_rule_history(branch)
-    )
+    def get_best_rule(self, signed_formula: SignedFormula, 
+                      sign_system: str) -> Optional[SignedTableauRule]:
+        """Get highest priority applicable rule."""
+        applicable_rules = [
+            rule for rule in self._rules[sign_system]
+            if rule.applies_to(signed_formula)
+        ]
+        return min(applicable_rules, key=lambda r: r.priority) if applicable_rules else None
+
+class SignedTableauRule(ABC):
+    priority: int  # Lower numbers = higher priority
     
-    # 2. Apply rule
-    application = rule.apply(formula, context)
+    @abstractmethod
+    def applies_to(self, signed_formula: SignedFormula) -> bool:
+        """Check if rule applies to signed formula."""
+        
+    @abstractmethod
+    def apply(self, signed_formula: SignedFormula) -> RuleResult:
+        """Apply rule, returning expansion result."""
+
+# Example Rule Implementation
+class TConjunctionRule(AlphaRule):
+    """T:(A∧B) → T:A, T:B"""
+    priority = 1  # High priority (α-rule)
     
-    # 3. Process rule application result
-    if application.branch_count == 1:
-        # α-rule: add formulas to current branch
-        branch.add_formulas(application.formulas_for_branches[0])
-    else:
-        # β-rule: create new branches
-        self._create_branches_from_application(branch, application)
+    def applies_to(self, signed_formula: SignedFormula) -> bool:
+        return (isinstance(signed_formula.sign, ClassicalSign) and
+                signed_formula.sign.value == "T" and
+                isinstance(signed_formula.formula, Conjunction))
     
-    # 4. Update statistics and tree (if enabled)
-    self._update_statistics(rule, application)
-    if self.track_tree:
-        self._update_tree(rule, formula, application, context)
+    def apply(self, signed_formula: SignedFormula) -> RuleResult:
+        conj = signed_formula.formula
+        return RuleResult(
+            is_alpha=True,
+            branches=[
+                [T(conj.left), T(conj.right)]  # Single branch with both conjuncts
+            ]
+        )
+
+class FDisjunctionRule(BetaRule):
+    """F:(A∨B) → F:A | F:B"""
+    priority = 3  # Lower priority (β-rule)
+    
+    def applies_to(self, signed_formula: SignedFormula) -> bool:
+        return (isinstance(signed_formula.sign, ClassicalSign) and
+                signed_formula.sign.value == "F" and
+                isinstance(signed_formula.formula, Disjunction))
+    
+    def apply(self, signed_formula: SignedFormula) -> RuleResult:
+        disj = signed_formula.formula
+        return RuleResult(
+            is_alpha=False,
+            branches=[
+                [F(disj.left)],   # First branch: F:A
+                [F(disj.right)]   # Second branch: F:B
+            ]
+        )
 ```
 
-### 6.3 Branch Selection Strategy
+## Data Structures
 
-The system implements **Depth-First Search** with optimizations:
+### 5.1 Formula Abstract Syntax Tree
+
+The system uses immutable formula objects with structural equality:
 
 ```python
-def _select_next_branch(self) -> Optional[BranchInterface]:
-    """Select next branch for expansion using DFS with optimizations"""
+# Structural equality example
+p = Atom("p")
+q = Atom("q")
+formula1 = Conjunction(p, q)
+formula2 = Conjunction(Atom("p"), Atom("q"))
+assert formula1 == formula2  # Structural equality
+assert hash(formula1) == hash(formula2)  # Consistent hashing
+
+# Formula tree structure
+Implication(
+    Conjunction(Atom("p"), Atom("q")),     # Left: (p ∧ q)
+    Disjunction(Atom("r"), Atom("s"))       # Right: (r ∨ s)
+)
+# Represents: (p ∧ q) → (r ∨ s)
+```
+
+### 5.2 Signed Formula System
+
+Signed formula notation supporting all logic systems:
+
+```python
+# Classical Logic (2-valued)
+T(Atom("p"))                    # T:p - "p is true"
+F(Conjunction(p, q))           # F:(p∧q) - "p∧q is false"
+
+# Three-Valued Logic (WK3)
+T3(Atom("p"))                  # T:p - "p is true"
+F3(Atom("p"))                  # F:p - "p is false"  
+U(Atom("p"))                   # U:p - "p is undefined"
+
+# Contradiction Detection
+sf1 = T(Atom("p"))
+sf2 = F(Atom("p"))
+assert sf1.is_contradictory_with(sf2)  # T:p contradicts F:p
+
+sf3 = T3(Atom("p"))
+sf4 = U(Atom("p"))
+assert not sf3.is_contradictory_with(sf4)  # T:p does not contradict U:p in WK3
+```
+
+### 5.3 Truth Value System
+
+Truth value representation across logic systems:
+
+```python
+# Classical Truth Values
+TruthValue.TRUE      # Boolean true
+TruthValue.FALSE     # Boolean false
+
+# Three-Valued Truth Values  
+TruthValue.TRUE      # True
+TruthValue.FALSE     # False
+TruthValue.UNDEFINED # Undefined/unknown
+
+# Model Representation
+classical_model = {
+    "p": TruthValue.TRUE,
+    "q": TruthValue.FALSE
+}
+
+wk3_model = {
+    "p": TruthValue.TRUE,
+    "q": TruthValue.UNDEFINED,
+    "r": TruthValue.FALSE
+}
+```
+
+## Algorithm Implementation
+
+### 6.1 Main Tableau Algorithm
+
+The TableauEngine implements a standard tableau construction algorithm:
+
+```python
+def build_tableau(self, initial_formulas: List[SignedFormula]) -> bool:
+    """Standard tableau construction algorithm."""
     
-    # Filter to open branches only
-    open_branches = [b for b in self.branches if not b.is_closed]
+    # Phase 1: Initialization
+    self._initialize_branches(initial_formulas)
     
-    if not open_branches:
+    # Phase 2: Main expansion loop
+    while True:
+        # 2a. Find expandable branch (depth-first order)
+        branch = self._find_expandable_branch()
+        if not branch:
+            break  # No more expansion possible
+            
+        # 2b. Find highest priority expandable formula  
+        formula = self._find_expandable_formula(branch)
+        if not formula:
+            continue  # Branch fully expanded
+            
+        # 2c. Apply best rule (α-rules before β-rules)
+        rule = self.rule_registry.get_best_rule(formula, self.sign_system)
+        if rule:
+            self._apply_rule(rule, formula, branch)
+            self.rule_applications += 1
+    
+    # Phase 3: Return satisfiability result
+    return self._has_open_branches()
+
+def _apply_rule(self, rule: SignedTableauRule, signed_formula: SignedFormula, 
+                branch: TableauBranch) -> None:
+    """Apply tableau rule with branch management."""
+    
+    result = rule.apply(signed_formula)
+    
+    if result.is_alpha:  # α-rule: extend current branch
+        for new_sf in result.branches[0]:
+            branch.add_signed_formula(new_sf)
+    else:  # β-rule: create new branches
+        # Remove current branch and replace with new branches
+        self.branches.remove(branch)
+        for i, new_formulas in enumerate(result.branches):
+            new_branch = TableauBranch(self._next_branch_id())
+            # Copy existing formulas
+            for sf in branch.signed_formulas:
+                new_branch.add_signed_formula(sf)
+            # Add new formulas
+            for new_sf in new_formulas:
+                new_branch.add_signed_formula(new_sf)
+            self.branches.append(new_branch)
+    
+    # Mark formula as processed
+    branch.mark_processed(signed_formula)
+```
+
+### 6.2 Rule Selection Strategy
+
+Priority-based rule selection for tableau construction:
+
+```python
+# Rule Priority System
+PRIORITY_DOUBLE_NEGATION = 0    # Highest: ¬¬A → A (simplification)
+PRIORITY_ALPHA_RULES = 1        # High: T:(A∧B), F:(A∨B) (non-branching)
+PRIORITY_NEGATION = 2           # Medium: T:¬A → F:A, F:¬A → T:A
+PRIORITY_BETA_RULES = 3         # Low: T:(A∨B), F:(A∧B) (branching)
+
+def _find_expandable_formula(self, branch: TableauBranch) -> Optional[SignedFormula]:
+    """Find highest priority expandable formula on branch."""
+    
+    expandable = [
+        sf for sf in branch.signed_formulas 
+        if not branch.is_processed(sf) and self.rule_registry.has_applicable_rule(sf)
+    ]
+    
+    if not expandable:
         return None
     
-    # Priority: branches with α-formulas first (minimize branching)
-    alpha_branches = []
-    beta_branches = []
+    # Sort by rule priority (lower number = higher priority)
+    def priority_key(sf: SignedFormula) -> int:
+        rule = self.rule_registry.get_best_rule(sf, self.sign_system)
+        return rule.priority if rule else 999
     
-    for branch in open_branches:
-        expandable = self._get_expandable_formulas(branch)
-        if any(self._is_alpha_formula(f) for f in expandable):
-            alpha_branches.append(branch)
-        else:
-            beta_branches.append(branch)
-    
-    # Select from α-branches first, then β-branches
-    candidate_branches = alpha_branches if alpha_branches else beta_branches
-    
-    # Within priority class, select by branch ID (DFS order)
-    return min(candidate_branches, key=lambda b: b.id)
+    return min(expandable, key=priority_key)
 ```
 
-### 6.4 Optimization Integration
+### 6.3 Closure Detection Algorithm
 
-**Formula Prioritization**:
+O(1) closure detection using pre-computed indices:
+
 ```python
-def _prioritize_formulas(self, formulas: List[Formula]) -> List[Formula]:
-    """Sort formulas by expansion priority to minimize branching"""
-    
-    def priority_key(formula: Formula) -> Tuple[int, str]:
-        applicable_rules = self.logic_system.find_applicable_rules(formula)
-        if not applicable_rules:
-            return (999, str(formula))  # No applicable rules = lowest priority
+class TableauBranch:
+    def _update_literal_indices(self, signed_formula: SignedFormula) -> None:
+        """Update literal indices for closure detection."""
         
-        rule = applicable_rules[0]  
-        return (rule.priority, str(formula))  # Secondary sort for determinism
-    
-    return sorted(formulas, key=priority_key)
-```
-
-**Subsumption Elimination**:
-```python
-def _apply_subsumption_elimination(self) -> None:
-    """Remove branches subsumed by other branches"""
-    if len(self.branches) < 2:
-        return
+        formula = signed_formula.formula
+        sign = signed_formula.sign
         
-    # Use logic system's subsumption detector
-    remaining_branches = self.logic_system.subsumption_detector.remove_subsumed_branches(
-        self.branches
-    )
-    
-    removed_count = len(self.branches) - len(remaining_branches)
-    if removed_count > 0:
-        self.branches = remaining_branches
-        self._statistics['subsumptions_eliminated'] += removed_count
-```
-
-## Performance Architecture
-
-### 7.1 Algorithmic Complexity
-
-**Time Complexity Analysis**:
-- **Rule lookup**: O(1) with pre-computed rule cache
-- **Formula prioritization**: O(n log n) where n = formulas per branch  
-- **Branch closure detection**: O(1) with literal indexing
-- **Subsumption elimination**: O(b²⋅f) where b = branches, f = formulas per branch
-- **Overall tableau construction**: O(n log n) best case, O(2ⁿ) worst case
-
-**Space Complexity Analysis**:
-- **Branch storage**: O(b⋅f) where b = number of branches, f = formulas per branch
-- **Rule cache**: O(r⋅t) where r = rules, t = formula types
-- **Literal indexes**: O(a) where a = distinct atoms in problem
-- **Tree tracking (optional)**: O(n) where n = total tableau nodes
-
-### 7.2 Optimization Strategies
-
-**1. Literal Indexing for O(1) Closure Detection**:
-```python
-class ClassicalBranch:
-    def add_formula(self, formula: Formula) -> None:
-        self._formulas.append(formula)
-        
-        # Update literal indexes for fast closure detection
+        # Only track atomic formulas and their negations for closure
         if isinstance(formula, Atom):
-            self._positive_literals.add(formula.name)
-            self._check_closure()
+            existing_signs = self._literal_indices[formula]
+            
+            # Check for contradiction
+            for existing_sign in existing_signs:
+                if sign.contradicts(existing_sign):
+                    self._close_branch(
+                        SignedFormula(existing_sign, formula), 
+                        signed_formula
+                    )
+                    return
+            
+            existing_signs.add(sign)
+        
         elif isinstance(formula, Negation) and isinstance(formula.operand, Atom):
-            self._negative_literals.add(formula.operand.name)  
-            self._check_closure()
-    
-    def _check_closure(self) -> None:
-        # O(1) intersection check
-        contradictory = self._positive_literals & self._negative_literals
-        if contradictory:
-            self.close_branch(f"Contradiction: {contradictory}")
+            # Handle ¬A as separate from A
+            inner_atom = formula.operand
+            existing_signs = self._literal_indices[formula]  # Index by complete formula
+            
+            for existing_sign in existing_signs:
+                if sign.contradicts(existing_sign):
+                    self._close_branch(
+                        SignedFormula(existing_sign, formula),
+                        signed_formula
+                    )
+                    return
+                    
+            existing_signs.add(sign)
 ```
 
-**2. Rule Caching for Fast Rule Lookup**:
+## Performance Characteristics
+
+### 7.1 Complexity Analysis
+
+**Time Complexity**:
+- Rule lookup: O(1) amortized with caching
+- Closure detection: O(1) with literal indexing  
+- Branch expansion: O(f) where f = formulas per branch
+- Overall construction: O(n log n) best case, O(2ⁿ) worst case (inherent to tableau method)
+
+**Space Complexity**:
+- Branch storage: O(b × f) where b = branches, f = formulas per branch
+- Literal indices: O(a) where a = distinct atoms
+- Rule cache: O(1) constant overhead
+- Model storage: O(a) per model where a = atoms
+
+### 7.2 Optimization Techniques
+
+**1. Literal Indexing for O(1) Closure**:
 ```python
-def _build_rule_cache(self) -> Dict[str, List[TableauRule]]:
-    """Pre-compute applicable rules by formula type"""
-    cache = defaultdict(list)
-    
-    for rule in self.rules:
-        # Sample each formula type to determine applicability
-        for formula_type in [Atom, Negation, Conjunction, Disjunction, Implication]:
-            sample_formula = self._create_sample_formula(formula_type)
-            if rule.applies_to(sample_formula):
-                cache[formula_type.__name__].append(rule)
-    
-    # Sort rules by priority within each type
-    for rule_list in cache.values():
-        rule_list.sort(key=lambda r: r.priority)
-    
-    return dict(cache)
+# Before optimization: O(n²) closure detection
+def check_closure_naive(formulas):
+    for i, sf1 in enumerate(formulas):
+        for j, sf2 in enumerate(formulas[i+1:], i+1):
+            if sf1.is_contradictory_with(sf2):
+                return True
+    return False
+
+# After optimization: O(1) closure detection  
+def check_closure_optimized(self):
+    # Contradictions detected incrementally during formula addition
+    return self._is_closed
 ```
 
-**3. Early Termination for Satisfiability**:
+**2. Rule Prioritization**:
 ```python
-def build(self) -> bool:
-    while self._has_expandable_branches():
-        # ... expansion logic ...
-        
-        # Early termination: if we have open branches, formula is satisfiable
-        if self._has_open_branches() and not self.complete_search:
-            return True  # Don't need to find all models
+# α-rules (non-branching) applied before β-rules (branching)
+# Reduces exponential explosion in tableau size
+
+def get_best_rule(self, signed_formula, sign_system):
+    applicable = [r for r in self._rules[sign_system] if r.applies_to(signed_formula)]
+    return min(applicable, key=lambda r: r.priority)  # Lower priority = applied first
+```
+
+**3. Early Termination**:
+```python
+def build_tableau(self, formulas):
+    # ... expansion loop ...
     
-    return self._has_open_branches()
-```
-
-**4. Formula Prioritization (α-rules before β-rules)**:
-```python
-# Rule priorities ensure α-rules (non-branching) expand before β-rules
-ALPHA_PRIORITY = 1  # Double negation, conjunction, etc.
-BETA_PRIORITY = 3   # Disjunction, implication, etc.
-
-class DoubleNegationRule(TableauRule):
-    priority = 1  # Highest priority - reduces formula complexity
+    # Stop as soon as satisfying assignment found
+    if self._has_open_branches() and self.early_termination:
+        return True  # Satisfiable
     
-class DisjunctionRule(TableauRule):  
-    priority = 3  # Lower priority - increases branching
+    # Continue for complete model enumeration if needed
 ```
 
-### 7.3 Memory Optimization
+### 7.3 Memory Management
 
-**Incremental Branch Representation**:
+**Branch Copying Strategy**:
 ```python
-class ClassicalBranch:
-    def copy(self, new_id: int) -> 'ClassicalBranch':
-        """Efficient branch copying for β-rule expansion"""
-        new_branch = ClassicalBranch(new_id)
-        
-        # Shallow copy of formulas (formulas are immutable)
-        new_branch._formulas = self._formulas.copy()
-        
-        # Copy literal indexes (small sets)
-        new_branch._positive_literals = self._positive_literals.copy()
-        new_branch._negative_literals = self._negative_literals.copy()
-        
-        return new_branch
-```
-
-**String Interning for Atom Names**:
-```python
-class Atom:
-    def __init__(self, name: str):
-        # Use string interning to reduce memory for repeated atom names
-        self.name = sys.intern(name)
-```
-
-### 7.4 Performance Monitoring
-
-The system includes comprehensive performance tracking:
-
-```python
-def get_statistics(self) -> Dict[str, Any]:
-    """Return detailed performance and correctness statistics"""
-    return {
-        'logic_system': self.logic_system.config.name,
-        'satisfiable': self._has_open_branches(),
-        'total_branches': len(self.branches),
-        'open_branches': len([b for b in self.branches if not b.is_closed]),
-        'closed_branches': len([b for b in self.branches if b.is_closed]),
-        'rule_applications': self._statistics.get('rule_applications', 0),
-        'alpha_applications': self._statistics.get('alpha_applications', 0),
-        'beta_applications': self._statistics.get('beta_applications', 0),
-        'subsumptions_eliminated': self._statistics.get('subsumptions_eliminated', 0),
-        'max_branch_depth': max(len(b.formulas) for b in self.branches) if self.branches else 0,
-        'distinct_atoms': len(self._collect_atoms()),
-        'construction_time': time.time() - self._start_time if hasattr(self, '_start_time') else 0
+def copy_branch_for_beta_rule(self, original_branch: TableauBranch) -> TableauBranch:
+    """Branch copying for β-rule expansion."""
+    new_branch = TableauBranch(self._next_branch_id())
+    
+    # Shallow copy of immutable signed formulas
+    new_branch._signed_formulas = original_branch._signed_formulas.copy()
+    
+    # Copy literal indices
+    new_branch._literal_indices = {
+        formula: signs.copy() 
+        for formula, signs in original_branch._literal_indices.items()
     }
+    
+    return new_branch
 ```
 
-## Extensibility Framework
+## Extension Framework
 
-### 8.1 Extension Points
+### 8.1 Adding New Logic Systems
 
-The architecture provides multiple clean extension vectors:
+The architecture provides extension points for new logic systems:
 
-**1. New Logic Systems**:
+**Step 1: Define Sign System**
 ```python
-# Step 1: Define rules
-class ModalNecessityRule(TableauRule):
-    def applies_to(self, formula: Formula) -> bool:
-        return isinstance(formula, ModalNecessity)  # □A
-        
-    def apply(self, formula: Formula, context: RuleContext) -> RuleApplication:
-        # Modal logic expansion: □A in all accessible worlds
-        return RuleApplication(...)
-
-# Step 2: Define components  
-class ModalBranch(BranchInterface):
-    def __init__(self, branch_id: int, world_id: int = 0):
-        self._world_id = world_id  # Current world
-        self._accessible_worlds = set()  # R-accessible worlds
-        # ... rest of implementation
-
-# Step 3: Register logic system
-def create_modal_logic_system() -> LogicSystem:
-    config = LogicSystemConfig(name="Modal Logic K", ...)
-    rules = [ModalNecessityRule(), ModalPossibilityRule(), ...]
-    components = create_modal_components()
-    return LogicSystem(config, rules, **components)
-
-register_logic_system("modal-k", create_modal_logic_system)
+class ModalSign:
+    """Signs for modal logic: □T, □F, ◇T, ◇F"""
+    def __init__(self, modality: str, polarity: str):
+        if modality not in ["□", "◇"]:
+            raise ValueError(f"Invalid modality: {modality}")
+        if polarity not in ["T", "F"]:
+            raise ValueError(f"Invalid polarity: {polarity}")
+        self.modality = modality
+        self.polarity = polarity
+    
+    def contradicts(self, other: 'ModalSign') -> bool:
+        return (self.modality == other.modality and 
+                self.polarity != other.polarity)
 ```
 
-**2. Custom Truth Value Systems**:
+**Step 2: Implement Rules**
 ```python
-# Many-valued logic extension
-class FourValuedTruth:
-    """Four-valued logic: true, false, unknown, inconsistent"""
-    def __init__(self, value: str):
-        if value not in ['t', 'f', 'u', 'i']:
-            raise ValueError(f"Invalid four-valued truth value: {value}")
-        self._value = value
-
-class FourValuedOperators:
-    @staticmethod
-    def conjunction(x: FourValuedTruth, y: FourValuedTruth) -> FourValuedTruth:
-        # Implement four-valued conjunction table
-        truth_table = { ... }
-        return truth_table[(x._value, y._value)]
+class ModalNecessityRule(AlphaRule):
+    """□T:A → T:A (necessity rule)"""
+    priority = 1
+    
+    def applies_to(self, signed_formula: SignedFormula) -> bool:
+        return (isinstance(signed_formula.sign, ModalSign) and
+                signed_formula.sign.modality == "□" and
+                signed_formula.sign.polarity == "T")
+    
+    def apply(self, signed_formula: SignedFormula) -> RuleResult:
+        inner_formula = signed_formula.formula
+        return RuleResult(
+            is_alpha=True,
+            branches=[[T(inner_formula)]]  # Add T:A to current branch
+        )
 ```
 
-**3. Domain-Specific Rules**:
+**Step 3: Register in Rule System**
 ```python
-class TemporalNextRule(TableauRule):
+def _create_modal_rules(self) -> List[SignedTableauRule]:
+    return [
+        ModalNecessityRule(),
+        ModalPossibilityRule(),
+        # ... other modal rules
+    ]
+
+# In SignedRuleRegistry.__init__():
+self._rules["modal"] = self._create_modal_rules()
+```
+
+### 8.2 Adding New Formula Types
+
+**Step 1: Define Formula Class**
+```python
+class TemporalNext(Formula):
     """Temporal logic: X φ (φ holds in next time point)"""
-    def applies_to(self, formula: Formula) -> bool:
-        return isinstance(formula, TemporalNext)
-        
-    def apply(self, formula: Formula, context: RuleContext) -> RuleApplication:
-        # Create new branch with incremented time
-        next_time_formula = formula.operand
-        return RuleApplication(
-            formulas_for_branches=[[next_time_formula]],
-            branch_count=1,
-            metadata={'time_increment': 1}
+    def __init__(self, operand: Formula):
+        self.operand = operand
+    
+    def __str__(self) -> str:
+        return f"X({self.operand})"
+    
+    def __eq__(self, other) -> bool:
+        return isinstance(other, TemporalNext) and self.operand == other.operand
+    
+    def __hash__(self) -> int:
+        return hash(("TemporalNext", self.operand))
+```
+
+**Step 2: Implement Rules**
+```python  
+class TemporalNextRule(AlphaRule):
+    """T:X(φ) → advance time and add T:φ"""
+    priority = 2
+    
+    def applies_to(self, signed_formula: SignedFormula) -> bool:
+        return isinstance(signed_formula.formula, TemporalNext)
+    
+    def apply(self, signed_formula: SignedFormula) -> RuleResult:
+        # Implementation depends on temporal semantics
+        next_formula = signed_formula.formula.operand
+        return RuleResult(
+            is_alpha=True,
+            branches=[[SignedFormula(signed_formula.sign, next_formula)]],
+            metadata={"time_advance": 1}
         )
 ```
 
-### 8.2 Plugin Architecture Guidelines
+### 8.3 Performance Extensions
 
-**Interface Contracts**:
+**Custom Optimization Strategies**:
 ```python
-# All extensions must implement required protocols
-class TableauRule(ABC):
-    # Required properties
-    priority: int           # Rule application priority
-    rule_type: RuleType    # Enumerated rule type
-    is_alpha_rule: bool    # Non-branching rule
-    is_beta_rule: bool     # Branching rule
-    description: str       # Human-readable description
+class CustomTableauEngine(TableauEngine):
+    def _find_expandable_branch(self) -> Optional[TableauBranch]:
+        """Custom branch selection strategy."""
+        open_branches = [b for b in self.branches if not b.is_closed]
+        
+        # Example: Breadth-first instead of depth-first
+        return min(open_branches, key=lambda b: len(b.signed_formulas))
     
-    # Required methods
-    @abstractmethod
-    def applies_to(self, formula: Formula) -> bool: ...
-    @abstractmethod  
-    def apply(self, formula: Formula, context: RuleContext) -> RuleApplication: ...
-
-class BranchInterface(Protocol):
-    # Required for all branch implementations
-    @property def id(self) -> int: ...
-    @property def is_closed(self) -> bool: ...
-    @property def formulas(self) -> List[Formula]: ...
-    def add_formula(self, formula: Formula) -> None: ...
-    def close_branch(self, reason: str = "") -> None: ...
-    def copy(self, new_id: int) -> 'BranchInterface': ...
-```
-
-**Validation Framework**:
-```python
-def validate_logic_system(logic_system: LogicSystem) -> List[str]:
-    """Validate logic system for correctness and completeness"""
-    errors = []
-    
-    # Check rule coverage
-    formula_types = [Atom, Negation, Conjunction, Disjunction, Implication]
-    for formula_type in formula_types:
-        sample = create_sample_formula(formula_type)
-        applicable = logic_system.find_applicable_rules(sample)
-        if not applicable:
-            errors.append(f"No rules for formula type: {formula_type.__name__}")
-    
-    # Check component compatibility
-    try:
-        branch = logic_system.branch_factory.create_branch(0, [])
-        logic_system.closure_detector.detect_closure(branch)
-        logic_system.model_extractor.extract_model(branch)
-    except Exception as e:
-        errors.append(f"Component compatibility error: {e}")
-    
-    return errors
-```
-
-### 8.3 Extension Examples
-
-**Example 1: First-Order Logic with Quantifiers**:
-```python
-class UniversalQuantifierRule(TableauRule):
-    def applies_to(self, formula: Formula) -> bool:
-        return isinstance(formula, UniversalQuantifier)  # ∀x φ(x)
-        
-    def apply(self, formula: Formula, context: RuleContext) -> RuleApplication:
-        # Universal instantiation: ∀x φ(x) → φ(t) for all terms t in domain
-        domain_terms = self._get_domain_terms(context)
-        instantiated_formulas = []
-        
-        for term in domain_terms:
-            instantiated = formula.body.substitute(formula.variable, term)
-            instantiated_formulas.append(instantiated)
-        
-        return RuleApplication(
-            formulas_for_branches=[instantiated_formulas],
-            branch_count=1,  # α-rule: all instances on same branch
-            metadata={'quantifier_instantiation': True}
-        )
-```
-
-**Example 2: Probabilistic Logic**:
-```python
-class ProbabilisticBranch(BranchInterface):
-    def __init__(self, branch_id: int, probability: float = 1.0):
-        self._id = branch_id
-        self._probability = probability  # Branch probability
-        self._probabilistic_assignments = {}  # atom -> probability distribution
-        
-    def add_probabilistic_assignment(self, atom: str, prob_true: float):
-        self._probabilistic_assignments[atom] = prob_true
-        
-    def get_branch_probability(self) -> float:
-        return self._probability
+    def _apply_custom_optimizations(self) -> None:
+        """Custom optimization after rule application."""
+        # Example: Remove subsumed branches
+        self.branches = self._remove_subsumed_branches(self.branches)
 ```
 
 ## Interface Specifications
 
 ### 9.1 Public API Contracts
 
-**ComponentizedTableau Public Interface**:
+**Core Functions**:
 ```python
-class ComponentizedTableau:
-    def __init__(self, 
-                 formula: Union[Formula, List[Formula]], 
-                 logic_system: Union[str, LogicSystem],
-                 track_tree: bool = True,
-                 early_termination: bool = True) -> None:
-        """
-        Initialize tableau with formula(s) and logic system.
-        
-        Args:
-            formula: Single formula or list of formulas to test
-            logic_system: Logic system name or LogicSystem instance  
-            track_tree: Whether to maintain tableau tree for visualization
-            early_termination: Stop at first satisfying assignment
-            
-        Raises:
-            ValueError: If logic_system name not registered
-            TypeError: If formula type not supported by logic system
-        """
+def classical_signed_tableau(formulas: Union[SignedFormula, List[SignedFormula]]) -> TableauEngine:
+    """
+    Create classical logic tableau engine.
     
+    Args:
+        formulas: Single signed formula or list of signed formulas
+        
+    Returns:
+        TableauEngine configured for classical logic
+        
+    Example:
+        >>> engine = classical_signed_tableau(T(Atom("p")))
+        >>> satisfiable = engine.build()
+        >>> models = engine.extract_all_models() if satisfiable else []
+    """
+
+def wk3_satisfiable(formula: Formula) -> bool:
+    """
+    Check WK3 satisfiability of formula.
+    
+    Args:
+        formula: Formula to test
+        
+    Returns:
+        True if satisfiable in WK3, False otherwise
+        
+    Time Complexity: O(2^n) worst case
+    Space Complexity: O(n) where n = number of atoms
+    """
+
+def wk3_models(formula: Formula) -> List[Dict[str, TruthValue]]:
+    """
+    Find all WK3 models satisfying formula.
+    
+    Args:
+        formula: Formula to find models for
+        
+    Returns:
+        List of truth assignments (atom_name -> TruthValue)
+        
+    Example:
+        >>> models = wk3_models(Disjunction(Atom("p"), Atom("q")))
+        >>> print(f"Found {len(models)} models")
+    """
+```
+
+**TableauEngine Interface**:
+```python
+class TableauEngine:
     def build(self) -> bool:
         """
         Construct tableau and determine satisfiability.
         
         Returns:
-            bool: True if formulas are satisfiable, False if unsatisfiable
+            True if satisfiable, False if unsatisfiable
             
-        Time Complexity: O(n log n) average case, O(2^n) worst case
-        Space Complexity: O(b * f) where b=branches, f=formulas per branch
+        Side Effects:
+            - Updates self.branches with final tableau
+            - Updates self.rule_applications with statistics
+            - May modify internal state for optimization
         """
     
-    def extract_all_models(self) -> List[Any]:
+    def extract_all_models(self) -> List[Dict[str, TruthValue]]:
         """
-        Extract all satisfying models from open branches.
+        Extract all satisfying models.
         
         Returns:
-            List[Model]: All satisfying truth assignments
+            List of models, each mapping atom names to truth values
             
-        Precondition: build() must be called first
+        Preconditions:
+            - build() must be called first
+            - Must be satisfiable (build() returned True)
+            
         Raises:
             RuntimeError: If called before build() or on unsatisfiable formula
         """
     
     def get_statistics(self) -> Dict[str, Any]:
         """
-        Return detailed performance and correctness statistics.
+        Get performance statistics.
         
         Returns:
-            Dict with keys: logic_system, satisfiable, total_branches, 
-            open_branches, closed_branches, rule_applications, 
-            construction_time, etc.
+            Dictionary with keys:
+            - satisfiable: bool
+            - total_branches: int  
+            - rule_applications: int
+            - max_branch_size: int
+            - construction_time: float (seconds)
         """
-    
-    def print_tree(self, show_closed: bool = True) -> None:
-        """
-        Print human-readable tableau tree.
-        
-        Args:
-            show_closed: Whether to include closed branches in output
-            
-        Precondition: track_tree=True in constructor
-        """
-```
-
-**LogicSystem Interface**:
-```python
-class LogicSystem:
-    def find_applicable_rules(self, formula: Formula) -> List[TableauRule]:
-        """
-        Find all rules applicable to formula, sorted by priority.
-        
-        Time Complexity: O(1) with rule caching
-        """
-    
-    def apply_rule(self, rule: TableauRule, formula: Formula, 
-                   context: RuleContext) -> RuleApplication:
-        """Apply rule to formula in given context."""
-    
-    def is_branch_closed(self, branch: BranchInterface) -> bool:
-        """Check if branch is closed (contains contradiction)."""
-    
-    def extract_model(self, branch: BranchInterface) -> Any:
-        """Extract satisfying model from open branch."""
-    
-    def remove_subsumed_branches(self, branches: List[BranchInterface]) -> List[BranchInterface]:
-        """Remove branches subsumed by other branches."""
-    
-    def list_rules(self) -> List[str]:
-        """Return human-readable list of rule descriptions."""
-    
-    def validate(self) -> List[str]:
-        """Validate system for correctness, return error list."""
 ```
 
 ### 9.2 Extension Interface Contracts
 
-**TableauRule Implementation Contract**:
+**Rule Implementation Contract**:
 ```python
-class CustomRule(TableauRule):
-    # Required class attributes
-    priority: int = 2           # 1=highest priority, higher numbers=lower priority
-    rule_type: RuleType = ...   # Enum value for rule classification
-    description: str = "..."    # Human-readable description
+class CustomRule(SignedTableauRule):
+    # Required: priority for rule ordering
+    priority: int = 2  # 0=highest, higher numbers=lower priority
     
-    # Computed properties (do not override)
-    @property
-    def is_alpha_rule(self) -> bool:
-        return self.priority <= 2  # Non-branching rules
-    
-    @property  
-    def is_beta_rule(self) -> bool:
-        return self.priority >= 3  # Branching rules
-    
-    # Required implementations
-    def applies_to(self, formula: Formula) -> bool:
+    def applies_to(self, signed_formula: SignedFormula) -> bool:
         """
-        Return True if this rule can be applied to formula.
+        Check if rule applies to signed formula.
         
-        Contract: Must be deterministic and side-effect free.
-        Performance: Should be O(1) or O(log n) at worst.
-        """
-        
-    def apply(self, formula: Formula, context: RuleContext) -> RuleApplication:
-        """
-        Apply rule to formula, returning expansion result.
-        
-        Contract: 
-        - Must not modify input formula or context
-        - Must return valid RuleApplication
-        - branch_count must match len(formulas_for_branches)
-        - For α-rules: branch_count should be 1
-        - For β-rules: branch_count should be > 1
+        Requirements:
+        - Must be deterministic and side-effect free
+        - Should be O(1) or O(log n) complexity
+        - Must return True iff apply() can handle this formula
         
         Args:
-            formula: Formula to expand (guaranteed applies_to(formula) == True)
-            context: Tableau context with branch and state information
+            signed_formula: The signed formula to check
             
         Returns:
-            RuleApplication with new formulas and metadata
-        """
-```
-
-**BranchInterface Implementation Guidelines**:
-```python
-class CustomBranch:
-    """Custom branch implementation guidelines."""
-    
-    def __init__(self, branch_id: int, formulas: List[Formula] = None):
-        """
-        Contract:
-        - branch_id must be unique within tableau
-        - formulas list must be copied, not aliased
-        - Initial state must be open (not closed)
+            True if rule applies, False otherwise
         """
         
-    @property
-    def id(self) -> int:
+    def apply(self, signed_formula: SignedFormula) -> RuleResult:
         """
-        Contract: Must return unique, immutable identifier.
-        Performance: Must be O(1).
-        """
+        Apply rule to signed formula.
         
-    @property
-    def is_closed(self) -> bool:
-        """
-        Contract: Return True iff branch contains contradiction.
-        Performance: Should be O(1) with caching/indexing.
-        """
+        Requirements:
+        - Must not modify input signed_formula
+        - Must return valid RuleResult
+        - For α-rules: result.is_alpha=True, len(result.branches)=1
+        - For β-rules: result.is_alpha=False, len(result.branches)>1
         
-    def add_formula(self, formula: Formula) -> None:
-        """
-        Contract:
-        - Must append formula to branch
-        - Must update any indexes/caches
-        - Must check for closure after addition
-        - Must not modify the input formula
-        Performance: Should be O(1) amortized.
-        """
-        
-    def copy(self, new_id: int) -> 'BranchInterface':
-        """
-        Contract:
-        - Must create deep copy of branch state
-        - Must preserve all formulas and assignments
-        - Must use new_id as branch identifier
-        - Must preserve open/closed status
-        Performance: Should minimize copying overhead.
-        """
-```
-
-### 9.3 Error Handling and Validation
-
-**Exception Hierarchy**:
-```python
-class TableauError(Exception):
-    """Base class for all tableau-related errors."""
-    
-class LogicSystemError(TableauError):
-    """Errors in logic system configuration or components."""
-    
-class RuleApplicationError(TableauError):
-    """Errors during rule application."""
-    
-class BranchError(TableauError):
-    """Errors in branch operations."""
-    
-class ModelExtractionError(TableauError):
-    """Errors during model extraction."""
-```
-
-**Validation Framework**:
-```python
-def validate_tableau_construction(tableau: ComponentizedTableau) -> None:
-    """Validate tableau construction correctness."""
-    
-    # Check branch consistency
-    for branch in tableau.branches:
-        if branch.is_closed:
-            reason = branch.closure_reason
-            if not reason:
-                raise TableauError(f"Closed branch {branch.id} missing closure reason")
-        
-        # Check formula types supported by logic system
-        for formula in branch.formulas:
-            applicable_rules = tableau.logic_system.find_applicable_rules(formula)
-            # Warning: no rules found (not necessarily error)
-    
-    # Check satisfiability consistency
-    open_branches = [b for b in tableau.branches if not b.is_closed]
-    satisfiable = len(open_branches) > 0
-    
-    if satisfiable:
-        # All open branches should provide models
-        for branch in open_branches:
-            try:
-                model = tableau.logic_system.extract_model(branch)
-                # Validate model actually satisfies original formulas
-                for formula in tableau.initial_formulas:
-                    if not model.satisfies(formula):
-                        raise ModelExtractionError(
-                            f"Extracted model does not satisfy formula: {formula}"
-                        )
-            except Exception as e:
-                raise ModelExtractionError(f"Model extraction failed for branch {branch.id}: {e}")
-```
-
-## Design Patterns
-
-### 10.1 Structural Patterns
-
-**1. Composite Pattern (Formula AST)**:
-```python
-# Uniform treatment of atomic and composite formulas
-class Formula(ABC):
-    @abstractmethod
-    def accept(self, visitor: 'FormulaVisitor') -> Any: ...
-
-class Atom(Formula):
-    def accept(self, visitor: 'FormulaVisitor') -> Any:
-        return visitor.visit_atom(self)
-
-class Conjunction(Formula):
-    def accept(self, visitor: 'FormulaVisitor') -> Any:
-        return visitor.visit_conjunction(self)
-
-# Client code treats all formulas uniformly
-def count_atoms(formula: Formula) -> int:
-    counter = AtomCounterVisitor()
-    return formula.accept(counter)
-```
-
-**2. Strategy Pattern (Multiple Implementations)**:
-```python
-# Pluggable algorithms for different logic systems
-class ClosureDetector(ABC):
-    @abstractmethod
-    def detect_closure(self, branch: BranchInterface) -> Optional[str]: ...
-
-class ClassicalClosureDetector(ClosureDetector):
-    def detect_closure(self, branch: BranchInterface) -> Optional[str]:
-        # Two-valued contradiction: A and ¬A
-        return self._check_boolean_contradiction(branch)
-
-class WK3ClosureDetector(ClosureDetector):
-    def detect_closure(self, branch: BranchInterface) -> Optional[str]:
-        # Three-valued contradiction: A=t and A=f
-        return self._check_three_valued_contradiction(branch)
-
-# Client uses strategy polymorphically
-def check_branch_closure(branch: BranchInterface, detector: ClosureDetector) -> bool:
-    return detector.detect_closure(branch) is not None
-```
-
-**3. Abstract Factory Pattern (Component Creation)**:
-```python
-class LogicComponentFactory(ABC):
-    @abstractmethod
-    def create_branch_factory(self) -> BranchFactory: ...
-    @abstractmethod
-    def create_closure_detector(self) -> ClosureDetector: ...
-    @abstractmethod
-    def create_model_extractor(self) -> ModelExtractor: ...
-
-class ClassicalComponentFactory(LogicComponentFactory):
-    def create_branch_factory(self) -> BranchFactory:
-        return ClassicalBranchFactory()
-    def create_closure_detector(self) -> ClosureDetector:
-        return ClassicalClosureDetector()
-    def create_model_extractor(self) -> ModelExtractor:
-        return ClassicalModelExtractor()
-
-class WK3ComponentFactory(LogicComponentFactory):
-    def create_branch_factory(self) -> BranchFactory:
-        return WK3BranchFactory()
-    def create_closure_detector(self) -> ClosureDetector:
-        return WK3ClosureDetector()
-    def create_model_extractor(self) -> ModelExtractor:
-        return WK3ModelExtractor()
-```
-
-### 10.2 Behavioral Patterns
-
-**1. Command Pattern (Rule Application)**:
-```python
-# Rules encapsulate tableau expansion operations
-class RuleCommand:
-    def __init__(self, rule: TableauRule, formula: Formula, context: RuleContext):
-        self.rule = rule
-        self.formula = formula
-        self.context = context
-        self.result: Optional[RuleApplication] = None
-    
-    def execute(self) -> RuleApplication:
-        if self.result is None:
-            self.result = self.rule.apply(self.formula, self.context)
-        return self.result
-    
-    def undo(self) -> None:
-        # Remove formulas added by this rule application
-        if self.result:
-            self._undo_rule_application(self.result)
-
-# Tableau maintains command history for undo/replay
-class ComponentizedTableau:
-    def __init__(self, ...):
-        self._command_history: List[RuleCommand] = []
-    
-    def _apply_rule(self, rule, formula, branch):
-        command = RuleCommand(rule, formula, self._create_context(branch))
-        result = command.execute()
-        self._command_history.append(command)
-        return result
-```
-
-**2. Observer Pattern (Statistics Collection)**:
-```python
-class TableauObserver(ABC):
-    @abstractmethod
-    def on_rule_applied(self, rule: TableauRule, result: RuleApplication) -> None: ...
-    @abstractmethod
-    def on_branch_closed(self, branch: BranchInterface, reason: str) -> None: ...
-    @abstractmethod
-    def on_branch_created(self, branch: BranchInterface) -> None: ...
-
-class StatisticsCollector(TableauObserver):
-    def __init__(self):
-        self.stats = {'rule_applications': 0, 'branches_closed': 0, 'branches_created': 0}
-    
-    def on_rule_applied(self, rule: TableauRule, result: RuleApplication) -> None:
-        self.stats['rule_applications'] += 1
-        if rule.is_alpha_rule:
-            self.stats['alpha_applications'] += 1
-        else:
-            self.stats['beta_applications'] += 1
-
-class ComponentizedTableau:
-    def __init__(self, ...):
-        self._observers: List[TableauObserver] = []
-        
-    def add_observer(self, observer: TableauObserver) -> None:
-        self._observers.append(observer)
-    
-    def _notify_rule_applied(self, rule: TableauRule, result: RuleApplication) -> None:
-        for observer in self._observers:
-            observer.on_rule_applied(rule, result)
-```
-
-**3. Template Method Pattern (Tableau Algorithm)**:
-```python
-class AbstractTableau(ABC):
-    def build(self) -> bool:
-        """Template method defining tableau construction algorithm."""
-        self._initialize()
-        
-        while self._has_work_to_do():
-            branch = self._select_branch()      # Subclass can override
-            formula = self._select_formula(branch)  # Subclass can override
-            rule = self._select_rule(formula)   # Logic system handles this
+        Args:
+            signed_formula: Formula to expand (guaranteed applies_to() == True)
             
-            self._apply_rule(rule, formula, branch)
-            self._check_closure()
-            self._apply_optimizations()         # Subclass can override
-            
-            if self._should_terminate_early():  # Subclass can override
-                break
-        
-        return self._compute_result()
-    
-    # Template methods with default implementations
-    def _select_branch(self) -> BranchInterface:
-        return min(self._open_branches(), key=lambda b: b.id)  # DFS by default
-    
-    def _should_terminate_early(self) -> bool:
-        return self.early_termination and self._has_open_branches()
-    
-    # Abstract methods for subclasses
-    @abstractmethod
-    def _initialize(self) -> None: ...
-    @abstractmethod 
-    def _apply_optimizations(self) -> None: ...
+        Returns:
+            RuleResult with expansion information
+        """
 ```
 
-### 10.3 Creational Patterns
+## Implementation Assessment
 
-**1. Factory Method (Branch Creation)**:
-```python
-class BranchFactory(ABC):
-    @abstractmethod
-    def create_branch(self, branch_id: int, formulas: List[Formula] = None) -> BranchInterface:
-        """Factory method for creating logic-specific branches."""
-        
-class ClassicalBranchFactory(BranchFactory):
-    def create_branch(self, branch_id: int, formulas: List[Formula] = None) -> BranchInterface:
-        return ClassicalBranch(branch_id, formulas)
+### 10.1 Architecture Characteristics
 
-class WK3BranchFactory(BranchFactory):
-    def create_branch(self, branch_id: int, formulas: List[Formula] = None) -> BranchInterface:
-        return WK3Branch(branch_id, formulas)
-```
+**Modularity**: The system consists of three core modules with clear separation of concerns. Each module has a single primary responsibility.
 
-**2. Builder Pattern (Logic System Construction)**:
-```python
-class LogicSystemBuilder:
-    def __init__(self, name: str):
-        self._config = LogicSystemConfig(name=name)
-        self._rules: List[TableauRule] = []
-        self._components: Dict[str, Any] = {}
-    
-    def with_truth_values(self, count: int) -> 'LogicSystemBuilder':
-        self._config.truth_values = count
-        return self
-    
-    def with_description(self, desc: str) -> 'LogicSystemBuilder':
-        self._config.description = desc
-        return self
-    
-    def with_rules(self, rules: List[TableauRule]) -> 'LogicSystemBuilder':
-        self._rules.extend(rules)
-        return self
-    
-    def with_component(self, name: str, component: Any) -> 'LogicSystemBuilder':
-        self._components[name] = component
-        return self
-    
-    def build(self) -> LogicSystem:
-        # Validation
-        required_components = ['branch_factory', 'closure_detector', 'model_extractor']
-        for comp in required_components:
-            if comp not in self._components:
-                raise ValueError(f"Missing required component: {comp}")
-        
-        return LogicSystem(self._config, self._rules, **self._components)
+**Performance**: Critical operations achieve O(1) complexity. The complete test suite (227 tests) executes in under 0.2 seconds.
 
-# Usage:
-modal_logic = (LogicSystemBuilder("Modal Logic K")
-               .with_truth_values(2)
-               .with_description("Basic modal logic with necessity and possibility")
-               .with_rules([ModalNecessityRule(), ModalPossibilityRule()])
-               .with_component('branch_factory', ModalBranchFactory())
-               .with_component('closure_detector', ModalClosureDetector())
-               .with_component('model_extractor', ModalModelExtractor())
-               .build())
-```
+**Correctness**: All implementations follow standard logical semantics. The test suite includes literature-based validation cases.
 
-**3. Registry Pattern (Logic System Management)**:
-```python
-class LogicSystemRegistry:
-    def __init__(self):
-        self._systems: Dict[str, Callable[[], LogicSystem]] = {}
-        self._aliases: Dict[str, str] = {}
-    
-    def register(self, name: str, factory: Callable[[], LogicSystem], 
-                 aliases: List[str] = None) -> None:
-        self._systems[name] = factory
-        
-        if aliases:
-            for alias in aliases:
-                self._aliases[alias] = name
-    
-    def get(self, name: str) -> LogicSystem:
-        # Check aliases first
-        actual_name = self._aliases.get(name, name)
-        
-        if actual_name not in self._systems:
-            available = list(self._systems.keys()) + list(self._aliases.keys())
-            raise ValueError(f"Unknown logic system: {name}. Available: {available}")
-        
-        return self._systems[actual_name]()  # Call factory
-    
-    def list_all(self) -> List[str]:
-        return list(self._systems.keys())
+**Maintainability**: The codebase uses consistent naming conventions and includes comprehensive documentation.
 
-# Global registry instance
-_registry = LogicSystemRegistry()
+**Extensibility**: The system provides defined extension points for new logic systems and formula types.
 
-# Public interface
-def register_logic_system(name: str, factory: Callable[[], LogicSystem], 
-                         aliases: List[str] = None) -> None:
-    _registry.register(name, factory, aliases)
+### 10.2 Code Quality Indicators
 
-def get_logic_system(name: str) -> LogicSystem:
-    return _registry.get(name)
-```
+**Type Safety**: The implementation uses Python type hints throughout the codebase.
 
-## Migration Architecture
+**Error Handling**: Input validation and error reporting are implemented with specific exception types.
 
-### 11.1 Backward Compatibility Strategy
+**Documentation**: Functions and classes include docstrings describing parameters, return values, and behavior.
 
-The system maintains **100% backward compatibility** with existing code through facade interfaces:
+**Testing**: The system includes 227 tests covering all major functionality with no failing tests.
 
-```python
-# Legacy interface preserved
-def classical_tableau(formula: Union[Formula, List[Formula]]) -> ComponentizedTableau:
-    """Facade function maintaining backward compatibility."""
-    return ComponentizedTableau(formula, "classical")
+**Performance**: Critical algorithms use optimized data structures and avoid quadratic complexity where possible.
 
-def wk3_tableau(formula: Union[Formula, List[Formula]]) -> ComponentizedTableau:
-    """Facade function maintaining backward compatibility."""
-    return ComponentizedTableau(formula, "wk3")
+### 10.3 Comparison with Related Systems
 
-# Original classes still work
-class Tableau:
-    """Original Tableau class - still fully functional."""
-    def __init__(self, formulas: Union[Formula, List[Formula]]):
-        # Original implementation preserved unchanged
-        ...
-    
-    def build(self) -> bool:
-        # Original algorithm implementation
-        ...
+**Comparison with Academic Tableau Implementations**:
 
-class WK3Tableau:
-    """Original WK3Tableau class - still fully functional."""
-    # Preserved unchanged for backward compatibility
-```
+| Feature | This System | Typical Academic | Production ATP |
+|---------|-------------|------------------|----------------|
+| **Code Organization** | Three-module design | Variable | Multiple modules |
+| **Performance** | O(1) closure detection | O(n²) typical | Highly optimized |
+| **Logic Support** | Multiple logics | Single logic | Single logic |
+| **Extensibility** | Defined extension points | Limited | Limited |
+| **Documentation** | Comprehensive | Variable | Variable |
+| **Testing** | 227 tests | Basic | Extensive |
+| **Type Safety** | Full type hints | Variable | Variable |
 
-### 11.2 Incremental Migration Path
+**Implementation Characteristics**:
+- Uses signed tableau approach supporting multiple logic systems
+- Implements standard performance optimizations found in production systems
+- Provides extension framework for research applications
+- Maintains academic code quality standards with comprehensive documentation
 
-**Phase 1: Coexistence** (Current State):
-- Both legacy and componentized systems available
-- All existing code continues to work without changes
-- New features developed using componentized system
+### 10.4 Technical Debt Analysis
 
-**Phase 2: Gradual Migration** (Future):
-- Legacy systems become thin wrappers around componentized system
-- Performance benefits of componentized system available to legacy code
-- Deprecation warnings for direct use of legacy classes
+**Current State**: The implementation has minimal technical debt based on standard software quality metrics.
 
-**Phase 3: Consolidation** (Future):
-- Legacy classes removed or moved to compatibility module
-- Full migration to componentized architecture
-- Performance and maintainability benefits fully realized
+**Code Quality**:
+- Consistent coding patterns throughout the codebase
+- No deprecated code or architectural inconsistencies  
+- Comprehensive test coverage with all tests passing
+- Clear separation of concerns with minimal coupling
 
-### 11.3 API Evolution Strategy
+**Areas for Potential Enhancement**:
+1. **Rule Registry Coupling**: Some coupling exists between engine and rule lookup
+2. **Error Context**: Error messages could include more contextual information  
+3. **Performance Monitoring**: Additional performance metrics could be collected
+4. **Documentation Examples**: More usage examples could be added to API documentation
 
-**Versioning Strategy**:
-```python
-class ComponentizedTableau:
-    API_VERSION = "2.0"
-    
-    def __init__(self, formula, logic_system, **kwargs):
-        # Handle deprecated parameters
-        if 'optimization_level' in kwargs:
-            warnings.warn("optimization_level parameter deprecated, optimizations always enabled", 
-                         DeprecationWarning, stacklevel=2)
-        
-        # New parameter validation  
-        if 'early_termination' in kwargs:
-            self.early_termination = kwargs['early_termination']
-        else:
-            # Maintain backward compatible default
-            self.early_termination = True
-```
-
-**Configuration Migration**:
-```python
-def migrate_legacy_config(legacy_config: Dict[str, Any]) -> LogicSystemConfig:
-    """Convert legacy configuration to new format."""
-    
-    # Handle renamed parameters
-    config_mapping = {
-        'use_optimization': 'enable_optimizations',
-        'max_depth': 'depth_limit', 
-        'show_tree': 'track_tree'
-    }
-    
-    new_config = {}
-    for old_key, value in legacy_config.items():
-        new_key = config_mapping.get(old_key, old_key)
-        new_config[new_key] = value
-        
-        if old_key in config_mapping:
-            warnings.warn(f"Configuration parameter '{old_key}' deprecated, use '{new_key}'",
-                         DeprecationWarning)
-    
-    return LogicSystemConfig(**new_config)
-```
-
-## Quality Assessment  
-
-### 12.1 Architecture Quality Metrics
-
-**Modularity Score: 9/10**
-- **Strengths**: Clean separation of concerns, well-defined interfaces
-- **Areas for Improvement**: Some coupling between TableauRule and RuleContext
-
-**Extensibility Score: 10/10**  
-- **Strengths**: Multiple extension points, plugin architecture, protocol-based interfaces
-- **Validation**: Successfully demonstrated with WK3 and mode-aware extensions
-
-**Maintainability Score: 9/10**
-- **Strengths**: Consistent patterns, comprehensive documentation, type safety
-- **Areas for Improvement**: Complex generic types in some interfaces
-
-**Performance Score: 9/10**
-- **Strengths**: All original optimizations preserved, O(1) critical operations
-- **Validation**: Maintains theoretical complexity bounds
-
-**Testability Score: 10/10**
-- **Strengths**: Each component independently testable, dependency injection
-- **Validation**: 100+ tests with comprehensive coverage
-
-### 12.2 Design Quality Assessment
-
-**SOLID Principles Adherence**:
-- ✅ **Single Responsibility**: Each class has one clear purpose
-- ✅ **Open-Closed**: Open for extension, closed for modification  
-- ✅ **Liskov Substitution**: All implementations properly substitute for abstractions
-- ✅ **Interface Segregation**: Components depend only on interfaces they use
-- ✅ **Dependency Inversion**: High-level algorithm depends on abstractions
-
-**Design Pattern Usage**:
-- ✅ **Strategy Pattern**: For pluggable rules and components
-- ✅ **Factory Pattern**: For logic-specific component creation
-- ✅ **Template Method**: For consistent tableau construction
-- ✅ **Observer Pattern**: For statistics and event handling
-- ✅ **Registry Pattern**: For logic system management
-
-**Code Quality Indicators**:
-- **Type Safety**: Full typing with Protocol-based interfaces
-- **Error Handling**: Comprehensive exception hierarchy and validation
-- **Documentation**: Extensive docstrings and architectural documentation
-- **Testing**: High test coverage with multiple test categories
-- **Performance**: Preserved optimizations with monitoring capabilities
-
-### 12.3 Comparative Analysis
-
-**Comparison with Related Systems**:
-
-| Feature | This System | Typical ATP Systems | Educational Tableaux |
-|---------|-------------|--------------------|--------------------|
-| **Modularity** | High (componentized) | Medium | Low (monolithic) |
-| **Extensibility** | High (plugin architecture) | Low (hardcoded) | Low |
-| **Performance** | High (optimized) | High | Medium |
-| **Type Safety** | High (typed interfaces) | Variable | Low |
-| **Logic Support** | Multi-logic framework | Single logic | Single logic |
-| **Educational Value** | High (clear structure) | Low (complex) | High (simple) |
-| **Production Ready** | High | High | Low |
-
-**Innovation Assessment**:
-- **Novel Contributions**: Componentized tableau architecture, multi-logic framework
-- **Best Practices**: Clean architecture, protocol-based design, comprehensive testing
-- **Educational Impact**: Demonstrates advanced software engineering in automated reasoning
-- **Research Value**: Platform for logic system experimentation and comparison
-
-### 12.4 Technical Debt Assessment
-
-**Current Technical Debt: Low**
-
-**Areas Requiring Attention**:
-1. **Rule Context Complexity**: RuleContext has many parameters - consider builder pattern
-2. **Generic Type Complexity**: Some type signatures are complex - could benefit from type aliases
-3. **Error Message Quality**: Some error messages could be more specific and actionable
-4. **Documentation Coverage**: Architecture docs complete, but API docs could be more detailed
-
-**Recommended Improvements**:
-1. **Type Aliases**: Define clear type aliases for complex generic signatures
-2. **Builder Pattern**: Implement RuleContextBuilder for cleaner context creation
-3. **Error Context**: Add more contextual information to error messages
-4. **Performance Profiling**: Add detailed performance profiling capabilities
-5. **Formal Verification**: Consider formal verification of tableau rule correctness
-
-### 12.5 Future Architecture Evolution
-
-**Short-term Evolution** (6 months):
-- Enhanced error reporting with context information
-- Performance profiling and optimization tooling  
-- Additional built-in logic systems (FDE, modal logics)
-- Documentation improvements and examples
-
-**Medium-term Evolution** (1-2 years):
-- First-order logic with full quantifier support
-- Proof object generation and verification
-- Parallel tableau construction for performance
-- Integration with external theorem provers
-
-**Long-term Vision** (3+ years):
-- Machine learning guided rule selection
-- Automated logic system synthesis from examples  
-- Web-based interactive tableau construction
-- Integration with formal verification tools
+**Maintenance Requirements**:
+1. **Dependency Management**: Rule registry could be injected for better testability
+2. **Logging Infrastructure**: Structured logging could be added for debugging
+3. **Performance Metrics**: Detailed timing and memory usage tracking could be implemented
+4. **API Documentation**: Additional practical examples could be included
 
 ## Conclusion
 
-This architectural documentation demonstrates a **mature, well-designed system** that successfully balances theoretical rigor with practical software engineering concerns. The componentized tableau architecture provides an **excellent foundation** for automated reasoning research and education while maintaining the **performance characteristics** required for practical applications.
+This document describes the consolidated tableau system architecture, which implements semantic tableau methods for multiple logic systems using a three-module design. The system uses signed tableau notation as a universal foundation and implements standard performance optimizations including O(1) closure detection and rule prioritization.
 
-**Key Architectural Achievements**:
-1. **Successful Modularization**: Transformed monolithic system into clean, extensible architecture
-2. **Performance Preservation**: Maintained all optimizations while adding flexibility  
-3. **Type Safety**: Full typing with protocol-based interfaces for compile-time verification
-4. **Extensibility Framework**: Clean extension points for new logic systems and capabilities
-5. **Backward Compatibility**: Existing code continues to work without modification
+The architecture supports extension with new logic systems through defined interfaces while maintaining the performance characteristics required for automated reasoning applications. The implementation includes comprehensive testing and documentation suitable for both research and educational use.
 
-**Technical Excellence Indicators**:
-- **SOLID Principles**: Full adherence to all five principles
-- **Design Patterns**: Appropriate use of multiple patterns without over-engineering
-- **Testing**: Comprehensive test coverage with multiple test categories  
-- **Documentation**: Extensive architectural and API documentation
-- **Performance**: Preserved theoretical complexity bounds with practical optimizations
-
-The system represents a **best practice example** of how to architect extensible, high-performance automated reasoning systems while maintaining code quality and theoretical soundness.
-
-**Reviewer Assessment**: This architecture demonstrates **production-quality software engineering** applied to automated theorem proving, suitable for both research and educational applications. The design successfully achieves the difficult balance of **flexibility without performance penalty**, making it an exemplary implementation for the automated reasoning community.
+The system demonstrates how tableau-based theorem proving systems can be implemented with clean module separation, optimized algorithms, and extensible design patterns. The consolidated approach reduces complexity compared to componentized architectures while maintaining support for multiple logical systems.
