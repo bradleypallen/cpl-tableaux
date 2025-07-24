@@ -683,7 +683,7 @@ class SignedRuleRegistry:
             UConjunctionRule(),
             
             # Ferguson wKrQ rules
-            FergusonTConjunctionRule(),
+            WkrqTConjunctionRule(),
             WkrqFConjunctionRule(),
             WkrqMConjunctionRule(),
             WkrqNConjunctionRule(),
