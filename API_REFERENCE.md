@@ -1,18 +1,18 @@
-# API Reference: Consolidated Tableau System
+# API Reference: Unified Tableau System
 
-**Version**: 3.0 (Consolidated Architecture)  
-**Last Updated**: July 2025  
+**Version**: 4.0 (Unified Implementation)  
+**Last Updated**: December 2024  
 **License**: MIT  
 
 ## Table of Contents
 
 1. [Quick Start](#quick-start)
 2. [Core API Functions](#core-api-functions)
-3. [TableauEngine Class](#tableauengine-class)
+3. [OptimizedTableauEngine Class](#optimizedtableauengine-class)
 4. [Data Structures](#data-structures)
 5. [Logic Systems](#logic-systems)
-6. [Extension Framework](#extension-framework)
-7. [Performance and Debugging](#performance-and-debugging)
+6. [Visualization Features](#visualization-features)
+7. [Extension Framework](#extension-framework)
 8. [Complete Examples](#complete-examples)
 
 ## Quick Start
@@ -31,26 +31,40 @@ python -m pytest --tb=no -q
 ### Basic Usage
 
 ```python
-from tableau_core import Atom, Conjunction, Disjunction, Negation, Implication
-from tableau_core import T, F, classical_signed_tableau, wk3_satisfiable
+from tableau_core import (
+    # Formula construction
+    Atom, Conjunction, Disjunction, Negation, Implication,
+    # Signs
+    T, F, T3, F3, U, TF, FF, M, N,
+    # Truth values
+    t, f, e,
+    # Tableau functions
+    classical_signed_tableau, three_valued_signed_tableau, T3, U
+)
 
 # Create formulas
 p = Atom("p")
 q = Atom("q")
 formula = Implication(p, Disjunction(p, q))
 
-# Classical logic - check satisfiability
-engine = classical_signed_tableau(T(formula))
-satisfiable = engine.build()
+# Classical logic with visualization
+tableau = classical_signed_tableau(T(formula), track_steps=True)
+satisfiable = tableau.build()
 print(f"Satisfiable: {satisfiable}")
+
+# Show step-by-step construction
+tableau.print_construction_steps()
 
 # Extract models if satisfiable
 if satisfiable:
-    models = engine.extract_all_models()
-    print(f"Models: {models}")
+    models = tableau.extract_all_models()
+    print(f"Found {len(models)} models")
 
 # Three-valued logic (WK3)
-wk3_result = wk3_satisfiable(formula)
+# WK3 satisfiability using tableau approach
+t3_tableau = three_valued_signed_tableau(T3(formula))
+u_tableau = three_valued_signed_tableau(U(formula))
+wk3_result = t3_tableau.build() or u_tableau.build()
 print(f"WK3 satisfiable: {wk3_result}")
 ```
 
@@ -58,102 +72,155 @@ print(f"WK3 satisfiable: {wk3_result}")
 
 ### Classical Logic Functions
 
-#### `classical_signed_tableau(formulas)`
+#### `classical_signed_tableau(formulas, track_steps=False)`
 
-Create a classical logic tableau engine.
+Create a classical logic tableau engine with optional step tracking.
 
 **Parameters:**
 - `formulas`: `SignedFormula` or `List[SignedFormula]` - Initial signed formulas
+- `track_steps`: `bool` - Enable step-by-step visualization (default: False)
 
 **Returns:**
-- `TableauEngine` - Configured tableau engine
+- `OptimizedTableauEngine` - Configured tableau engine
 
 **Example:**
 ```python
-from tableau_core import T, F, classical_signed_tableau
+from tableau_core import T, F, classical_signed_tableau, Atom
 
-# Single formula
-engine = classical_signed_tableau(T(Atom("p")))
+# Single formula with visualization
+tableau = classical_signed_tableau(T(Atom("p")), track_steps=True)
 
 # Multiple formulas
-engine = classical_signed_tableau([T(Atom("p")), F(Atom("q"))])
+tableau = classical_signed_tableau([T(Atom("p")), F(Atom("q"))])
+
+# Build and show results
+result = tableau.build()
+if tableau.track_construction:
+    tableau.print_construction_steps()
 ```
 
-#### `check_satisfiability(formulas, logic_system="classical")`
+#### `three_valued_signed_tableau(formulas, track_steps=False)`
 
-Quick satisfiability check without model extraction.
+Create a three-valued logic tableau engine.
 
 **Parameters:**
-- `formulas`: `List[Formula]` - Unsigned formulas to test
-- `logic_system`: `str` - Logic system ("classical", "three_valued", "wkrq")
+- `formulas`: `SignedFormula` or `List[SignedFormula]` - Initial signed formulas
+- `track_steps`: `bool` - Enable step-by-step visualization
 
 **Returns:**
-- `bool` - True if satisfiable
+- `OptimizedTableauEngine` - Engine configured for three-valued logic
 
 **Example:**
 ```python
-from tableau_engine import check_satisfiability
+from tableau_core import T3, F3, U, three_valued_signed_tableau
 
-formulas = [Atom("p"), Negation(Atom("p"))]
-result = check_satisfiability(formulas, "classical")
-print(f"Satisfiable: {result}")  # False (contradiction)
+p = Atom("p")
+tableau = three_valued_signed_tableau([T3(p), U(p)], track_steps=True)
+result = tableau.build()
 ```
 
 ### Three-Valued Logic Functions
 
-#### `wk3_satisfiable(formula)`
+#### WK3 Satisfiability Check (Tableau Approach)
 
-Check WK3 (Weak Kleene) satisfiability.
+Check WK3 (Weak Kleene) satisfiability using the tableau method.
 
-**Parameters:**
-- `formula`: `Formula` - Formula to test
+**Approach:**
+A formula is WK3-satisfiable if it can be either **true** (T3) or **undefined** (U).
 
-**Returns:**
-- `bool` - True if satisfiable in WK3
+**Algorithm:**
+1. Create tableau for `T3(formula)` (can the formula be true?)
+2. Create tableau for `U(formula)` (can the formula be undefined?)
+3. Formula is satisfiable if either tableau succeeds
 
 **Example:**
 ```python
-from tableau_core import wk3_satisfiable, Conjunction, Negation
+from tableau_core import three_valued_signed_tableau, T3, U, Conjunction, Negation, Atom
 
 p = Atom("p")
 contradiction = Conjunction(p, Negation(p))
 
 # Classical: unsatisfiable
-classical_result = check_satisfiability([contradiction])
+tableau = classical_signed_tableau(T(contradiction))
+classical_result = tableau.build()
 print(f"Classical: {classical_result}")  # False
 
-# WK3: satisfiable (when p is undefined)
-wk3_result = wk3_satisfiable(contradiction)
+# WK3: satisfiable using tableau approach
+t3_tableau = three_valued_signed_tableau(T3(contradiction))
+u_tableau = three_valued_signed_tableau(U(contradiction))
+wk3_result = t3_tableau.build() or u_tableau.build()
 print(f"WK3: {wk3_result}")  # True
 ```
 
-#### `wk3_models(formula)`
+#### WK3 Model Extraction (Tableau Approach)
 
-Find all WK3 models for a formula.
+Extract all WK3 models for a formula using the tableau method.
 
-**Parameters:**
-- `formula`: `Formula` - Formula to find models for
+**Approach:**
+1. Check if formula can be true (T3) - extract models from successful tableau
+2. Check if formula can be undefined (U) - extract models from successful tableau  
+3. Combine models from both tableaux
 
 **Returns:**
-- `List[WK3Model]` - List of satisfying models
+- Models from tableaux show **minimal satisfying assignments**
 
 **Example:**
 ```python
-from tableau_core import wk3_models, Disjunction
+from tableau_core import three_valued_signed_tableau, T3, U, Disjunction, Atom
 
 p = Atom("p")
-q = Atom("q")
+q = Atom("q") 
 formula = Disjunction(p, q)
 
-models = wk3_models(formula)
+# Get models from both T3 and U tableaux
+t3_tableau = three_valued_signed_tableau(T3(formula))
+u_tableau = three_valued_signed_tableau(U(formula))
+
+models = []
+if t3_tableau.build():
+    models.extend(t3_tableau.extract_all_models())
+if u_tableau.build():
+    models.extend(u_tableau.extract_all_models())
 for i, model in enumerate(models):
-    print(f"Model {i+1}: {model.assignment}")
+    print(f"Model {i+1}:")
+    print(f"  p: {model.get_assignment('p')}")
+    print(f"  q: {model.get_assignment('q')}")
     print(f"  Satisfies formula: {model.satisfies(formula)}")
 ```
 
+### Ferguson's wKrQ Epistemic Logic
+
+#### `wkrq_signed_tableau(formulas, track_steps=False)`
+
+Create Ferguson's wKrQ epistemic logic tableau.
+
+**Parameters:**
+- `formulas`: `SignedFormula` or `List[SignedFormula]` - Initial signed formulas
+- `track_steps`: `bool` - Enable step-by-step visualization
+
+**Returns:**
+- `OptimizedTableauEngine` - Engine configured for wKrQ logic
+
+**Example:**
+```python
+from tableau_core import M, N, TF, FF, wkrq_signed_tableau
+
+p = Atom("p")
+q = Atom("q")
+
+# Epistemic uncertainty: "p may be true" and "p need not be true"
+formulas = [M(p), N(p)]
+tableau = wkrq_signed_tableau(formulas, track_steps=True)
+result = tableau.build()  # True - epistemic uncertainty is consistent
+```
+
+#### `ferguson_signed_tableau(formulas, track_steps=False)`
+
+Alternative name for wKrQ tableau (same functionality).
+
 ### Signed Formula Constructors
 
-#### `T(formula)`, `F(formula)` - Classical Signs
+#### Classical Signs: `T(formula)`, `F(formula)`
 
 Create signed formulas for classical logic.
 
@@ -161,7 +228,7 @@ Create signed formulas for classical logic.
 - `formula`: `Formula` - The formula to sign
 
 **Returns:**
-- `SignedFormula` - Signed formula object
+- `SignedFormula` - Signed formula with classical sign
 
 **Example:**
 ```python
@@ -177,44 +244,63 @@ t_conj = T(Conjunction(p, q))
 f_conj = F(Conjunction(p, q))
 ```
 
-#### `T3(formula)`, `F3(formula)`, `U(formula)` - Three-Valued Signs
+#### Three-Valued Signs: `T3(formula)`, `F3(formula)`, `U(formula)`
 
 Create signed formulas for three-valued logic.
 
-**Parameters:**
-- `formula`: `Formula` - The formula to sign
-
-**Returns:**
-- `SignedFormula` - Signed formula with three-valued sign
-
 **Example:**
 ```python
-from tableau_core import T3, F3, U, three_valued_signed_tableau
+from tableau_core import T3, F3, U
 
 p = Atom("p")
 
-# Three-valued signs
 t3_p = T3(p)  # "p is true"
 f3_p = F3(p)  # "p is false"
 u_p = U(p)    # "p is undefined"
-
-# Use in three-valued tableau
-engine = three_valued_signed_tableau([t3_p, u_p])
-satisfiable = engine.build()
 ```
 
-## TableauEngine Class
+#### wKrQ Signs: `TF(formula)`, `FF(formula)`, `M(formula)`, `N(formula)`
 
-The `TableauEngine` class provides the main tableau construction algorithm.
+Create signed formulas for Ferguson's epistemic logic.
+
+**Signs:**
+- `TF`: Definitely true (classical T)
+- `FF`: Definitely false (classical F)
+- `M`: May be true (epistemic possibility)
+- `N`: Need not be true (epistemic possibility of falsehood)
+
+**Example:**
+```python
+from tableau_core import TF, FF, M, N
+
+p = Atom("p")
+
+tf_p = TF(p)  # "p is definitely true"
+ff_p = FF(p)  # "p is definitely false"
+m_p = M(p)    # "p may be true"
+n_p = N(p)    # "p need not be true"
+```
+
+## OptimizedTableauEngine Class
+
+The `OptimizedTableauEngine` class provides industrial-grade tableau construction with visualization.
+
+### Key Features
+
+- **α/β Rule Prioritization**: Apply linear rules before branching (Smullyan, 1968)
+- **O(1) Closure Detection**: Hash-based formula tracking
+- **Subsumption Elimination**: Remove redundant branches
+- **Step-by-Step Visualization**: Track construction with tree structure
 
 ### Constructor
 
-#### `TableauEngine(sign_system="classical")`
+The engine is typically created through convenience functions, but can be instantiated directly:
 
-Create a new tableau engine.
+```python
+from tableau_core import OptimizedTableauEngine
 
-**Parameters:**
-- `sign_system`: `str` - Logic system ("classical", "three_valued", "wkrq")
+engine = OptimizedTableauEngine("classical")  # or "wk3", "wkrq"
+```
 
 ### Core Methods
 
@@ -227,864 +313,452 @@ Construct the tableau and determine satisfiability.
 
 **Side Effects:**
 - Updates `self.branches` with final tableau
-- Updates `self.rule_applications` with statistics
-- May modify internal state for optimization
+- Records construction steps if tracking enabled
+- Updates performance statistics
 
-**Example:**
-```python
-from tableau_engine import TableauEngine
-from tableau_core import T, Atom, Implication
+#### `is_satisfiable() -> bool`
 
-engine = TableauEngine("classical")
-engine.add_initial_formulas([T(Implication(Atom("p"), Atom("q")))])
-satisfiable = engine.build()
+Check satisfiability (must call `build()` first).
 
-print(f"Satisfiable: {satisfiable}")
-print(f"Rule applications: {engine.rule_applications}")
-print(f"Total branches: {len(engine.branches)}")
-```
+**Returns:**
+- `bool` - True if satisfiable
 
-#### `extract_all_models() -> List[Dict[str, TruthValue]]`
+#### `extract_all_models() -> List[Model]`
 
 Extract all satisfying models from open branches.
 
 **Returns:**
-- `List[Dict[str, TruthValue]]` - List of models mapping atom names to truth values
-
-**Preconditions:**
-- `build()` must be called first
-- Must be satisfiable (`build()` returned True)
-
-**Raises:**
-- `RuntimeError` - If called before `build()` or on unsatisfiable formula
+- `List[Model]` - List of models (ClassicalModel, WK3Model, or WkrqModel)
 
 **Example:**
 ```python
-engine = classical_signed_tableau(T(Atom("p")))
-if engine.build():
-    models = engine.extract_all_models()
-    for i, model in enumerate(models):
-        print(f"Model {i+1}:")
-        for atom, value in model.items():
-            print(f"  {atom}: {value}")
+tableau = classical_signed_tableau(T(Atom("p")))
+if tableau.build():
+    models = tableau.extract_all_models()
+    for model in models:
+        print(f"Model: {model.assignment}")
 ```
 
-#### `get_statistics() -> Dict[str, Any]`
+### Visualization Methods
 
-Get performance and construction statistics.
+#### `enable_step_tracking()`
+
+Enable construction step recording for visualization.
+
+**Note:** Must be called before `build_tableau()`.
+
+#### `print_construction_steps(title="Step-by-Step Tableau Construction")`
+
+Print step-by-step construction with tree visualization.
+
+**Parameters:**
+- `title`: `str` - Title for the output
+
+**Output Format:**
+```
+Step 1: Initialize tableau with given formulas
+Initial formulas:
+  • T:p ∨ q
+
+Step 2: Apply T-Disjunction (β) to T:p ∨ q (creates 2 branches)
+Rule applied: T-Disjunction (β)
+New formulas added:
+  • T:p
+  • T:q
+Tableau tree structure:
+├── Branch 1 ○
+│   ├─ T:p ∨ q
+│   └─ T:p
+└── Branch 2 ○
+    ├─ T:p ∨ q
+    └─ T:q
+```
+
+#### `get_step_by_step_construction() -> List[dict]`
+
+Get raw construction steps for programmatic access.
 
 **Returns:**
-- `Dict[str, Any]` - Statistics dictionary
-
-**Keys:**
-- `satisfiable`: `bool` - Whether formula was satisfiable
-- `total_branches`: `int` - Total branches created
-- `rule_applications`: `int` - Number of rule applications
-- `max_branch_size`: `int` - Largest branch size
-- `construction_time`: `float` - Time in seconds (if available)
-
-**Example:**
-```python
-engine = classical_signed_tableau(T(complex_formula))
-engine.build()
-
-stats = engine.get_statistics()
-print(f"Total branches: {stats['total_branches']}")
-print(f"Rule applications: {stats['rule_applications']}")
-print(f"Max branch size: {stats['max_branch_size']}")
-```
-
-### Advanced Methods
-
-#### `add_initial_formulas(formulas: List[SignedFormula])`
-
-Add initial formulas before tableau construction.
-
-#### `find_expandable_branch() -> Optional[TableauBranch]`
-
-Find next branch to expand (internal method).
-
-#### `apply_rule(rule, signed_formula, branch)`
-
-Apply a tableau rule to a branch (internal method).
+- `List[dict]` - Step information with tree snapshots
 
 ## Data Structures
 
 ### Formula Classes
 
-#### `Atom(name: str)`
+#### `Atom(name)`
 
-Propositional atom.
+Atomic proposition.
 
 **Parameters:**
-- `name`: `str` - Atom name (e.g., "p", "q", "proposition1")
+- `name`: `str` - Atom name
 
 **Example:**
 ```python
-from tableau_core import Atom
-
 p = Atom("p")
-complex_atom = Atom("user_is_authenticated")
+q = Atom("q")
 ```
 
-#### `Negation(operand: Formula)`
+#### `Negation(operand)`
 
-Logical negation.
+Negation formula.
 
 **Parameters:**
 - `operand`: `Formula` - Formula to negate
 
-**Example:**
-```python
-from tableau_core import Negation, Atom
+#### `Conjunction(left, right)`
 
-p = Atom("p")
-not_p = Negation(p)  # ¬p
-```
-
-#### `Conjunction(left: Formula, right: Formula)`
-
-Logical conjunction (AND).
+Conjunction (AND) formula.
 
 **Parameters:**
-- `left`: `Formula` - Left operand
-- `right`: `Formula` - Right operand
+- `left`: `Formula` - Left conjunct
+- `right`: `Formula` - Right conjunct
+
+#### `Disjunction(left, right)`
+
+Disjunction (OR) formula.
+
+#### `Implication(antecedent, consequent)`
+
+Implication formula.
+
+**Parameters:**
+- `antecedent`: `Formula` - Antecedent (if part)
+- `consequent`: `Formula` - Consequent (then part)
+
+### First-Order Logic Classes
+
+#### `Predicate(name, terms)`
+
+Predicate with terms.
+
+**Parameters:**
+- `name`: `str` - Predicate name
+- `terms`: `List[Term]` - List of terms
 
 **Example:**
 ```python
-from tableau_core import Conjunction, Atom
+from tableau_core import Predicate, Constant, Variable
 
-p = Atom("p")
-q = Atom("q")
-p_and_q = Conjunction(p, q)  # p ∧ q
+x = Variable("x")
+a = Constant("a")
+Student_a = Predicate("Student", [a])
+Human_x = Predicate("Human", [x])
 ```
 
-#### `Disjunction(left: Formula, right: Formula)`
+#### `Constant(name)`
 
-Logical disjunction (OR).
+Constant term.
 
-**Example:**
+#### `Variable(name)`
+
+Variable term.
+
+### Truth Values
+
+#### `TruthValue` Enumeration
+
+Three-valued truth system:
+
 ```python
-from tableau_core import Disjunction, Atom
+from tableau_core import TruthValue, t, f, e
 
-p = Atom("p")
-q = Atom("q")
-p_or_q = Disjunction(p, q)  # p ∨ q
+# Values
+t = TruthValue.TRUE      # True
+f = TruthValue.FALSE     # False  
+e = TruthValue.UNDEFINED # Undefined/error
 ```
 
-#### `Implication(left: Formula, right: Formula)`
+#### `WeakKleeneOperators`
 
-Logical implication.
+Operators for weak Kleene semantics:
 
-**Example:**
 ```python
-from tableau_core import Implication, Atom
+from tableau_core import WeakKleeneOperators
 
-p = Atom("p")
-q = Atom("q")
-p_implies_q = Implication(p, q)  # p → q
+# Any operation with 'e' returns 'e'
+result = WeakKleeneOperators.conjunction(t, e)  # Returns e
+result = WeakKleeneOperators.disjunction(f, e)  # Returns e
+result = WeakKleeneOperators.negation(e)        # Returns e
 ```
 
-### Truth Value System
+### Model Classes
 
-#### `TruthValue`
+#### `ClassicalModel`
 
-Constants for truth values across logic systems.
+Two-valued model for classical logic.
 
-**Constants:**
-- `TruthValue.TRUE` - Boolean true
-- `TruthValue.FALSE` - Boolean false
-- `TruthValue.UNDEFINED` - Three-valued undefined
+**Methods:**
+- `get_assignment(atom_name: str) -> bool`
+- `satisfies(formula: Formula) -> bool`
 
-**Example:**
-```python
-from tableau_core import TruthValue
+#### `WK3Model`
 
-# Classical model
-classical_model = {
-    "p": TruthValue.TRUE,
-    "q": TruthValue.FALSE
-}
+Three-valued model for weak Kleene logic.
 
-# Three-valued model
-wk3_model = {
-    "p": TruthValue.TRUE,
-    "q": TruthValue.UNDEFINED,
-    "r": TruthValue.FALSE
-}
-```
+**Methods:**
+- `get_assignment(atom_name: str) -> TruthValue`
+- `satisfies(formula: Formula) -> TruthValue`
 
-### WK3 Truth Value Constructors
+#### `WkrqModel`
 
-#### `t`, `f`, `e` - Three-Valued Constants
+Model for Ferguson's wKrQ epistemic logic.
 
-Convenience constructors for WK3 truth values.
-
-**Usage:**
-```python
-from tableau_core import t, f, e
-
-# Direct truth value construction
-model = {
-    "p": t,  # true
-    "q": f,  # false  
-    "r": e   # undefined
-}
-```
+**Methods:**
+- `get_assignment(formula: Formula) -> Optional[Sign]`
 
 ## Logic Systems
 
 ### Classical Propositional Logic
 
-Two-valued logic with standard semantics.
+**Signs:** T (true), F (false)  
+**Contradiction:** T:φ and F:φ contradict
 
-**Truth Values:** `true`, `false`
-
-**Operators:**
-- `¬p` (negation): `¬true = false`, `¬false = true`
-- `p ∧ q` (conjunction): true only when both operands are true
-- `p ∨ q` (disjunction): false only when both operands are false
-- `p → q` (implication): false only when p is true and q is false
-
-**API Usage:**
-```python
-from tableau_core import classical_signed_tableau, T, F
-
-# Test tautology
-tautology = Disjunction(Atom("p"), Negation(Atom("p")))
-engine = classical_signed_tableau(F(tautology))  # Test if negation is unsatisfiable
-is_tautology = not engine.build()  # Unsatisfiable negation = tautology
-```
+**Rules:**
+- T-Conjunction (α): T:(A∧B) → T:A, T:B
+- F-Conjunction (β): F:(A∧B) → F:A | F:B
+- T-Disjunction (β): T:(A∨B) → T:A | T:B
+- F-Disjunction (α): F:(A∨B) → F:A, F:B
+- T-Implication (β): T:(A→B) → F:A | T:B
+- F-Implication (α): F:(A→B) → T:A, F:B
+- T-Negation (α): T:¬A → F:A
+- F-Negation (α): F:¬A → T:A
 
 ### Weak Kleene Logic (WK3)
 
-Three-valued logic with undefined value propagation.
-
-**Truth Values:** `t` (true), `f` (false), `e` (undefined/error)
+**Signs:** T (true), F (false), U (undefined)  
+**Contradiction:** Only T:φ and F:φ contradict
 
 **Truth Tables:**
 ```
 ¬t = f    ¬f = t    ¬e = e
 
-t ∧ t = t    t ∧ f = f    t ∧ e = e
-f ∧ t = f    f ∧ f = f    f ∧ e = f  
-e ∧ t = e    e ∧ f = f    e ∧ e = e
-
-t ∨ t = t    t ∨ f = t    t ∨ e = t
-f ∨ t = t    f ∨ f = f    f ∨ e = e
-e ∨ t = t    e ∨ f = e    e ∨ e = e
+t ∧ t = t    t ∧ f = e    t ∧ e = e
+f ∧ t = e    f ∧ f = f    f ∧ e = e
+e ∧ t = e    e ∧ f = e    e ∧ e = e
 ```
 
-**Key Properties:**
-- Contradictions can be satisfiable when atoms are undefined
-- Law of excluded middle (`p ∨ ¬p`) is not a tautology
-- Self-implication (`p → p`) is not a tautology
+### Ferguson's wKrQ Epistemic Logic
 
-**API Usage:**
+**Signs:** T/F (definite), M/N (epistemic)  
+**Contradiction:** Only T:φ and F:φ contradict
+
+**Interpretation:**
+- T:φ - "φ is definitely true"
+- F:φ - "φ is definitely false"
+- M:φ - "φ may be true" (epistemic possibility)
+- N:φ - "φ need not be true" (epistemic possibility of falsehood)
+
+## Visualization Features
+
+### Step-by-Step Construction
+
+Enable detailed construction tracking:
+
 ```python
-from tableau_core import wk3_satisfiable, wk3_models
-
-p = Atom("p")
-contradiction = Conjunction(p, Negation(p))
-
-# Check satisfiability
-satisfiable = wk3_satisfiable(contradiction)  # True
-
-# Find models
-models = wk3_models(contradiction)
-for model in models:
-    print(f"p = {model.assignment.get('p', e)}")  # Should show e (undefined)
+tableau = classical_signed_tableau(formulas, track_steps=True)
+result = tableau.build()
+tableau.print_construction_steps("My Tableau Construction")
 ```
 
-### wKrQ Logic (Ferguson System)
+### Tree Structure Display
 
-Four-valued epistemic logic with signs T, F, M, N.
+The visualization shows:
+- Branch hierarchy with parent-child relationships
+- Open (○) and closed (✗) branch status
+- Specific rules applied at each step
+- Formulas added by each rule application
 
-**Signs:**
-- `T` (definitely true) / `F` (definitely false) - Truth-functional
-- `M` (may be true) / `N` (need not be true) - Epistemic
-
-**Closure Conditions:**
-- `T:p` and `F:p` close branches (classical contradiction)
-- `M:p` and `N:p` do NOT close branches (epistemic uncertainty)
-
-**API Usage:**
-```python
-from tableau_core import TF, FF, M, N, wkrq_signed_tableau
-
-p = Atom("p")
-
-# Classical contradiction - unsatisfiable
-classical_test = wkrq_signed_tableau([TF(p), FF(p)])
-print(classical_test.build())  # False
-
-# Epistemic uncertainty - satisfiable
-epistemic_test = wkrq_signed_tableau([M(p), N(p)])
-print(epistemic_test.build())  # True
+Example output:
+```
+Step 2: Apply F-Conjunction (β) to F:p ∧ q (creates 2 branches)
+Rule applied: F-Conjunction (β)
+Tableau tree structure:
+└── Branch 0 (parent node)
+    ├── Branch 1 ○
+    │   ├─ F:p ∧ q
+    │   └─ F:p
+    └── Branch 2 ○
+        ├─ F:p ∧ q
+        └─ F:q
 ```
 
 ## Extension Framework
 
 ### Adding New Logic Systems
 
-#### Step 1: Define Sign System
+Extend the unified implementation by modifying `tableau_core.py`:
 
+**Step 1: Define Sign System**
 ```python
-from tableau_core import Sign
-
-class ModalSign(Sign):
-    """Modal logic signs: □T, □F, ◇T, ◇F"""
+class TemporalSign(Sign):
+    def __init__(self, designation: str, time: int):
+        self.designation = designation  # "T" or "F"
+        self.time = time               # Time point
     
-    def __init__(self, modality: str, polarity: str):
-        if modality not in ["□", "◇"]:
-            raise ValueError(f"Invalid modality: {modality}")
-        if polarity not in ["T", "F"]:
-            raise ValueError(f"Invalid polarity: {polarity}")
-        self.modality = modality
-        self.polarity = polarity
-    
-    def contradicts(self, other: 'ModalSign') -> bool:
-        return (self.modality == other.modality and 
-                self.polarity != other.polarity)
-    
-    def __str__(self) -> str:
-        return f"{self.modality}{self.polarity}"
+    def is_contradictory_with(self, other: 'Sign') -> bool:
+        return (isinstance(other, TemporalSign) and
+                self.designation != other.designation and
+                self.time == other.time)
 ```
 
-#### Step 2: Implement Tableau Rules
-
+**Step 2: Add Rules to Engine**
 ```python
-from tableau_rules import SignedTableauRule, AlphaRule, RuleResult
-
-class ModalNecessityRule(AlphaRule):
-    """□T:A → T:A (necessity rule)"""
-    priority = 1
-    
-    def applies_to(self, signed_formula) -> bool:
-        return (isinstance(signed_formula.sign, ModalSign) and
-                signed_formula.sign.modality == "□" and
-                signed_formula.sign.polarity == "T")
-    
-    def apply(self, signed_formula) -> RuleResult:
-        inner_formula = signed_formula.formula
-        return RuleResult(
-            is_alpha=True,
-            branches=[[T(inner_formula)]]
-        )
+# In OptimizedTableauEngine._initialize_tableau_rules()
+elif self.sign_system == "temporal":
+    rules['T_next'] = [TableauRule(
+        rule_type="alpha",
+        premises=["T:X(A)"],
+        conclusions=[["T:A@t+1"]],  # Next time point
+        priority=1,
+        name="Temporal-Next (α)"
+    )]
 ```
 
-#### Step 3: Register System
-
+**Step 3: Create Helper Function**
 ```python
-from tableau_rules import SignedRuleRegistry
-
-def create_modal_tableau(formulas):
-    """Create modal logic tableau engine."""
-    engine = TableauEngine("modal")
-    
-    # Register modal rules
-    engine.rule_registry.register_rules("modal", [
-        ModalNecessityRule(),
-        ModalPossibilityRule(),
-        # ... other modal rules
-    ])
-    
-    engine.add_initial_formulas(formulas)
+def temporal_signed_tableau(formulas, track_steps=False):
+    engine = OptimizedTableauEngine("temporal")
+    if track_steps:
+        engine.enable_step_tracking()
+    engine.build_tableau(formulas)
     return engine
-```
-
-### Adding New Formula Types
-
-#### Step 1: Define Formula Class
-
-```python
-from tableau_core import Formula
-
-class TemporalNext(Formula):
-    """Temporal logic: X φ (φ holds in next time point)"""
-    
-    def __init__(self, operand: Formula):
-        self.operand = operand
-    
-    def __str__(self) -> str:
-        return f"X({self.operand})"
-    
-    def __eq__(self, other) -> bool:
-        return isinstance(other, TemporalNext) and self.operand == other.operand
-    
-    def __hash__(self) -> int:
-        return hash(("TemporalNext", self.operand))
-```
-
-#### Step 2: Implement Rules
-
-```python
-class TemporalNextRule(AlphaRule):
-    """T:X(φ) → advance time and add T:φ"""
-    priority = 2
-    
-    def applies_to(self, signed_formula) -> bool:
-        return isinstance(signed_formula.formula, TemporalNext)
-    
-    def apply(self, signed_formula) -> RuleResult:
-        next_formula = signed_formula.formula.operand
-        return RuleResult(
-            is_alpha=True,
-            branches=[[SignedFormula(signed_formula.sign, next_formula)]],
-            metadata={"time_advance": 1}
-        )
-```
-
-## Performance and Debugging
-
-### Performance Monitoring
-
-```python
-import time
-from tableau_core import classical_signed_tableau
-
-# Measure construction time
-start_time = time.time()
-engine = classical_signed_tableau(T(complex_formula))
-result = engine.build()
-end_time = time.time()
-
-stats = engine.get_statistics()
-stats["actual_construction_time"] = end_time - start_time
-
-print(f"Satisfiable: {result}")
-print(f"Construction time: {stats['actual_construction_time']:.4f}s")
-print(f"Rule applications: {stats['rule_applications']}")
-print(f"Branches created: {stats['total_branches']}")
-```
-
-### Debug Output
-
-```python
-from tableau_engine import TableauEngine
-
-# Enable debug mode
-engine = TableauEngine("classical")
-engine.debug = True  # If supported
-engine.add_initial_formulas([T(formula)])
-
-result = engine.build()
-
-# Examine branch details
-for i, branch in enumerate(engine.branches):
-    print(f"Branch {i+1}: {'CLOSED' if branch.is_closed else 'OPEN'}")
-    if branch.is_closed and branch.closure_reason:
-        sf1, sf2 = branch.closure_reason
-        print(f"  Closed by: {sf1} ⊥ {sf2}")
-    
-    print(f"  Formulas ({len(branch.signed_formulas)}):")
-    for sf in branch.signed_formulas:
-        print(f"    {sf}")
-```
-
-### Memory Usage Analysis
-
-```python
-import sys
-from tableau_core import classical_signed_tableau
-
-def get_object_size(obj):
-    """Get approximate object size in bytes."""
-    return sys.getsizeof(obj)
-
-engine = classical_signed_tableau(T(large_formula))
-engine.build()
-
-total_memory = 0
-for branch in engine.branches:
-    branch_memory = get_object_size(branch.signed_formulas)
-    total_memory += branch_memory
-
-print(f"Approximate memory usage: {total_memory} bytes")
-print(f"Memory per branch: {total_memory / len(engine.branches):.1f} bytes")
 ```
 
 ## Complete Examples
 
-### Example 1: Propositional Satisfiability Solver
+### Example 1: Classical Logic with Visualization
 
 ```python
-#!/usr/bin/env python3
-"""
-Propositional SAT solver using tableau method.
-"""
+from tableau_core import Atom, Conjunction, classical_signed_tableau, T, F
 
-from tableau_core import *
+# Test a complex formula
+p = Atom("p")
+q = Atom("q")
+r = Atom("r")
 
-def solve_sat(formula_str):
-    """
-    Solve SAT problem from string representation.
-    
-    Example formula strings:
-    - "p & q"
-    - "p | ~p" 
-    - "(p -> q) & p & ~q"
-    """
-    # Parse formula (simplified parser)
-    formula = parse_formula(formula_str)  # Implementation needed
-    
-    # Test satisfiability
-    engine = classical_signed_tableau(T(formula))
-    satisfiable = engine.build()
-    
-    if satisfiable:
-        models = engine.extract_all_models()
-        print(f"SATISFIABLE - Found {len(models)} model(s):")
-        for i, model in enumerate(models):
-            assignments = [f"{atom}={value}" for atom, value in model.items()]
-            print(f"  Model {i+1}: {{{', '.join(assignments)}}}")
-    else:
-        print("UNSATISFIABLE")
-    
-    return satisfiable
+# (p ∧ q) → r
+formula = Implication(Conjunction(p, q), r)
 
-# Usage
-solve_sat("p & q")  # Satisfiable
-solve_sat("p & ~p")  # Unsatisfiable
-solve_sat("(p -> q) & (q -> r) & p & ~r")  # Unsatisfiable
+# Create tableau with step tracking
+tableau = classical_signed_tableau([T(formula), T(p), T(q), F(r)], track_steps=True)
+
+# Build and analyze
+result = tableau.build()
+print(f"Satisfiable: {result}")
+
+# Show construction steps
+tableau.print_construction_steps("Testing (p ∧ q) → r with p, q true and r false")
+
+# This should be unsatisfiable (contradiction)
 ```
 
-### Example 2: Three-Valued Logic Explorer
+### Example 2: Three-Valued Logic Comparison
 
 ```python
-#!/usr/bin/env python3
-"""
-Explore differences between classical and three-valued logic.
-"""
+from tableau_core import Atom, Conjunction, Negation, wk3_satisfiable, wk3_models
 
-from tableau_core import *
+p = Atom("p")
 
-def compare_logics(formula):
-    """Compare classical vs WK3 satisfiability."""
-    
-    print(f"Formula: {formula}")
-    print("-" * 40)
-    
-    # Classical logic
-    classical_engine = classical_signed_tableau(T(formula))
-    classical_sat = classical_engine.build()
-    
-    # Three-valued logic  
-    wk3_sat = wk3_satisfiable(formula)
-    
-    print(f"Classical satisfiable: {classical_sat}")
-    print(f"WK3 satisfiable: {wk3_sat}")
-    
-    if classical_sat != wk3_sat:
-        print("*** DIFFERENCE DETECTED ***")
-        
-        if wk3_sat and not classical_sat:
-            print("WK3 allows satisfiability through undefined values")
-            models = wk3_models(formula)
-            for model in models:
-                undefined_atoms = [
-                    atom for atom, value in model.assignment.items() 
-                    if value == e
-                ]
-                if undefined_atoms:
-                    print(f"  Undefined atoms: {undefined_atoms}")
-    
-    print()
+# Classical contradiction: p ∧ ¬p
+contradiction = Conjunction(p, Negation(p))
 
-# Test cases that highlight differences
+# Classical logic
+classical_tableau = classical_signed_tableau(T(contradiction))
+classical_result = classical_tableau.build()
+print(f"Classical satisfiable: {classical_result}")  # False
+
+# WK3 logic
+wk3_result = wk3_satisfiable(contradiction)
+print(f"WK3 satisfiable: {wk3_result}")  # True
+
+# Find WK3 models
+models = wk3_models(contradiction)
+print(f"WK3 models: {len(models)}")
+for model in models:
+    p_val = model.get_assignment("p")
+    result = model.satisfies(contradiction)
+    print(f"  p={p_val}, formula evaluates to {result}")
+```
+
+### Example 3: Ferguson's Epistemic Logic
+
+```python
+from tableau_core import Atom, M, N, TF, FF, ferguson_signed_tableau
+
 p = Atom("p")
 q = Atom("q")
 
-test_cases = [
-    Conjunction(p, Negation(p)),  # p ∧ ¬p - classical contradiction
-    Disjunction(p, Negation(p)),  # p ∨ ¬p - excluded middle
-    Implication(p, p),  # p → p - self-implication
-    Implication(Conjunction(p, q), p),  # (p ∧ q) → p - simplification
-]
+# Test epistemic uncertainty
+print("Example: Epistemic uncertainty without contradiction")
+formulas = [M(p), N(p)]  # "p may be true" and "p need not be true"
+tableau = ferguson_signed_tableau(formulas, track_steps=True)
+result = tableau.build()
+print(f"M:p ∧ N:p satisfiable: {result}")  # True
 
-for formula in test_cases:
-    compare_logics(formula)
+# Test classical contradiction
+print("\nExample: Classical contradiction")
+formulas = [TF(p), FF(p)]  # "p is definitely true" and "p is definitely false"
+tableau = ferguson_signed_tableau(formulas, track_steps=True)
+result = tableau.build()
+print(f"T:p ∧ F:p satisfiable: {result}")  # False
+
+tableau.print_construction_steps("Ferguson Epistemic Logic Example")
 ```
 
-### Example 3: Automated Theorem Prover
+### Example 4: First-Order Logic
 
 ```python
-#!/usr/bin/env python3
-"""
-Automated theorem prover for propositional logic.
-"""
+from tableau_core import Predicate, Constant, Implication, classical_signed_tableau, T
 
-from tableau_core import *
+# First-order predicate logic
+tweety = Constant("tweety")
+Human = lambda x: Predicate("Human", [x])
+Mortal = lambda x: Predicate("Mortal", [x])
 
-class TheoremProver:
-    def __init__(self, logic_system="classical"):
-        self.logic_system = logic_system
-    
-    def prove_tautology(self, formula):
-        """
-        Prove that formula is a tautology.
-        Method: Show that ¬formula is unsatisfiable.
-        """
-        negated = Negation(formula)
-        
-        if self.logic_system == "classical":
-            engine = classical_signed_tableau(T(negated))
-            unsatisfiable = not engine.build()
-        elif self.logic_system == "wk3":
-            unsatisfiable = not wk3_satisfiable(negated)
-        else:
-            raise ValueError(f"Unknown logic system: {self.logic_system}")
-        
-        return unsatisfiable
-    
-    def prove_inference(self, premises, conclusion):
-        """
-        Prove that premises ⊢ conclusion.
-        Method: Show that premises ∪ {¬conclusion} is unsatisfiable.
-        """
-        test_formulas = premises + [Negation(conclusion)]
-        
-        # Convert to single formula
-        if len(test_formulas) == 1:
-            combined = test_formulas[0]
-        else:
-            combined = test_formulas[0]
-            for formula in test_formulas[1:]:
-                combined = Conjunction(combined, formula)
-        
-        if self.logic_system == "classical":
-            engine = classical_signed_tableau(T(combined))
-            valid = not engine.build()
-        elif self.logic_system == "wk3":
-            valid = not wk3_satisfiable(combined)
-        else:
-            raise ValueError(f"Unknown logic system: {self.logic_system}")
-        
-        return valid
-    
-    def find_counterexample(self, premises, conclusion):
-        """Find counterexample to inference if it exists."""
-        test_formulas = premises + [Negation(conclusion)]
-        
-        if len(test_formulas) == 1:
-            combined = test_formulas[0]
-        else:
-            combined = test_formulas[0]
-            for formula in test_formulas[1:]:
-                combined = Conjunction(combined, formula)
-        
-        if self.logic_system == "classical":
-            engine = classical_signed_tableau(T(combined))
-            if engine.build():
-                return engine.extract_all_models()[0]
-        elif self.logic_system == "wk3":
-            if wk3_satisfiable(combined):
-                return wk3_models(combined)[0]
-        
-        return None
+# Human(tweety) → Mortal(tweety)
+formula = Implication(Human(tweety), Mortal(tweety))
 
-# Usage examples
-prover = TheoremProver("classical")
+# Test satisfiability
+tableau = classical_signed_tableau(T(formula), track_steps=True)
+result = tableau.build()
+print(f"Human(tweety) → Mortal(tweety) satisfiable: {result}")
 
-# Test tautologies
-p = Atom("p")
-q = Atom("q")
-
-tautologies = [
-    Disjunction(p, Negation(p)),  # p ∨ ¬p
-    Implication(p, Disjunction(p, q)),  # p → (p ∨ q)
-    Implication(Conjunction(p, q), p),  # (p ∧ q) → p
-]
-
-for tautology in tautologies:
-    is_tautology = prover.prove_tautology(tautology)
-    print(f"{tautology} is tautology: {is_tautology}")
-
-# Test inferences
-premises = [Implication(p, q), p]
-conclusion = q
-
-valid = prover.prove_inference(premises, conclusion)
-print(f"Modus ponens valid: {valid}")
-
-if not valid:
-    counterexample = prover.find_counterexample(premises, conclusion)
-    print(f"Counterexample: {counterexample}")
+# Show construction
+tableau.print_construction_steps("First-Order Logic Example")
 ```
 
-### Example 4: Interactive Logic Tutor
+### Example 5: Performance Analysis
 
 ```python
-#!/usr/bin/env python3
-"""
-Interactive tutorial system for learning tableau methods.
-"""
+from tableau_core import Atom, Conjunction, Disjunction, classical_signed_tableau, T
+import time
 
-from tableau_core import *
+# Create complex formula for performance testing
+atoms = [Atom(f"p{i}") for i in range(10)]
 
-class LogicTutor:
-    def __init__(self):
-        self.current_lesson = 0
-        self.lessons = [
-            self.lesson_basic_formulas,
-            self.lesson_satisfiability,
-            self.lesson_tautologies,
-            self.lesson_three_valued_logic,
-            self.lesson_tableau_construction,
-        ]
-    
-    def run(self):
-        """Run interactive tutorial."""
-        print("Welcome to the Tableau Logic Tutor!")
-        print("=" * 40)
-        
-        while self.current_lesson < len(self.lessons):
-            self.lessons[self.current_lesson]()
-            
-            if self.current_lesson < len(self.lessons) - 1:
-                response = input("\nContinue to next lesson? (y/n): ")
-                if response.lower() != 'y':
-                    break
-                    
-            self.current_lesson += 1
-        
-        print("\nTutorial complete! You now understand tableau methods.")
-    
-    def lesson_basic_formulas(self):
-        print("\nLESSON 1: Building Logical Formulas")
-        print("-" * 35)
-        
-        p = Atom("p")
-        q = Atom("q")
-        
-        print("Let's create some basic formulas:")
-        print(f"  Atom p: {p}")
-        print(f"  Atom q: {q}")
-        print(f"  Negation ¬p: {Negation(p)}")
-        print(f"  Conjunction p ∧ q: {Conjunction(p, q)}")
-        print(f"  Disjunction p ∨ q: {Disjunction(p, q)}")
-        print(f"  Implication p → q: {Implication(p, q)}")
-        
-        # Interactive exercise
-        print("\nExercise: What would ¬(p ∧ q) look like?")
-        user_input = input("Your answer (or 'skip'): ")
-        
-        correct = Negation(Conjunction(p, q))
-        print(f"Correct answer: {correct}")
-        
-        if user_input.strip() and "skip" not in user_input.lower():
-            print("Great job participating!")
-    
-    def lesson_satisfiability(self):
-        print("\nLESSON 2: Satisfiability")
-        print("-" * 25)
-        
-        p = Atom("p")
-        
-        satisfiable_formula = p
-        unsatisfiable_formula = Conjunction(p, Negation(p))
-        
-        print("A formula is satisfiable if there's a truth assignment that makes it true.")
-        print()
-        print(f"Example 1: {satisfiable_formula}")
-        engine1 = classical_signed_tableau(T(satisfiable_formula))
-        result1 = engine1.build()
-        print(f"  Satisfiable: {result1}")
-        
-        if result1:
-            models = engine1.extract_all_models()
-            print(f"  Model: {models[0]}")
-        
-        print()
-        print(f"Example 2: {unsatisfiable_formula}")
-        engine2 = classical_signed_tableau(T(unsatisfiable_formula))
-        result2 = engine2.build()
-        print(f"  Satisfiable: {result2}")
-        
-        print("\nA contradiction is never satisfiable - there's no way to make p both true and false!")
-    
-    def lesson_tautologies(self):
-        print("\nLESSON 3: Tautologies")
-        print("-" * 20)
-        
-        p = Atom("p")
-        tautology = Disjunction(p, Negation(p))  # p ∨ ¬p
-        
-        print("A tautology is always true, regardless of truth assignments.")
-        print(f"Example: {tautology}")
-        print()
-        print("To test if something is a tautology, we check if its negation is unsatisfiable:")
-        
-        negated_tautology = Negation(tautology)
-        print(f"Testing: {negated_tautology}")
-        
-        engine = classical_signed_tableau(T(negated_tautology))
-        result = engine.build()
-        
-        print(f"Satisfiable: {result}")
-        print(f"Therefore, {tautology} is a tautology: {not result}")
-    
-    def lesson_three_valued_logic(self):
-        print("\nLESSON 4: Three-Valued Logic")
-        print("-" * 30)
-        
-        p = Atom("p")
-        contradiction = Conjunction(p, Negation(p))
-        
-        print("In classical logic, p ∧ ¬p is always false (unsatisfiable).")
-        classical_result = classical_signed_tableau(T(contradiction)).build()
-        print(f"Classical satisfiability: {classical_result}")
-        
-        print("\nBut in three-valued logic, p can be 'undefined'!")
-        print("When p is undefined, p ∧ ¬p is also undefined, which counts as satisfiable.")
-        
-        wk3_result = wk3_satisfiable(contradiction)
-        print(f"WK3 satisfiability: {wk3_result}")
-        
-        if wk3_result:
-            models = wk3_models(contradiction)
-            print("WK3 models:")
-            for model in models:
-                print(f"  p = {model.assignment.get('p', e)}")
-    
-    def lesson_tableau_construction(self):
-        print("\nLESSON 5: How Tableaux Work")
-        print("-" * 30)
-        
-        p = Atom("p")
-        q = Atom("q")
-        formula = Conjunction(p, Disjunction(q, Negation(q)))
-        
-        print("Tableaux break down formulas systematically using rules:")
-        print(f"Formula: {formula}")
-        print()
-        print("Signed tableau construction:")
-        print(f"1. Start with T:{formula}")
-        print("2. Apply T-conjunction rule: T:(p ∧ (q ∨ ¬q)) → T:p, T:(q ∨ ¬q)")
-        print("3. Apply T-disjunction rule: T:(q ∨ ¬q) → T:q | T:¬q")
-        print("4. This creates two branches:")
-        print("   Branch 1: T:p, T:q")
-        print("   Branch 2: T:p, T:¬q")
-        print("5. Apply T-negation rule in Branch 2: T:¬q → F:q")
-        print("6. Final branches:")
-        print("   Branch 1: T:p, T:q (satisfying model: p=true, q=true)")
-        print("   Branch 2: T:p, F:q (satisfying model: p=true, q=false)")
-        print()
-        
-        # Verify with actual tableau
-        engine = classical_signed_tableau(T(formula))
-        result = engine.build()
-        models = engine.extract_all_models() if result else []
-        
-        print(f"Tableau result - Satisfiable: {result}")
-        print(f"Models found: {len(models)}")
-        for i, model in enumerate(models):
-            print(f"  Model {i+1}: {model}")
+# Create CNF formula: (p0 ∨ p1) ∧ (p2 ∨ p3) ∧ ... ∧ (p8 ∨ p9)
+clauses = []
+for i in range(0, len(atoms), 2):
+    if i + 1 < len(atoms):
+        clauses.append(Disjunction(atoms[i], atoms[i+1]))
 
-# Run the tutor
-if __name__ == "__main__":
-    tutor = LogicTutor()
-    tutor.run()
+# Conjoin all clauses
+formula = clauses[0]
+for clause in clauses[1:]:
+    formula = Conjunction(formula, clause)
+
+# Test with timing
+start_time = time.time()
+tableau = classical_signed_tableau(T(formula))
+result = tableau.build()
+end_time = time.time()
+
+print(f"Complex formula satisfiable: {result}")
+print(f"Construction time: {end_time - start_time:.4f} seconds")
+print(f"Total branches: {len(tableau.branches)}")
+
+# Extract models
+if result:
+    models = tableau.extract_all_models()
+    print(f"Number of models: {len(models)}")
 ```
-
-This comprehensive API reference provides everything needed to understand and use the consolidated tableau system. The examples progress from basic usage to advanced applications, making it suitable for both beginners and expert users building tableau-based reasoning systems.

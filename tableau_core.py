@@ -1816,141 +1816,19 @@ def parse_formula(formula_str: str) -> Formula:
 # COMPATIBILITY FUNCTIONS FOR LITERATURE TESTS
 # =============================================================================
 
-def wk3_satisfiable(formula: Formula) -> bool:
-    """
-    Test satisfiability using WK3 (weak Kleene) semantics.
-    
-    In weak Kleene logic, a formula is satisfiable if there exists an assignment
-    where it evaluates to either true (T) or undefined (U). 
-    
-    Args:
-        formula: Formula to test
-        
-    Returns:
-        True if satisfiable in WK3, False otherwise
-    """
-    # Use direct enumeration approach for WK3 satisfiability
-    return _enumerate_wk3_models(formula) is not None
+# REMOVED: wk3_satisfiable() - Use tableau approach instead
 
 
-def wk3_models(formula: Formula):
-    """
-    Extract all WK3 models for a formula.
-    
-    Args:
-        formula: Formula to find models for
-        
-    Returns:
-        List of models that satisfy the formula in WK3 semantics
-    """
-    models = _enumerate_wk3_models(formula)
-    return models if models is not None else []
+# REMOVED: wk3_models() - Use tableau.extract_all_models() instead
 
 
-def _enumerate_wk3_models(formula: Formula):
-    """
-    Enumerate all possible WK3 models by trying all truth value assignments.
-    
-    In WK3, each atom can be assigned true (t), false (f), or undefined (e).
-    A formula is satisfiable if it evaluates to either t or e under some assignment.
-    
-    Args:
-        formula: Formula to find models for
-        
-    Returns:
-        List of WK3 models, or None if unsatisfiable for wk3_satisfiable()
-    """
-    from unified_model import WK3Model
-    from itertools import product
-    
-    # Extract all atoms from the formula
-    atoms = _extract_atoms(formula)
-    
-    if not atoms:
-        # Formula with no atoms - evaluate directly
-        result = _evaluate_wk3_formula(formula, {})
-        if result in [t, e]:  # Satisfiable if true or undefined
-            return [WK3Model({})]
-        else:
-            return [] if isinstance(formula, type(None)) else None
-    
-    # Try all possible three-valued assignments
-    satisfying_models = []
-    truth_values = [t, f, e]
-    
-    for assignment in product(truth_values, repeat=len(atoms)):
-        model_assignment = dict(zip(atoms, assignment))
-        
-        # Evaluate formula under this assignment
-        result = _evaluate_wk3_formula(formula, model_assignment)
-        
-        # In WK3, satisfiable means true or undefined (not false)
-        if result in [t, e]:
-            satisfying_models.append(WK3Model(model_assignment))
-    
-    # Return None for wk3_satisfiable, empty list for wk3_models
-    if not satisfying_models:
-        return None
-    
-    return satisfying_models
+# REMOVED: _enumerate_wk3_models() - Use tableau approach instead
 
 
-def _extract_atoms(formula: Formula) -> list:
-    """Extract all atomic propositions from a formula."""
-    atoms = set()
-    
-    def collect_atoms(f):
-        if isinstance(f, Atom):
-            atoms.add(f.name)
-        elif isinstance(f, Implication):
-            collect_atoms(f.antecedent)
-            collect_atoms(f.consequent)
-        elif hasattr(f, 'left') and hasattr(f, 'right'):
-            collect_atoms(f.left)
-            collect_atoms(f.right)
-        elif hasattr(f, 'operand'):
-            collect_atoms(f.operand)
-    
-    collect_atoms(formula)
-    return sorted(atoms)  # Sort for consistent ordering
+# REMOVED: _extract_atoms() - Use tableau approach instead
 
 
-def _evaluate_wk3_formula(formula: Formula, assignment: dict) -> TruthValue:
-    """
-    Evaluate a formula under a three-valued assignment using weak Kleene semantics.
-    
-    Args:
-        formula: Formula to evaluate
-        assignment: Dictionary mapping atom names to truth values {t, f, e}
-        
-    Returns:
-        Truth value (t, f, or e) under weak Kleene semantics
-    """
-    if isinstance(formula, Atom):
-        return assignment.get(formula.name, e)  # Default to undefined
-    
-    elif isinstance(formula, Negation):
-        operand_val = _evaluate_wk3_formula(formula.operand, assignment)
-        return WeakKleeneOperators.negation(operand_val)
-    
-    elif isinstance(formula, Conjunction):
-        left_val = _evaluate_wk3_formula(formula.left, assignment)
-        right_val = _evaluate_wk3_formula(formula.right, assignment)
-        return WeakKleeneOperators.conjunction(left_val, right_val)
-    
-    elif isinstance(formula, Disjunction):
-        left_val = _evaluate_wk3_formula(formula.left, assignment)
-        right_val = _evaluate_wk3_formula(formula.right, assignment)
-        return WeakKleeneOperators.disjunction(left_val, right_val)
-    
-    elif isinstance(formula, Implication):
-        antecedent_val = _evaluate_wk3_formula(formula.antecedent, assignment)
-        consequent_val = _evaluate_wk3_formula(formula.consequent, assignment)
-        return WeakKleeneOperators.implication(antecedent_val, consequent_val)
-    
-    else:
-        # Unknown formula type - return undefined
-        return e
+# REMOVED: _evaluate_wk3_formula() - Use tableau approach instead
 
 
 # =============================================================================

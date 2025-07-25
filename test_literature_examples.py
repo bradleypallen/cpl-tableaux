@@ -18,12 +18,31 @@ from tableau_core import (
     Variable, Constant,
     T, F, T3, F3, U, TF, FF, M, N,
     t, f, e,
-    wk3_satisfiable, wk3_models,
     classical_signed_tableau, three_valued_signed_tableau, wkrq_signed_tableau, ferguson_signed_tableau,
     RestrictedExistentialFormula, RestrictedUniversalFormula
 )
-# Updated to use unified system
+# Updated to use unified system - using only tableau approach
 # Removed all legacy imports - using unified system only
+
+def is_wk3_satisfiable(formula):
+    """Helper function: WK3 satisfiability using tableau approach"""
+    t3_tableau = three_valued_signed_tableau(T3(formula))
+    u_tableau = three_valued_signed_tableau(U(formula))
+    return t3_tableau.build() or u_tableau.build()
+
+def get_wk3_models(formula):
+    """Helper function: Get WK3 models using tableau approach"""
+    t3_tableau = three_valued_signed_tableau(T3(formula))
+    u_tableau = three_valued_signed_tableau(U(formula))
+    t3_satisfiable = t3_tableau.build()
+    u_satisfiable = u_tableau.build()
+    
+    models = []
+    if t3_satisfiable:
+        models.extend(t3_tableau.extract_all_models())
+    if u_satisfiable:
+        models.extend(u_tableau.extract_all_models())
+    return models
 
 
 class TestPriestExamples:
@@ -66,10 +85,10 @@ class TestPriestExamples:
         excluded_middle = Disjunction(p, Negation(p))
         
         # Should be satisfiable (not unsatisfiable)
-        assert wk3_satisfiable(excluded_middle) == True
+        assert is_wk3_satisfiable(excluded_middle) == True
         
         # Should have models where it's not true (i.e., undefined)
-        models = wk3_models(excluded_middle)
+        models = get_wk3_models(excluded_middle)
         found_non_true = False
         
         for model in models:
@@ -92,10 +111,10 @@ class TestPriestExamples:
         contradiction = Conjunction(p, Negation(p))
         
         # Should be satisfiable in WK3
-        assert wk3_satisfiable(contradiction) == True
+        assert is_wk3_satisfiable(contradiction) == True
         
         # Find model where it's satisfied
-        models = wk3_models(contradiction)
+        models = get_wk3_models(contradiction)
         found_satisfying = False
         
         for model in models:
@@ -427,11 +446,11 @@ class TestHandbookExamples:
         assert classical_result == False, "Classical contradiction should be unsatisfiable"
         
         # Three-valued test  
-        three_valued_result = wk3_satisfiable(contradiction)
+        three_valued_result = is_wk3_satisfiable(contradiction)
         assert three_valued_result == True, "Three-valued contradiction should be satisfiable"
         
         # Verify the satisfying model has undefined values
-        models = wk3_models(contradiction)
+        models = get_wk3_models(contradiction)
         found_undefined = False
         for model in models:
             if model.get_assignment(p.name) == e:
@@ -510,7 +529,7 @@ class TestEdgeCasesFromLiterature:
         # In WK3: p → p is not always true (can be undefined when p is undefined)
         self_implication = Implication(p, p)
         
-        models = wk3_models(self_implication)
+        models = get_wk3_models(self_implication)
         found_non_true = False
         
         for model in models:
@@ -770,7 +789,7 @@ class TestFergusonWKrQExamples:
         assert classical_result == False, "Classical T:(p ∧ ¬p) should be unsatisfiable"
         
         # Three-valued: contradiction can be satisfiable when p is undefined
-        wk3_result = wk3_satisfiable(contradiction)
+        wk3_result = is_wk3_satisfiable(contradiction)
         assert wk3_result == True, "WK3 p ∧ ¬p should be satisfiable"
         
         # Ferguson: Can express epistemic uncertainty about the contradiction

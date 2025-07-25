@@ -338,10 +338,11 @@ def test_logic_comparison():
     except Exception as e:
         print(f"  Classical:    ERROR: {e}")
     
-    # WK3 logic - use unified system
+    # WK3 logic - use tableau approach
     try:
-        from tableau_core import wk3_satisfiable
-        wk3_result = wk3_satisfiable(formula)
+        t3_tableau = three_valued_signed_tableau(T3(formula))
+        u_tableau = three_valued_signed_tableau(U(formula))
+        wk3_result = t3_tableau.build() or u_tableau.build()
         print(f"  WK3:          {'SAT' if wk3_result else 'UNSAT'}")
     except Exception as e:
         print(f"  WK3:          ERROR: {e}")

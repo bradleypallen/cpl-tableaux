@@ -60,14 +60,10 @@ def compare_classical_vs_wk3():
         classical_engine = classical_signed_tableau(T(formula))
         classical_sat = classical_engine.build()
         
-        # Three-valued logic - need to use WK3 functions
-        try:
-            wk3_sat = wk3_satisfiable(formula)
-        except NameError:
-            # If wk3_satisfiable doesn't exist, try direct WK3 tableau
-            from wk3_tableau import WK3Tableau
-            wk3_tableau = WK3Tableau(formula)
-            wk3_sat = wk3_tableau.build()
+        # Three-valued logic using tableau approach
+        t3_tableau = three_valued_signed_tableau(T3(formula))
+        u_tableau = three_valued_signed_tableau(U(formula))
+        wk3_sat = t3_tableau.build() or u_tableau.build()
         
         print(f"  Classical: {'Satisfiable' if classical_sat else 'Unsatisfiable'}")
         print(f"  WK3: {'Satisfiable' if wk3_sat else 'Unsatisfiable'}")

@@ -22,8 +22,7 @@ from tableau_core import (
     Atom, Negation, Conjunction, Disjunction, Implication, 
     Constant, Variable, FunctionApplication, Predicate,
     T, F, T3, F3, U, TF, FF, M, N,
-    classical_signed_tableau, three_valued_signed_tableau, wkrq_signed_tableau,
-    wk3_satisfiable
+    classical_signed_tableau, three_valued_signed_tableau, wkrq_signed_tableau
 )
 from tableau_core import TruthValue, t, f, e
 from unified_model import WK3Model

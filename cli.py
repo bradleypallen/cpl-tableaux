@@ -14,8 +14,13 @@ import time
 from typing import List, Dict, Any, Optional
 from io import StringIO
 
-# Import unified tableau components
-from tableau_core import *
+# Import tableau components - using only tableau approach
+from tableau_core import (
+    Formula, Atom, Negation, Conjunction, Disjunction, Implication,
+    classical_signed_tableau, three_valued_signed_tableau, wkrq_signed_tableau,
+    T, F, T3, F3, U, TF, FF,
+    parse_formula
+)
 from unified_model import UnifiedModel, ClassicalModel, WK3Model, WkrqModel
 
 class EnhancedFormulaParser:
@@ -339,13 +344,20 @@ Examples:
                 print(OutputFormatter.format_result(result_data, args.format))
                 return
             
-            # Create tableau
+            # Create tableau using actual API
             if logic_system == "wk3":
-                tableau = WK3Tableau(formula)
-                is_satisfiable = tableau.build()
+                # For WK3, check if formula can be true OR undefined
+                t3_tableau = three_valued_signed_tableau(T3(formula))
+                u_tableau = three_valued_signed_tableau(U(formula))
+                t3_satisfiable = t3_tableau.build()
+                u_satisfiable = u_tableau.build()
+                is_satisfiable = t3_satisfiable or u_satisfiable
+                
+                # Use primary tableau for stats and models
+                tableau = t3_tableau if t3_satisfiable else u_tableau
                 models = tableau.extract_all_models() if is_satisfiable and args.models else []
             else:
-                tableau = Tableau(formula)
+                tableau = classical_signed_tableau(T(formula))
                 is_satisfiable = tableau.build()
                 models = tableau.extract_all_models() if is_satisfiable and args.models else []
             
@@ -408,11 +420,18 @@ Examples:
                     formula = self.parser.parse(formula_str)
                     
                     if logic_system == "wk3":
-                        tableau = WK3Tableau(formula)
-                        is_satisfiable = tableau.build()
+                        # For WK3, check if formula can be true OR undefined
+                        t3_tableau = three_valued_signed_tableau(T3(formula))
+                        u_tableau = three_valued_signed_tableau(U(formula))
+                        t3_satisfiable = t3_tableau.build()
+                        u_satisfiable = u_tableau.build()
+                        is_satisfiable = t3_satisfiable or u_satisfiable
+                        
+                        # Use primary tableau for stats and models
+                        tableau = t3_tableau if t3_satisfiable else u_tableau
                         models = tableau.extract_all_models() if is_satisfiable and args.models else []
                     else:
-                        tableau = Tableau(formula)
+                        tableau = classical_signed_tableau(T(formula))
                         is_satisfiable = tableau.build()
                         models = tableau.extract_all_models() if is_satisfiable and args.models else []
                     
@@ -504,11 +523,15 @@ Examples:
                 
                 elif user_input.startswith('wk3 '):
                     formula_str = user_input[4:].strip()
-                    self._interactive_test(formula_str, "wk3")
+                    logic_system = "wk3"
+                    print("Switching to WK3 (three-valued) logic...")
+                    self._interactive_test(formula_str, logic_system)
                 
                 elif user_input.startswith('classical '):
                     formula_str = user_input[10:].strip()
-                    self._interactive_test(formula_str, "classical")
+                    logic_system = "classical"
+                    print("Switching to classical logic...")
+                    self._interactive_test(formula_str, logic_system)
                 
                 else:
                     # Treat as formula to test
@@ -564,10 +587,14 @@ Examples:
             formula = self.parser.parse(formula_str)
             
             if logic_system == "wk3":
-                tableau = WK3Tableau(formula)
-                is_satisfiable = tableau.build()
+                # For WK3, check if formula can be true OR undefined
+                t3_tableau = three_valued_signed_tableau(T3(formula))
+                u_tableau = three_valued_signed_tableau(U(formula))
+                t3_satisfiable = t3_tableau.build()
+                u_satisfiable = u_tableau.build()
+                is_satisfiable = t3_satisfiable or u_satisfiable
             else:
-                tableau = Tableau(formula)
+                tableau = classical_signed_tableau(T(formula))
                 is_satisfiable = tableau.build()
             
             print(f"Formula: {formula}")
@@ -575,7 +602,14 @@ Examples:
             print(f"Result: {'SATISFIABLE' if is_satisfiable else 'UNSATISFIABLE'}")
             
             if is_satisfiable:
-                models = tableau.extract_all_models()
+                if logic_system == "wk3":
+                    # Extract models from the satisfiable tableau
+                    if t3_satisfiable:
+                        models = t3_tableau.extract_all_models()
+                    else:
+                        models = u_tableau.extract_all_models()
+                else:
+                    models = tableau.extract_all_models()
                 print(f"Found {len(models)} model(s)")
         
         except Exception as e:
@@ -587,11 +621,23 @@ Examples:
             formula = self.parser.parse(formula_str)
             
             if logic_system == "wk3":
-                tableau = WK3Tableau(formula)
-                is_satisfiable = tableau.build()
-                models = tableau.extract_all_models() if is_satisfiable else []
+                # For WK3, check if formula can be true OR undefined
+                t3_tableau = three_valued_signed_tableau(T3(formula))
+                u_tableau = three_valued_signed_tableau(U(formula))
+                t3_satisfiable = t3_tableau.build()
+                u_satisfiable = u_tableau.build()
+                is_satisfiable = t3_satisfiable or u_satisfiable
+                
+                # Extract models from the satisfiable tableau
+                if is_satisfiable:
+                    if t3_satisfiable:
+                        models = t3_tableau.extract_all_models()
+                    else:
+                        models = u_tableau.extract_all_models()
+                else:
+                    models = []
             else:
-                tableau = Tableau(formula)
+                tableau = classical_signed_tableau(T(formula))
                 is_satisfiable = tableau.build()
                 models = tableau.extract_all_models() if is_satisfiable else []
             
