@@ -1,110 +1,157 @@
 #!/usr/bin/env python3
 """Tutorial 5: Model Extraction and Analysis"""
 
-from tableau_core import *
+from tableau_core import Atom, Conjunction, Disjunction, Implication, Negation
+from tableau_core import T, F, T3, U, classical_signed_tableau, three_valued_signed_tableau
 
-def understand_models():
-    """Learn what models represent."""
-    
-    print("=== UNDERSTANDING MODELS ===\n")
-    
-    p = Atom("p")
-    q = Atom("q")
-    
-    # Simple formula with multiple models
-    formula = Disjunction(p, q)  # p ∨ q
-    
-    print(f"Formula: {formula}")
-    print("This formula is true when at least one of p or q is true.")
-    print()
-    
-    engine = classical_signed_tableau(T(formula))
-    satisfiable = engine.build()
-    
-    if satisfiable:
-        models = engine.extract_all_models()
-        print(f"Found {len(models)} satisfying models:")
-        
-        for i, model in enumerate(models):
-            print(f"\nModel {i+1}: {model}")
-            
-            # Verify this model satisfies the formula
-            # Use unified model interface
-            p_value = model.get_assignment('p')
-            q_value = model.get_assignment('q')
-            
-            p_bool = bool(p_value)
-            q_bool = bool(q_value)
-                
-            formula_value = p_bool or q_bool  # p ∨ q
-            
-            print(f"  p = {p_bool}, q = {q_bool}")
-            print(f"  p ∨ q = {p_bool} ∨ {q_bool} = {formula_value}")
-            print(f"  ✓ Model satisfies formula: {formula_value}")
-    
-    print("\nExplanation:")
-    print("Each model represents a complete truth assignment to all atoms")
-    print("that appear in the formula. Any assignment that makes the formula")
-    print("true is a satisfying model.")
-
-def analyze_model_spaces():
-    """Analyze the space of all possible models."""
-    
-    print("\n=== MODEL SPACE ANALYSIS ===\n")
+def analyze_classical_models():
+    """Extract and analyze classical logic models."""
     
     p = Atom("p")
     q = Atom("q")
     r = Atom("r")
     
-    formulas_to_analyze = [
-        ("p", p),
-        ("p ∧ q", Conjunction(p, q)),
-        ("p ∨ q", Disjunction(p, q)),
-        ("p → q", Implication(p, q)),
-        ("(p ∨ q) ∧ (p ∨ r)", Conjunction(Disjunction(p, q), Disjunction(p, r))),
-    ]
+    print("=== CLASSICAL MODEL ANALYSIS ===\n")
     
-    for description, formula in formulas_to_analyze:
-        print(f"Formula: {description}")
+    # Example: CNF formula with multiple models
+    # (p ∨ q) ∧ (¬p ∨ r)
+    clause1 = Disjunction(p, q)
+    clause2 = Disjunction(Negation(p), r)
+    formula = Conjunction(clause1, clause2)
+    
+    print(f"Formula: {formula}")
+    print("This is satisfiable when:")
+    print("  Case 1: p=False, q=True, r=any")
+    print("  Case 2: p=True, q=any, r=True")
+    print()
+    
+    tableau = classical_signed_tableau(T(formula))
+    result = tableau.build()
+    
+    if result:
+        models = tableau.extract_all_models()
+        print(f"Found {len(models)} models:")
         
-        engine = classical_signed_tableau(T(formula))
-        satisfiable = engine.build()
+        for i, model in enumerate(models):
+            print(f"\nModel {i+1}: {model.assignments}")
+            
+            # Verify model satisfies formula
+            satisfies = model.satisfies(formula)
+            print(f"  Satisfies formula: {satisfies}")
+        print()
+    
+    # Analyze each clause
+    print("Clause analysis:")
+    for i, model in enumerate(models):
+        print(f"Model {i+1}:")
         
-        if satisfiable:
-            models = engine.extract_all_models()
-            print(f"  Models: {len(models)}")
-            
-            # Show all models
-            for i, model in enumerate(models):
-                assignments = []
-                # Use unified model interface
-                for atom, value in sorted(model.assignments.items()):
-                    val_str = str(value).lower()
-                    assignments.append(f"{atom}={val_str}")
-                print(f"    {i+1}: {{{', '.join(assignments)}}}")
-            
-            # Calculate what fraction of total space this represents
-            atoms_in_formula = set()
-            extract_atoms(formula, atoms_in_formula)
-            total_possible = 2 ** len(atoms_in_formula)
-            fraction = len(models) / total_possible
-            
-            print(f"  Covers {len(models)}/{total_possible} = {fraction:.1%} of possible assignments")
-        else:
-            print(f"  Models: 0 (unsatisfiable)")
+        # Check clause1: p ∨ q
+        clause1_result = model.satisfies(clause1)
+        print(f"  (p ∨ q): {clause1_result}")
         
+        # Check clause2: ¬p ∨ r  
+        clause2_result = model.satisfies(clause2)
+        print(f"  (¬p ∨ r): {clause2_result}")
         print()
 
-def extract_atoms(formula, atom_set):
-    """Extract all atoms from a formula."""
-    if isinstance(formula, Atom):
-        atom_set.add(formula.name)
-    elif hasattr(formula, 'operand'):  # Unary operator
-        extract_atoms(formula.operand, atom_set)
-    elif hasattr(formula, 'left') and hasattr(formula, 'right'):  # Binary operator
-        extract_atoms(formula.left, atom_set)
-        extract_atoms(formula.right, atom_set)
+def analyze_wk3_models():
+    """Analyze three-valued models."""
+    
+    p = Atom("p")
+    q = Atom("q")
+    
+    print("=== WK3 MODEL ANALYSIS ===\n")
+    
+    # Formula that has different behavior in WK3
+    # p → q (implication)
+    formula = Implication(p, q)
+    
+    print(f"Formula: {formula}")
+    print("In WK3, this can be satisfied in various ways including")
+    print("when p or q (or both) are undefined.\n")
+    
+    # Get WK3 models using tableau approach
+    t3_tableau = three_valued_signed_tableau(T3(formula))
+    u_tableau = three_valued_signed_tableau(U(formula))
+    t3_satisfiable = t3_tableau.build()
+    u_satisfiable = u_tableau.build()
+    
+    models = []
+    if t3_satisfiable:
+        models.extend(t3_tableau.extract_all_models())
+    if u_satisfiable:
+        models.extend(u_tableau.extract_all_models())
+    
+    print(f"Found {len(models)} WK3 models:")
+    
+    for i, model in enumerate(models):
+        print(f"Model {i+1}: {model}")
+    print()
+    
+    # Show which assignments DON'T satisfy
+    print("Non-satisfying assignments (formula evaluates to 'f'):")
+    from tableau_core import t, f, e
+    all_assignments = [
+        (t, t), (t, f), (t, e),
+        (f, t), (f, f), (f, e),
+        (e, t), (e, f), (e, e)
+    ]
+    
+    from unified_model import WK3Model
+    from tableau_core import WeakKleeneOperators
+    
+    for p_val, q_val in all_assignments:
+        model = WK3Model({"p": p_val, "q": q_val})
+        result = model.satisfies(formula)
+        
+        if result == f:
+            print(f"  p={p_val}, q={q_val} → {result}")
+
+def model_comparison():
+    """Compare models across logic systems."""
+    
+    p = Atom("p")
+    
+    print("\n=== MODEL COMPARISON ACROSS LOGICS ===\n")
+    
+    # Test excluded middle: p ∨ ¬p
+    formula = Disjunction(p, Negation(p))
+    
+    print(f"Formula: {formula}")
+    print()
+    
+    # Classical models
+    classical_tableau = classical_signed_tableau(T(formula))
+    classical_result = classical_tableau.build()
+    
+    if classical_result:
+        classical_models = classical_tableau.extract_all_models()
+        print(f"Classical models ({len(classical_models)}):")
+        for model in classical_models:
+            print(f"  {model}")
+    print()
+    
+    # WK3 models using tableau approach
+    t3_tableau = three_valued_signed_tableau(T3(formula))
+    u_tableau = three_valued_signed_tableau(U(formula))
+    t3_satisfiable = t3_tableau.build()
+    u_satisfiable = u_tableau.build()
+    
+    wk3_model_list = []
+    if t3_satisfiable:
+        wk3_model_list.extend(t3_tableau.extract_all_models())
+    if u_satisfiable:
+        wk3_model_list.extend(u_tableau.extract_all_models())
+    
+    print(f"WK3 models ({len(wk3_model_list)}):")
+    for model in wk3_model_list:
+        print(f"  {model}")
+    print()
+    
+    print("Key difference: WK3 has an additional model where p=e (undefined)")
+    print("and the formula still evaluates to e (which is considered satisfying).")
 
 if __name__ == "__main__":
-    understand_models()
-    analyze_model_spaces()
+    analyze_classical_models()
+    analyze_wk3_models()
+    model_comparison()

@@ -1,49 +1,91 @@
 #!/usr/bin/env python3
-"""Tutorial 2: Understanding Signed Tableaux"""
+"""Tutorial 2: Signed Tableaux with Visualization"""
 
-from tableau_core import *
+from tableau_core import Atom, Conjunction, Disjunction, Implication, Negation
+from tableau_core import T, F, classical_signed_tableau
 
-def explore_signed_formulas():
-    """Understand signed formula notation."""
+def visualize_simple_tableau():
+    """Show tableau construction step-by-step."""
     
     p = Atom("p")
     q = Atom("q")
     
-    print("=== SIGNED FORMULA NOTATION ===\n")
+    print("=== TABLEAU VISUALIZATION EXAMPLE ===\n")
     
-    # Basic signed formulas
-    t_p = T(p)  # "p is true"
-    f_p = F(p)  # "p is false"
+    # Create a formula that will require branching
+    # F:(p ∨ q) means "p ∨ q is false"
+    formula = Disjunction(p, q)
     
-    print(f"T:p = {t_p} (p is true)")
-    print(f"F:p = {f_p} (p is false)")
+    print(f"Testing: F:({formula})")
+    print("This means: 'p ∨ q must be false'")
+    print("For this to be true, both p and q must be false.\n")
+    
+    # Create tableau with step tracking enabled
+    tableau = classical_signed_tableau(F(formula), track_steps=True)
+    result = tableau.build()
+    
+    print(f"Result: {'SATISFIABLE' if result else 'UNSATISFIABLE'}\n")
+    
+    # Show the step-by-step construction
+    tableau.print_construction_steps("F:(p ∨ q) Tableau Construction")
+
+def visualize_branching_tableau():
+    """Show a more complex example with multiple branches."""
+    
+    p = Atom("p")
+    q = Atom("q")
+    r = Atom("r")
+    
+    print("\n=== COMPLEX BRANCHING EXAMPLE ===\n")
+    
+    # T:(p ∨ q) ∧ T:(r ∨ ¬p)
+    # This will create multiple branches
+    formula1 = Disjunction(p, q)
+    formula2 = Disjunction(r, Negation(p))
+    
+    formulas = [T(formula1), T(formula2)]
+    
+    print("Testing multiple formulas:")
+    for i, f in enumerate(formulas):
+        print(f"  {i+1}. {f}")
     print()
     
-    # Signed complex formulas
-    conjunction = Conjunction(p, q)
-    t_conj = T(conjunction)  # "(p ∧ q) is true"
-    f_conj = F(conjunction)  # "(p ∧ q) is false"
+    tableau = classical_signed_tableau(formulas, track_steps=True)
+    result = tableau.build()
     
-    print(f"T:(p ∧ q) = {t_conj}")
-    print(f"F:(p ∧ q) = {f_conj}")
-    print()
+    print(f"Result: {'SATISFIABLE' if result else 'UNSATISFIABLE'}\n")
     
-    # Test what these mean
-    print("Testing T:(p ∧ q) - requires both p and q to be true:")
-    engine = classical_signed_tableau(t_conj)
-    result = engine.build()
+    # Show detailed construction
+    tableau.print_construction_steps("Complex Tableau Construction")
+    
+    # Show final models
     if result:
-        models = engine.extract_all_models()
-        print(f"  Model: {models[0]}")
+        models = tableau.extract_all_models()
+        print(f"\nFound {len(models)} satisfying models:")
+        for i, model in enumerate(models):
+            print(f"Model {i+1}: {model.assignments}")
+
+def visualize_contradiction():
+    """Show how contradictions are detected."""
     
-    print("\nTesting F:(p ∧ q) - requires at least one of p, q to be false:")
-    engine = classical_signed_tableau(f_conj)
-    result = engine.build()
-    if result:
-        models = engine.extract_all_models()
-        print(f"  Found {len(models)} models:")
-        for model in models:
-            print(f"    {model}")
+    p = Atom("p")
+    
+    print("\n=== CONTRADICTION DETECTION ===\n")
+    
+    # Create a clear contradiction: T:p and F:p
+    formulas = [T(p), F(p)]
+    
+    print("Testing contradiction: T:p ∧ F:p")
+    print("This says 'p is true AND p is false' - impossible!\n")
+    
+    tableau = classical_signed_tableau(formulas, track_steps=True)
+    result = tableau.build()
+    
+    print(f"Result: {'SATISFIABLE' if result else 'UNSATISFIABLE'}\n")
+    
+    tableau.print_construction_steps("Contradiction Detection")
 
 if __name__ == "__main__":
-    explore_signed_formulas()
+    visualize_simple_tableau()
+    visualize_branching_tableau()
+    visualize_contradiction()

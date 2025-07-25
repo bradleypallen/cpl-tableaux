@@ -1,44 +1,9 @@
 #!/usr/bin/env python3
-"""Tutorial 3: Three-Valued Logic Exploration"""
+"""Tutorial 3: Three-Valued Logic (WK3)"""
 
-from tableau_core import *
-
-def explore_three_valued_truth_tables():
-    """Demonstrate three-valued logic truth tables."""
-    
-    print("=== THREE-VALUED LOGIC TRUTH TABLES ===\n")
-    
-    # Truth values: t (true), f (false), e (undefined)
-    print("Truth values:")
-    print("  t = true")
-    print("  f = false")
-    print("  e = undefined/error")
-    print()
-    
-    # Negation truth table
-    print("Negation (¬):")
-    print("  ¬t = f")
-    print("  ¬f = t") 
-    print("  ¬e = e  ← Undefined stays undefined")
-    print()
-    
-    # Conjunction truth table
-    print("Conjunction (∧):")
-    print("     | t | f | e")
-    print("  ---|---|---|---")
-    print("   t | t | f | e")
-    print("   f | f | f | f  ← False 'absorbs'")
-    print("   e | e | f | e")
-    print()
-    
-    # Disjunction truth table
-    print("Disjunction (∨):")
-    print("     | t | f | e")
-    print("  ---|---|---|---")
-    print("   t | t | t | t  ← True 'absorbs'")
-    print("   f | t | f | e")
-    print("   e | t | e | e")
-    print()
+from tableau_core import Atom, Conjunction, Disjunction, Negation, Implication
+from tableau_core import T, F, T3, U, classical_signed_tableau, three_valued_signed_tableau
+from tableau_core import TruthValue, t, f, e
 
 def compare_classical_vs_wk3():
     """Compare classical and WK3 logic on key examples."""
@@ -47,32 +12,130 @@ def compare_classical_vs_wk3():
     
     print("=== CLASSICAL vs WK3 COMPARISON ===\n")
     
-    test_cases = [
-        ("p ∧ ¬p", Conjunction(p, Negation(p)), "Classical contradiction"),
-        ("p ∨ ¬p", Disjunction(p, Negation(p)), "Law of excluded middle"),
-        ("p → p", Implication(p, p), "Self-implication"),
+    # Example 1: Contradiction in classical logic
+    print("Example 1: p ∧ ¬p (Classical contradiction)")
+    contradiction = Conjunction(p, Negation(p))
+    
+    # Classical logic
+    classical_tableau = classical_signed_tableau(T(contradiction))
+    classical_result = classical_tableau.build()
+    
+    # WK3 logic (formula is satisfiable if it can be true OR undefined)
+    t3_tableau = three_valued_signed_tableau(T3(contradiction))
+    u_tableau = three_valued_signed_tableau(U(contradiction))
+    t3_satisfiable = t3_tableau.build()
+    u_satisfiable = u_tableau.build()
+    wk3_result = t3_satisfiable or u_satisfiable
+    
+    print(f"Classical satisfiable: {classical_result}")  # False
+    print(f"WK3 satisfiable: {wk3_result}")  # True
+    
+    if wk3_result:
+        models = []
+        if t3_satisfiable:
+            models.extend(t3_tableau.extract_all_models())
+        if u_satisfiable:
+            models.extend(u_tableau.extract_all_models())
+        print(f"WK3 models: {len(models)}")
+        for model in models:
+            print(f"  Model: {model}")
+    print()
+    
+    # Example 2: Excluded middle
+    print("Example 2: p ∨ ¬p (Excluded middle)")
+    excluded_middle = Disjunction(p, Negation(p))
+    
+    classical_tableau = classical_signed_tableau(T(excluded_middle))
+    classical_result = classical_tableau.build()
+    
+    t3_tableau = three_valued_signed_tableau(T3(excluded_middle))
+    u_tableau = three_valued_signed_tableau(U(excluded_middle))
+    t3_satisfiable = t3_tableau.build()
+    u_satisfiable = u_tableau.build()
+    wk3_result = t3_satisfiable or u_satisfiable
+    
+    print(f"Classical satisfiable: {classical_result}")  # True
+    print(f"WK3 satisfiable: {wk3_result}")  # True
+    
+    if wk3_result:
+        models = []
+        if t3_satisfiable:
+            models.extend(t3_tableau.extract_all_models())
+        if u_satisfiable:
+            models.extend(u_tableau.extract_all_models())
+        print(f"WK3 models: {len(models)}")
+        for model in models:
+            print(f"  Model: {model}")
+    print()
+
+def explore_wk3_truth_tables():
+    """Demonstrate WK3 truth tables."""
+    
+    from tableau_core import WeakKleeneOperators
+    
+    print("=== WK3 TRUTH TABLES ===\n")
+    
+    print("Negation (¬):")
+    print("  ¬t = f")
+    print("  ¬f = t") 
+    print("  ¬e = e  (undefined remains undefined)")
+    print()
+    
+    print("Conjunction (∧) - any operation with 'e' returns 'e':")
+    values = [t, f, e]
+    for a in values:
+        for b in values:
+            result = WeakKleeneOperators.conjunction(a, b)
+            print(f"  {a} ∧ {b} = {result}")
+    print()
+    
+    print("Key insight: In Weak Kleene logic, undefined values 'contaminate'")
+    print("all operations - any operation involving 'e' returns 'e'.")
+    print("This is different from Strong Kleene logic.")
+
+def test_wk3_formulas():
+    """Test various formulas in WK3."""
+    
+    p = Atom("p")
+    q = Atom("q")
+    
+    print("\n=== WK3 FORMULA TESTING ===\n")
+    
+    formulas = [
+        ("p → p", Implication(p, p)),
+        ("p ∨ ¬p", Disjunction(p, Negation(p))),
+        ("(p ∧ q) → p", Implication(Conjunction(p, q), p)),
+        ("p → (p ∨ q)", Implication(p, Disjunction(p, q)))
     ]
     
-    for description, formula, name in test_cases:
-        print(f"{name}: {description}")
+    for name, formula in formulas:
+        print(f"Testing: {name}")
         
-        # Classical logic
-        classical_engine = classical_signed_tableau(T(formula))
-        classical_sat = classical_engine.build()
+        # Classical
+        classical_tableau = classical_signed_tableau(T(formula))
+        classical_result = classical_tableau.build()
         
-        # Three-valued logic using tableau approach
+        # WK3
         t3_tableau = three_valued_signed_tableau(T3(formula))
         u_tableau = three_valued_signed_tableau(U(formula))
-        wk3_sat = t3_tableau.build() or u_tableau.build()
+        t3_satisfiable = t3_tableau.build()
+        u_satisfiable = u_tableau.build()
+        wk3_result = t3_satisfiable or u_satisfiable
         
-        print(f"  Classical: {'Satisfiable' if classical_sat else 'Unsatisfiable'}")
-        print(f"  WK3: {'Satisfiable' if wk3_sat else 'Unsatisfiable'}")
+        wk3_model_count = 0
+        if wk3_result:
+            models = []
+            if t3_satisfiable:
+                models.extend(t3_tableau.extract_all_models())
+            if u_satisfiable:
+                models.extend(u_tableau.extract_all_models())
+            wk3_model_count = len(models)
         
-        if wk3_sat and not classical_sat:
-            print("  *** WK3 allows satisfaction through undefined values ***")
-        
+        print(f"  Classical: {'✓' if classical_result else '✗'}")
+        print(f"  WK3: {'✓' if wk3_result else '✗'} ({wk3_model_count} models)")
         print()
 
 if __name__ == "__main__":
-    explore_three_valued_truth_tables()
     compare_classical_vs_wk3()
+    explore_wk3_truth_tables()
+    test_wk3_formulas()

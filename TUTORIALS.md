@@ -86,7 +86,7 @@ def test_satisfiability_examples():
     print(f"Satisfiable: {result}")
     if result:
         models = tableau.extract_all_models()
-        print(f"Model: {models[0].assignment}")
+        print(f"Model: {models[0].assignments}")
     print()
     
     # Example 2: Conjunction - satisfiable if both parts can be true
@@ -100,7 +100,7 @@ def test_satisfiability_examples():
     print(f"Satisfiable: {result}")
     if result:
         models = tableau.extract_all_models()
-        print(f"Model: {models[0].assignment}")
+        print(f"Model: {models[0].assignments}")
     print()
     
     # Example 3: Contradiction - never satisfiable
@@ -148,7 +148,7 @@ def test_implication_examples():
         models = tableau.extract_all_models()
         print(f"Found {len(models)} models:")
         for i, model in enumerate(models):
-            print(f"  Model {i+1}: {model.assignment}")
+            print(f"  Model {i+1}: {model.assignments}")
     print()
     
     # Example 2: Modus ponens test
@@ -272,7 +272,7 @@ def visualize_branching_tableau():
         models = tableau.extract_all_models()
         print(f"\nFound {len(models)} satisfying models:")
         for i, model in enumerate(models):
-            print(f"Model {i+1}: {model.assignment}")
+            print(f"Model {i+1}: {model.assignments}")
 
 def visualize_contradiction():
     """Show how contradictions are detected."""
@@ -625,7 +625,7 @@ def analyze_classical_models():
         print(f"Found {len(models)} models:")
         
         for i, model in enumerate(models):
-            print(f"Model {i+1}: {model.assignment}")
+            print(f"Model {i+1}: {model.assignments}")
             
             # Verify model satisfies formula
             satisfies = model.satisfies(formula)
@@ -790,7 +790,7 @@ def first_order_basics():
     print(f"Satisfiable: {result}")
     if result:
         models = tableau.extract_all_models()
-        print(f"Model: {models[0].assignment}")
+        print(f"Model: {models[0].assignments}")
     print()
 
 def predicate_logic_reasoning():
@@ -824,7 +824,7 @@ def predicate_logic_reasoning():
         models = tableau.extract_all_models()
         print(f"Found {len(models)} models")
         for model in models:
-            print(f"  {model.assignment}")
+            print(f"  {model.assignments}")
     print()
     
     # Example 2: Multiple individuals
@@ -838,7 +838,7 @@ def predicate_logic_reasoning():
     if result:
         models = tableau.extract_all_models()
         for model in models:
-            print(f"  {model.assignment}")
+            print(f"  {model.assignments}")
     print()
 
 def test_logical_validity():
@@ -871,7 +871,7 @@ def test_logical_validity():
         models = tableau.extract_all_models()
         print("Countermodel where implication fails:")
         for model in models:
-            print(f"  {model.assignment}")
+            print(f"  {model.assignments}")
     else:
         print("Original implication is VALID (tautology)")
     print()
@@ -1090,7 +1090,7 @@ def simple_sat_solver(cnf_clauses):
     
     if result:
         models = tableau.extract_all_models()
-        return models[0].assignment  # Return first satisfying assignment
+        return models[0].assignments  # Return first satisfying assignment
     else:
         return None  # UNSAT
 
@@ -1134,7 +1134,7 @@ def logic_tutor():
                 models = tableau.extract_all_models()
                 print(f"Models ({len(models)}):")
                 for model in models:
-                    print(f"  {model.assignment}")
+                    print(f"  {model.assignments}")
             else:
                 print("This formula is unsatisfiable (contradiction)")
             print()

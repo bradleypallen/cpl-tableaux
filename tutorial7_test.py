@@ -1,368 +1,127 @@
 #!/usr/bin/env python3
-"""Tutorial 7: Extending with New Logic Systems"""
+"""Tutorial 7: Performance Analysis"""
 
-from tableau_core import *
-from unified_model import UnifiedModel
-from typing import Dict, Union, List
-from abc import ABC, abstractmethod
+import time
+from tableau_core import Atom, Conjunction, Disjunction, classical_signed_tableau, T, F
 
-# Four-valued logic implementation from Tutorial 7
-class FourValuedTruthValue:
-    """Four-valued truth system: TRUE, FALSE, BOTH, NEITHER"""
+def performance_comparison():
+    """Compare performance across different formula sizes."""
     
-    def __init__(self, value: str):
-        if value not in {'TRUE', 'FALSE', 'BOTH', 'NEITHER'}:
-            raise ValueError(f"Invalid four-valued truth value: {value}")
-        self.value = value
+    print("=== PERFORMANCE ANALYSIS ===\n")
     
-    def __str__(self):
-        return self.value
+    sizes = [3, 5, 8]  # Smaller sizes for demonstration
     
-    def __repr__(self):
-        return f"FourValuedTruthValue('{self.value}')"
-    
-    def __eq__(self, other):
-        return isinstance(other, FourValuedTruthValue) and self.value == other.value
-    
-    def __hash__(self):
-        return hash(self.value)
-
-# Four-valued truth constants
-TRUE = FourValuedTruthValue('TRUE')
-FALSE = FourValuedTruthValue('FALSE')
-BOTH = FourValuedTruthValue('BOTH')
-NEITHER = FourValuedTruthValue('NEITHER')
-
-class FourValuedModel(UnifiedModel):
-    """Model for four-valued logic system"""
-    
-    def __init__(self, assignments: Dict[str, Union[str, FourValuedTruthValue]]):
-        self._assignments = {}
-        for atom, value in assignments.items():
-            if isinstance(value, FourValuedTruthValue):
-                self._assignments[atom] = value
-            elif isinstance(value, str) and value in {'TRUE', 'FALSE', 'BOTH', 'NEITHER'}:
-                self._assignments[atom] = FourValuedTruthValue(value)
-            else:
-                raise ValueError(f"Invalid four-valued truth value for {atom}: {value}")
-    
-    def satisfies(self, formula: Formula) -> FourValuedTruthValue:
-        """Evaluate formula under four-valued semantics"""
-        return self._evaluate_four_valued(formula)
-    
-    def is_satisfying(self, formula: Formula) -> bool:
-        """Check if model satisfies formula (TRUE or BOTH)"""
-        result = self._evaluate_four_valued(formula)
-        return result.value in {'TRUE', 'BOTH'}
-    
-    def get_assignment(self, atom_name: str) -> FourValuedTruthValue:
-        """Get four-valued assignment for atom"""
-        return self._assignments.get(atom_name, NEITHER)
-    
-    @property
-    def assignments(self) -> Dict[str, FourValuedTruthValue]:
-        """Get all assignments"""
-        return self._assignments.copy()
-    
-    def _evaluate_four_valued(self, formula: Formula) -> FourValuedTruthValue:
-        """Evaluate formula using four-valued semantics"""
-        if isinstance(formula, Atom):
-            return self._assignments.get(formula.name, NEITHER)
-        elif isinstance(formula, Negation):
-            operand_value = self._evaluate_four_valued(formula.operand)
-            # Negation: TRUE->FALSE, FALSE->TRUE, BOTH->BOTH, NEITHER->NEITHER
-            negation_map = {
-                'TRUE': FALSE,
-                'FALSE': TRUE,
-                'BOTH': BOTH,
-                'NEITHER': NEITHER
-            }
-            return negation_map[operand_value.value]
-        elif isinstance(formula, Conjunction):
-            left_value = self._evaluate_four_valued(formula.left)
-            right_value = self._evaluate_four_valued(formula.right)
-            # Simplified conjunction - can be extended with full truth table
-            if left_value == TRUE and right_value == TRUE:
-                return TRUE
-            elif left_value == FALSE or right_value == FALSE:
-                return FALSE
-            elif left_value == BOTH or right_value == BOTH:
-                return BOTH
-            else:
-                return NEITHER
-        elif isinstance(formula, Disjunction):
-            left_value = self._evaluate_four_valued(formula.left)
-            right_value = self._evaluate_four_valued(formula.right)
-            # Simplified disjunction
-            if left_value == TRUE or right_value == TRUE:
-                return TRUE
-            elif left_value == FALSE and right_value == FALSE:
-                return FALSE
-            elif left_value == BOTH or right_value == BOTH:
-                return BOTH
-            else:
-                return NEITHER
-        else:
-            return NEITHER  # Default for unknown formulas
-    
-    def __str__(self) -> str:
-        if not self._assignments:
-            return "{}"
+    for size in sizes:
+        print(f"Testing with {size} atoms:")
         
-        sorted_items = sorted(self._assignments.items())
-        assignment_strs = [f"{atom}={value}" for atom, value in sorted_items]
-        return "{" + ", ".join(assignment_strs) + "}"
-    
-    def __repr__(self) -> str:
-        return f"FourValuedModel({self._assignments})"
-
-# Modal logic extension from Tutorial 7
-class ModalFormula(Formula):
-    """Base class for modal formulas"""
-    pass
-
-class Box(ModalFormula):
-    """Necessity operator (□φ)"""
-    
-    def __init__(self, operand: Formula):
-        self.operand = operand
-    
-    def is_atomic(self) -> bool:
-        """Modal operators are not atomic"""
-        return False
-    
-    def is_literal(self) -> bool:
-        """Modal operators are not literals"""
-        return False
-    
-    def __str__(self):
-        return f"□{self.operand}"
-    
-    def __repr__(self):
-        return f"Box({self.operand!r})"
-    
-    def __eq__(self, other):
-        return isinstance(other, Box) and self.operand == other.operand
-    
-    def __hash__(self):
-        return hash(('Box', self.operand))
-
-class Diamond(ModalFormula):
-    """Possibility operator (◇φ)"""
-    
-    def __init__(self, operand: Formula):
-        self.operand = operand
-    
-    def is_atomic(self) -> bool:
-        """Modal operators are not atomic"""
-        return False
-    
-    def is_literal(self) -> bool:
-        """Modal operators are not literals"""
-        return False
-    
-    def __str__(self):
-        return f"◇{self.operand}"
-    
-    def __repr__(self):
-        return f"Diamond({self.operand!r})"
-    
-    def __eq__(self, other):
-        return isinstance(other, Diamond) and self.operand == other.operand
-    
-    def __hash__(self):
-        return hash(('Diamond', self.operand))
-
-class ModalModel(UnifiedModel):
-    """Simplified modal model with possible worlds"""
-    
-    def __init__(self, worlds: Dict[str, Dict[str, bool]], accessibility: Dict[str, List[str]], current_world: str = "w0"):
-        self.worlds = worlds  # world -> {atom -> bool}
-        self.accessibility = accessibility  # world -> [accessible_worlds]
-        self.current_world = current_world
-    
-    def satisfies(self, formula: Formula) -> bool:
-        """Evaluate formula in current world"""
-        return self._evaluate_modal(formula, self.current_world)
-    
-    def is_satisfying(self, formula: Formula) -> bool:
-        """Check if model satisfies formula in current world"""
-        return self.satisfies(formula)
-    
-    def get_assignment(self, atom_name: str) -> bool:
-        """Get assignment for atom in current world"""
-        return self.worlds.get(self.current_world, {}).get(atom_name, False)
-    
-    @property
-    def assignments(self) -> Dict[str, bool]:
-        """Get assignments in current world"""
-        return self.worlds.get(self.current_world, {}).copy()
-    
-    def _evaluate_modal(self, formula: Formula, world: str) -> bool:
-        """Evaluate formula in specific world"""
-        if isinstance(formula, Atom):
-            return self.worlds.get(world, {}).get(formula.name, False)
-        elif isinstance(formula, Negation):
-            return not self._evaluate_modal(formula.operand, world)
-        elif isinstance(formula, Conjunction):
-            return (self._evaluate_modal(formula.left, world) and 
-                   self._evaluate_modal(formula.right, world))
-        elif isinstance(formula, Disjunction):
-            return (self._evaluate_modal(formula.left, world) or 
-                   self._evaluate_modal(formula.right, world))
-        elif isinstance(formula, Box):
-            # □φ is true iff φ is true in all accessible worlds
-            accessible_worlds = self.accessibility.get(world, [])
-            return all(self._evaluate_modal(formula.operand, w) for w in accessible_worlds)
-        elif isinstance(formula, Diamond):
-            # ◇φ is true iff φ is true in some accessible world
-            accessible_worlds = self.accessibility.get(world, [])
-            return any(self._evaluate_modal(formula.operand, w) for w in accessible_worlds)
+        # Create atoms
+        atoms = [Atom(f"p{i}") for i in range(size)]
+        
+        # Create CNF formula: (p0 ∨ p1) ∧ (p2 ∨ p3) ∧ ...
+        clauses = []
+        for i in range(0, len(atoms) - 1, 2):
+            clauses.append(Disjunction(atoms[i], atoms[i + 1]))
+        
+        # Conjoin all clauses
+        if clauses:
+            formula = clauses[0]
+            for clause in clauses[1:]:
+                formula = Conjunction(formula, clause)
         else:
-            return False
-    
-    def __str__(self) -> str:
-        return f"ModalModel(current={self.current_world}, worlds={len(self.worlds)})"
-    
-    def __repr__(self) -> str:
-        return f"ModalModel(worlds={self.worlds}, accessibility={self.accessibility}, current='{self.current_world}')"
+            formula = atoms[0]  # Fallback for odd sizes
+        
+        # Time the tableau construction
+        start_time = time.time()
+        tableau = classical_signed_tableau(T(formula))
+        result = tableau.build()
+        end_time = time.time()
+        
+        # Collect statistics
+        construction_time = end_time - start_time
+        branch_count = len(tableau.branches)
+        
+        print(f"  Time: {construction_time:.4f}s")
+        print(f"  Branches: {branch_count}")
+        print(f"  Satisfiable: {result}")
+        
+        if result:
+            models = tableau.extract_all_models()
+            print(f"  Models: {len(models)}")
+        print()
 
-def test_four_valued_logic():
-    """Test the four-valued logic implementation"""
+def optimization_demonstration():
+    """Show optimization features in action."""
     
-    print("=== FOUR-VALUED LOGIC TEST ===\n")
+    print("=== OPTIMIZATION FEATURES ===\n")
     
-    # Create test model
-    model = FourValuedModel({
-        'p': 'TRUE',
-        'q': 'FALSE',
-        'r': 'BOTH'
-    })
+    p = Atom("p")
+    q = Atom("q")
+    r = Atom("r")
     
-    # Test atoms
-    p = Atom('p')
-    q = Atom('q')
-    r = Atom('r')
+    # Create formula that demonstrates α/β rule prioritization
+    # F:(p ∧ q) ∧ T:(r ∨ p)
+    # This will show α-rules (non-branching) applied before β-rules (branching)
     
-    print("Model assignments:")
-    for atom, value in model.assignments.items():
-        print(f"  {atom} = {value}")
+    formula1 = Conjunction(p, q)  # Will use F-Conjunction (β-rule)
+    formula2 = Disjunction(r, p)  # Will use T-Disjunction (β-rule)
+    
+    formulas = [F(formula1), T(formula2)]
+    
+    print("Formula designed to show α/β rule prioritization:")
+    print(f"  F:({formula1}) - uses F-Conjunction (β-rule)")
+    print(f"  T:({formula2}) - uses T-Disjunction (β-rule)")
     print()
     
-    # Test formulas
-    test_cases = [
-        ("p", p),
-        ("q", q), 
-        ("r", r),
-        ("¬p", Negation(p)),
-        ("¬q", Negation(q)),
-        ("¬r", Negation(r)),
-        ("p ∧ q", Conjunction(p, q)),
-        ("p ∨ q", Disjunction(p, q)),
-        ("r ∧ p", Conjunction(r, p))
-    ]
+    # Build with step tracking to see optimization
+    tableau = classical_signed_tableau(formulas, track_steps=True)
+    result = tableau.build()
     
-    print("Formula evaluations:")
-    for description, formula in test_cases:
-        result = model.satisfies(formula)
-        satisfying = model.is_satisfying(formula)
-        print(f"  {description:<8} = {result} (satisfying: {satisfying})")
+    print(f"Result: {'SATISFIABLE' if result else 'UNSATISFIABLE'}\n")
     
-    print(f"\nModel: {model}")
+    # Show the construction - notice rule prioritization
+    tableau.print_construction_steps("Optimization Demonstration")
+    
+    print("\nKey optimization features shown:")
+    print("1. α/β rule prioritization - linear rules before branching")
+    print("2. O(1) closure detection - contradictions found immediately")
+    print("3. Tree structure tracking - efficient branch management")
 
-def test_modal_logic():
-    """Test the modal logic implementation"""
+def memory_efficiency_test():
+    """Test memory efficiency with large formulas."""
     
-    print("\n=== MODAL LOGIC TEST ===\n")
+    print("\n=== MEMORY EFFICIENCY TEST ===\n")
     
-    # Create modal model with two worlds
-    worlds = {
-        'w0': {'p': True, 'q': False},
-        'w1': {'p': False, 'q': True}
-    }
-    accessibility = {
-        'w0': ['w1'],  # w0 can access w1
-        'w1': []       # w1 has no accessible worlds
-    }
+    # Create a formula that could cause exponential blowup
+    # but show how optimizations help
+    atoms = [Atom(f"p{i}") for i in range(5)]  # Smaller for demo
     
-    model = ModalModel(worlds, accessibility, 'w0')
+    # Create nested disjunctions: p0 ∨ (p1 ∨ (p2 ∨ ...))
+    formula = atoms[-1]
+    for atom in reversed(atoms[:-1]):
+        formula = Disjunction(atom, formula)
     
-    print(f"Modal model: {model}")
-    print("World assignments:")
-    for world, assignments in worlds.items():
-        assignment_strs = [f"{atom}={value}" for atom, value in assignments.items()]
-        print(f"  {world}: {{{', '.join(assignment_strs)}}}")
-    print(f"Accessibility: {accessibility}")
-    print()
+    print(f"Testing deeply nested formula with {len(atoms)} atoms")
+    print("This could potentially create many branches...\n")
     
-    # Test modal formulas
-    p = Atom('p')
-    q = Atom('q')
+    start_time = time.time()
+    tableau = classical_signed_tableau(T(formula))
+    result = tableau.build()
+    end_time = time.time()
     
-    test_cases = [
-        ("p", p),
-        ("q", q),
-        ("□p", Box(p)),
-        ("□q", Box(q)),
-        ("◇p", Diamond(p)),
-        ("◇q", Diamond(q)),
-        ("□(p ∨ q)", Box(Disjunction(p, q))),
-        ("◇(p ∧ q)", Diamond(Conjunction(p, q)))
-    ]
+    print(f"Construction time: {end_time - start_time:.4f}s")
+    print(f"Total branches created: {len(tableau.branches)}")
+    print(f"Satisfiable: {result}")
     
-    print("Modal formula evaluations (in w0):")
-    for description, formula in test_cases:
-        try:
-            result = model.satisfies(formula)
-            print(f"  {description:<12} = {result}")
-        except Exception as e:
-            print(f"  {description:<12} = ERROR: {e}")
-
-def test_logic_comparison():
-    """Compare different logic systems"""
+    if result:
+        models = tableau.extract_all_models()
+        print(f"Models found: {len(models)}")
     
-    print("\n=== LOGIC SYSTEM COMPARISON ===\n")
-    
-    # Test formula: p ∨ ¬p (should behave differently in different logics)
-    p = Atom('p')
-    formula = Disjunction(p, Negation(p))
-    
-    print(f"Formula: {formula}")
-    print("Evaluation in different logic systems:")
-    
-    # Classical logic - always true
-    try:
-        classical_tableau = classical_signed_tableau(T(formula))
-        classical_result = classical_tableau.build()
-        print(f"  Classical:    {'SAT' if classical_result else 'UNSAT'}")
-    except Exception as e:
-        print(f"  Classical:    ERROR: {e}")
-    
-    # WK3 logic - use tableau approach
-    try:
-        t3_tableau = three_valued_signed_tableau(T3(formula))
-        u_tableau = three_valued_signed_tableau(U(formula))
-        wk3_result = t3_tableau.build() or u_tableau.build()
-        print(f"  WK3:          {'SAT' if wk3_result else 'UNSAT'}")
-    except Exception as e:
-        print(f"  WK3:          ERROR: {e}")
-    
-    # Four-valued logic - test with different models
-    four_valued_models = [
-        FourValuedModel({'p': 'TRUE'}),
-        FourValuedModel({'p': 'FALSE'}),
-        FourValuedModel({'p': 'BOTH'}),
-        FourValuedModel({'p': 'NEITHER'})
-    ]
-    
-    print("  Four-valued:")
-    for i, model in enumerate(four_valued_models):
-        p_value = model.get_assignment('p')
-        result = model.satisfies(formula)
-        satisfying = model.is_satisfying(formula)
-        print(f"    p={p_value}: {result} (satisfying: {satisfying})")
+    print("\nThe optimized implementation handles this efficiently through:")
+    print("- Branch sharing and subsumption elimination")
+    print("- Early termination when satisfiability is determined")
+    print("- Efficient memory management for branch copying")
 
 if __name__ == "__main__":
-    test_four_valued_logic()
-    test_modal_logic()
-    test_logic_comparison()
+    performance_comparison()
+    optimization_demonstration()
+    memory_efficiency_test()
