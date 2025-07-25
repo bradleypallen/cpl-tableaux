@@ -3071,7 +3071,6 @@ __all__ = [
     'LogicMode', 'ModeError', 'PropositionalBuilder', 'FirstOrderBuilder',
     'propositional_tableau', 'first_order_tableau',
     
-    # Compatibility functions
-    'wk3_satisfiable', 'wk3_models',
+    # Tableau functions
     'classical_signed_tableau', 'three_valued_signed_tableau', 'wkrq_signed_tableau', 'ferguson_signed_tableau'
 ]
