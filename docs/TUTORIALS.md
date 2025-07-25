@@ -41,7 +41,7 @@ python -m pytest --tb=no -q
 
 ```python
 # test_setup.py
-from tableau_core import Atom, classical_signed_tableau, T
+from tableaux import Atom, classical_signed_tableau, T
 
 # Create a simple formula
 p = Atom("p")
@@ -63,8 +63,8 @@ Satisfiability is the core question in logic: *Can this formula be made true?*
 #!/usr/bin/env python3
 """Tutorial 1: Basic Satisfiability Testing"""
 
-from tableau_core import Atom, Conjunction, Disjunction, Negation, Implication
-from tableau_core import T, F, classical_signed_tableau
+from tableaux import Atom, Conjunction, Disjunction, Negation, Implication
+from tableaux import T, F, classical_signed_tableau
 
 def test_satisfiability_examples():
     """Explore basic satisfiability concepts."""
@@ -210,8 +210,8 @@ The unified implementation includes powerful visualization features:
 #!/usr/bin/env python3
 """Tutorial 2: Signed Tableaux with Visualization"""
 
-from tableau_core import Atom, Conjunction, Disjunction, Implication, Negation
-from tableau_core import T, F, classical_signed_tableau
+from tableaux import Atom, Conjunction, Disjunction, Implication, Negation
+from tableaux import T, F, classical_signed_tableau
 
 def visualize_simple_tableau():
     """Show tableau construction step-by-step."""
@@ -341,9 +341,9 @@ Current state: 1 open, 0 closed
 #!/usr/bin/env python3
 """Tutorial 3: Three-Valued Logic (WK3)"""
 
-from tableau_core import Atom, Conjunction, Disjunction, Negation
-from tableau_core import T, F, T3, U, classical_signed_tableau, three_valued_signed_tableau
-from tableau_core import TruthValue, t, f, e
+from tableaux import Atom, Conjunction, Disjunction, Negation, Implication
+from tableaux import T, F, T3, U, classical_signed_tableau, three_valued_signed_tableau
+from tableaux import TruthValue, t, f, e
 
 def compare_classical_vs_wk3():
     """Compare classical and WK3 logic on key examples."""
@@ -411,7 +411,7 @@ def compare_classical_vs_wk3():
 def explore_wk3_truth_tables():
     """Demonstrate WK3 truth tables."""
     
-    from tableau_core import WeakKleeneOperators
+    from tableaux import WeakKleeneOperators
     
     print("=== WK3 TRUTH TABLES ===\n")
     
@@ -491,8 +491,8 @@ if __name__ == "__main__":
 #!/usr/bin/env python3
 """Tutorial 4: Ferguson's wKrQ Epistemic Logic"""
 
-from tableau_core import Atom, Conjunction, Disjunction, Implication, Negation
-from tableau_core import TF, FF, M, N, wkrq_signed_tableau, ferguson_signed_tableau
+from tableaux import Atom, Conjunction, Disjunction, Implication, Negation
+from tableaux import TF, FF, M, N, wkrq_signed_tableau, ferguson_signed_tableau
 
 def epistemic_basics():
     """Understand the four epistemic signs."""
@@ -593,8 +593,8 @@ if __name__ == "__main__":
 #!/usr/bin/env python3
 """Tutorial 5: Model Extraction and Analysis"""
 
-from tableau_core import Atom, Conjunction, Disjunction, Implication, Negation
-from tableau_core import T, F, T3, U, classical_signed_tableau, three_valued_signed_tableau
+from tableaux import Atom, Conjunction, Disjunction, Implication, Negation
+from tableaux import T, F, T3, U, classical_signed_tableau, three_valued_signed_tableau
 
 def analyze_classical_models():
     """Extract and analyze classical logic models."""
@@ -682,14 +682,14 @@ def analyze_wk3_models():
     
     # Show which assignments DON'T satisfy
     print("Non-satisfying assignments (formula evaluates to 'f'):")
-    from tableau_core import t, f, e
+    from tableaux import t, f, e
     all_assignments = [
         (t, t), (t, f), (t, e),
         (f, t), (f, f), (f, e),
         (e, t), (e, f), (e, e)
     ]
     
-    from tableau_core import WK3Model, WeakKleeneOperators
+    from tableaux import WK3Model, WeakKleeneOperators
     
     for p_val, q_val in all_assignments:
         model = WK3Model({"p": p_val, "q": q_val})
@@ -756,8 +756,8 @@ if __name__ == "__main__":
 #!/usr/bin/env python3
 """Tutorial 6: First-Order Logic"""
 
-from tableau_core import Predicate, Constant, Variable, Implication
-from tableau_core import T, F, classical_signed_tableau
+from tableaux import Predicate, Constant, Variable, Implication
+from tableaux import T, F, classical_signed_tableau
 
 def first_order_basics():
     """Basic first-order logic concepts."""
@@ -894,14 +894,14 @@ if __name__ == "__main__":
 """Tutorial 7: Performance Analysis"""
 
 import time
-from tableau_core import Atom, Conjunction, Disjunction, classical_signed_tableau, T
+from tableaux import Atom, Conjunction, Disjunction, classical_signed_tableau, T
 
 def performance_comparison():
     """Compare performance across different formula sizes."""
     
     print("=== PERFORMANCE ANALYSIS ===\n")
     
-    sizes = [5, 10, 15, 20]
+    sizes = [3, 5, 8]  # Smaller sizes for demonstration
     
     for size in sizes:
         print(f"Testing with {size} atoms:")
@@ -985,7 +985,7 @@ def memory_efficiency_test():
     
     # Create a formula that could cause exponential blowup
     # but show how optimizations help
-    atoms = [Atom(f"p{i}") for i in range(8)]
+    atoms = [Atom(f"p{i}") for i in range(5)]  # Smaller for demo
     
     # Create nested disjunctions: p0 ∨ (p1 ∨ (p2 ∨ ...))
     formula = atoms[-1]
@@ -1027,15 +1027,15 @@ The unified system includes a powerful command-line interface:
 
 ```bash
 # Classical logic satisfiability
-python cli.py "p | ~p"                    # Tautology
-python cli.py "p & ~p"                    # Contradiction
+tableaux "p | ~p"                    # Tautology
+tableaux "p & ~p"                    # Contradiction
 
 # Three-valued logic
-python cli.py --wk3 "p | ~p"              # WK3 satisfiability
-python cli.py --wk3 "p & ~p"              # WK3 satisfiability
+tableaux --wk3 "p | ~p"              # WK3 satisfiability
+tableaux --wk3 "p & ~p"              # WK3 satisfiability
 
 # Interactive mode
-python cli.py                             # Start interactive session
+tableaux                             # Start interactive session
 ```
 
 ### Interactive Mode

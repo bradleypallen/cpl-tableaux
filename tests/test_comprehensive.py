@@ -18,14 +18,14 @@ from typing import List, Dict, Any
 import time
 
 # Core logic imports from consolidated architecture
-from tableau_core import (
+from tableaux import (
     Atom, Negation, Conjunction, Disjunction, Implication, 
     Constant, Variable, FunctionApplication, Predicate,
     T, F, T3, F3, U, TF, FF, M, N,
     classical_signed_tableau, three_valued_signed_tableau, wkrq_signed_tableau
 )
-from tableau_core import TruthValue, t, f, e
-from unified_model import WK3Model
+from tableaux import TruthValue, t, f, e
+from tableaux import WK3Model
 # Unified system imports only - removed legacy components
 
 
@@ -246,7 +246,7 @@ class TestWeakKleeneLogic:
     
     def test_wk3_truth_values(self):
         """Test WK3 truth value system"""
-        from tableau_core import WeakKleeneOperators
+        from tableaux import WeakKleeneOperators
         
         # Test truth value operations using WeakKleeneOperators
         assert WeakKleeneOperators.negation(t) == f
@@ -373,7 +373,7 @@ class TestModeAwareSystem:
     
     def test_mode_detection(self):
         """Test automatic mode detection"""
-        from tableau_core import LogicMode
+        from tableaux import LogicMode
         
         # Test propositional mode aliases
         assert LogicMode.from_string("prop") == LogicMode.PROPOSITIONAL
@@ -391,7 +391,7 @@ class TestModeAwareSystem:
     
     def test_mode_aware_api(self):
         """Test mode-aware programmatic API"""
-        from tableau_core import PropositionalBuilder, FirstOrderBuilder, propositional_tableau, first_order_tableau
+        from tableaux import PropositionalBuilder, FirstOrderBuilder, propositional_tableau, first_order_tableau
         
         # Test propositional builder
         p = PropositionalBuilder.atom("p")
@@ -411,7 +411,7 @@ class TestModeAwareSystem:
     
     def test_mixed_mode_prevention(self):
         """Test that mixing modes is prevented"""
-        from tableau_core import ModeError, propositional_tableau, first_order_tableau
+        from tableaux import ModeError, propositional_tableau, first_order_tableau
         
         p = Atom("p")
         john = Constant("john")

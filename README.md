@@ -10,8 +10,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 The system uses a unified architecture with a single core module:
 
-### Core Module
-- `tableau_core.py` - Complete implementation containing:
+### Core Modules
+- `src/tableaux/tableau_core.py` - Complete implementation containing:
   - Formula representation (atoms, connectives, predicates, quantifiers)
   - Truth value systems (classical, three-valued WK3)
   - Sign systems (classical T/F, three-valued T/F/U, epistemic wKrQ T/F/M/N)
@@ -19,50 +19,65 @@ The system uses a unified architecture with a single core module:
   - Tableau rules for multiple logic systems
   - Model extraction and satisfiability checking
   - Mode-aware system for propositional and first-order logic
+- `src/tableaux/unified_model.py` - Unified model representation for all logic systems
+- `src/tableaux/cli.py` - Command-line interface supporting multiple logic systems
 
-### Supporting Modules
-- `unified_model.py` - Unified model representation for all logic systems
-- `cli.py` - Command-line interface supporting multiple logic systems
-
-### Demonstration Programs
-- `wkrq_countermodel_demo.py` - Ferguson's wKrQ epistemic logic demonstrations
-- `wkrq_theoretical_demo.py` - Theoretical insights for weak Kleene logic
-- `verify_kleene_tables.py` - Verification of weak Kleene truth tables
+### Examples and Demonstrations
+- `examples/wkrq_countermodel_demo.py` - Ferguson's wKrQ epistemic logic demonstrations
+- `examples/wkrq_theoretical_demo.py` - Theoretical insights for weak Kleene logic
+- `examples/verify_kleene_tables.py` - Verification of weak Kleene truth tables
+- `examples/tutorials/` - Interactive tutorial examples
 
 ## Installation
 
-This is a pure Python implementation with no external dependencies for core functionality:
+### From PyPI (Recommended)
+
+```bash
+pip install tableaux
+```
+
+### From Source
 
 ```bash
 # Clone the repository
 git clone <repository-url>
 cd tableaux
 
+# Install in development mode
+pip install -e .
+
 # Run tests to verify installation
-python -m pytest
+python -m pytest tests/
 ```
 
 ## Usage
 
 ### Command Line Interface
 
+After installation, use the `tableaux` command:
+
 ```bash
 # Classical logic
-python cli.py "p | ~p"                    # Tautology check
-python cli.py "p & ~p"                    # Contradiction check
+tableaux "p | ~p"                         # Tautology check
+tableaux "p & ~p"                         # Contradiction check
 
 # Weak Kleene logic (WK3)
-python cli.py --wk3 "p | ~p"              # WK3 satisfiability check
-python cli.py --wk3 "p & ~p"              # WK3 satisfiability check
+tableaux --wk3 "p | ~p"                   # WK3 satisfiability check
+tableaux --wk3 "p & ~p"                   # WK3 satisfiability check
 
 # Interactive mode
-python cli.py                             # Interactive tableau system
+tableaux                                  # Interactive tableau system
+```
+
+**Development Mode**: If running from source without installation:
+```bash
+python -m tableaux.cli "formula"          # Alternative command
 ```
 
 ### Python API
 
 ```python
-from tableau_core import (
+from tableaux import (
     # Formula construction
     Atom, Conjunction, Disjunction, Negation, Implication,
     Predicate, Constant, Variable,
@@ -198,39 +213,39 @@ The system includes comprehensive test coverage:
 
 ```bash
 # Run all tests
-python -m pytest                              # All tests
+python -m pytest tests/                       # All tests
 
 # Run specific test suites
-python -m pytest test_comprehensive.py -v    # Unified test suite (35 tests)
-python -m pytest test_literature_examples.py -v  # Literature-based tests (26 tests)
+python -m pytest tests/test_comprehensive.py -v    # Unified test suite (35 tests)
+python -m pytest tests/test_literature_examples.py -v  # Literature-based tests (26 tests)
 
 # Run tutorial tests
-python -m pytest tutorial*_test.py -v        # Tutorial validation tests
+python -m pytest examples/tutorials/ -v       # Tutorial validation tests
 
 # Quick verification
-python -m pytest --tb=no -q                   # Brief output
+python -m pytest tests/ --tb=no -q            # Brief output
 ```
 
 ### Core Test Suites
 
-- **test_comprehensive.py** (35 tests) - Complete validation of unified implementation
-- **test_literature_examples.py** (26 tests) - Examples from Priest, Fitting, Smullyan, Ferguson
-- **tutorial*_test.py** - Tutorial code validation
+- **tests/test_comprehensive.py** (35 tests) - Complete validation of unified implementation
+- **tests/test_literature_examples.py** (26 tests) - Examples from Priest, Fitting, Smullyan, Ferguson
+- **examples/tutorials/tutorial*_test.py** - Tutorial code validation
 
 ### Demonstrations
 
 ```bash
 # Ferguson's wKrQ epistemic logic demonstrations
-python wkrq_countermodel_demo.py
+python examples/wkrq_countermodel_demo.py
 
 # Theoretical insights demonstration
-python wkrq_theoretical_demo.py
+python examples/wkrq_theoretical_demo.py
 
 # Verify weak Kleene truth tables
-python verify_kleene_tables.py
+python examples/verify_kleene_tables.py
 
 # Interactive CLI with multiple logic support
-python cli.py
+tableaux
 ```
 
 ## Performance Characteristics
@@ -258,10 +273,10 @@ The implementation includes standard tableau optimizations:
 
 For detailed technical documentation, see:
 
-- **ARCHITECTURE.md** - Complete system architecture and implementation details
-- **OPTIMIZATIONS.md** - Performance optimization strategies and analysis
-- **TECHNICAL_ANALYSIS.md** - Implementation quality assessment
-- **WEAK_KLEENE_PLAN.md** - WK3 implementation design and semantics
+- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Complete system architecture and implementation details
+- **[OPTIMIZATIONS.md](docs/OPTIMIZATIONS.md)** - Performance optimization strategies and analysis
+- **[docs/archive/historical-design-docs/TECHNICAL_ANALYSIS.md](docs/archive/historical-design-docs/TECHNICAL_ANALYSIS.md)** - Implementation quality assessment
+- **[docs/archive/historical-design-docs/WEAK_KLEENE_PLAN.md](docs/archive/historical-design-docs/WEAK_KLEENE_PLAN.md)** - WK3 implementation design and semantics
 
 ## Extension Framework
 
@@ -275,7 +290,7 @@ The unified system supports extension with new logic systems:
 
 Example modal logic extension:
 ```python
-# In tableau_core.py
+# In src/tableaux/tableau_core.py
 class ModalSign(Sign):
     def __init__(self, modality: str, polarity: str):
         self.modality = modality  # □ or ◇
@@ -298,7 +313,7 @@ if self.sign_system == "modal":
 
 ### Adding New Formula Types
 
-1. **Define Formula Class**: Extend the `Formula` base class in `tableau_core.py`
+1. **Define Formula Class**: Extend the `Formula` base class in `src/tableaux/tableau_core.py`
 2. **Implement Required Methods**: `__str__`, `__eq__`, `__hash__`, `is_atomic()`, etc.
 3. **Add Tableau Rules**: Update rule initialization for the new formula type
 
@@ -334,17 +349,17 @@ When extending the system:
 For comprehensive documentation and detailed guides, see:
 
 ### Core Documentation
-- **[TUTORIALS.md](TUTORIALS.md)** - Step-by-step tutorials covering basic to advanced usage
-- **[API_REFERENCE.md](API_REFERENCE.md)** - Complete API documentation with examples for all functions and classes
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Detailed system architecture, design patterns, and implementation details
-- **[CLI_GUIDE.md](CLI_GUIDE.md)** - Comprehensive command-line interface usage guide with examples
+- **[TUTORIALS.md](docs/TUTORIALS.md)** - Step-by-step tutorials covering basic to advanced usage
+- **[API_REFERENCE.md](docs/API_REFERENCE.md)** - Complete API documentation with examples for all functions and classes
+- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Detailed system architecture, design patterns, and implementation details
+- **[CLI_GUIDE.md](docs/CLI_GUIDE.md)** - Comprehensive command-line interface usage guide with examples
 
 ### Implementation Guides
-- **[BUILDING_GUIDE.md](BUILDING_GUIDE.md)** - Step-by-step guide for extending the system with new logic systems
-- **[OPTIMIZATIONS.md](OPTIMIZATIONS.md)** - Performance optimization strategies and analysis (still current)
+- **[BUILDING_GUIDE.md](docs/BUILDING_GUIDE.md)** - Step-by-step guide for extending the system with new logic systems
+- **[OPTIMIZATIONS.md](docs/OPTIMIZATIONS.md)** - Performance optimization strategies and analysis
 
 ### Development
 - **[CLAUDE.md](CLAUDE.md)** - Project instructions and development guidelines for AI assistants
-- **[archive/historical-design-docs/](archive/historical-design-docs/)** - Historical design documents from before the July 2025 consolidation
+- **[docs/archive/historical-design-docs/](docs/archive/historical-design-docs/)** - Historical design documents from before the July 2025 consolidation
 
 The system demonstrates how semantic tableau methods can be implemented with clean architecture, optimized performance, and support for multiple logical systems suitable for both research and educational applications.

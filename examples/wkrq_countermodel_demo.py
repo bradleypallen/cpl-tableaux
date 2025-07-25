@@ -12,7 +12,7 @@ for systems related to weak Kleene logic." TABLEAUX 2021.
 Author: Generated for review by Thomas Ferguson
 """
 
-from tableau_core import Atom, Negation, Conjunction, Disjunction, Implication, Predicate, Constant, TF, FF, M, N, wkrq_signed_tableau
+from tableaux import Atom, Negation, Conjunction, Disjunction, Implication, Predicate, Constant, TF, FF, M, N, wkrq_signed_tableau
 
 
 def print_step_by_step_tableau(tableau, title="Tableau Construction"):

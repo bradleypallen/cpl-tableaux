@@ -22,7 +22,7 @@
 
 ```bash
 # Verify the system is working
-python cli.py "p | ~p"
+tableaux "p | ~p"
 # Expected output: SATISFIABLE with 2 models
 ```
 
@@ -30,19 +30,19 @@ python cli.py "p | ~p"
 
 ```bash
 # Test a simple tautology
-python cli.py "p | ~p"
+tableaux "p | ~p"
 
 # Test a contradiction
-python cli.py "p & ~p"
+tableaux "p & ~p"
 
 # Show all satisfying models
-python cli.py --models "p | q"
+tableaux --models "p | q"
 
 # Use three-valued logic
-python cli.py --wk3 "p & ~p"
+tableaux --wk3 "p & ~p"
 
 # Start interactive mode
-python cli.py
+tableaux
 ```
 
 ## Basic Commands
@@ -50,17 +50,17 @@ python cli.py
 ### Command Line Syntax
 
 ```bash
-python cli.py [OPTIONS] [FORMULA]
+tableaux [OPTIONS] [FORMULA]
 ```
 
 ### Essential Options
 
 | Option | Description | Example |
 |--------|-------------|---------|
-| `--models` | Show all satisfying models | `python cli.py --models "p \| q"` |
-| `--wk3` | Use three-valued (WK3) logic | `python cli.py --wk3 "p & ~p"` |
-| `--stats` | Show performance statistics | `python cli.py --stats "complex_formula"` |
-| `--help` | Display help message | `python cli.py --help` |
+| `--models` | Show all satisfying models | `tableaux --models "p \| q"` |
+| `--wk3` | Use three-valued (WK3) logic | `tableaux --wk3 "p & ~p"` |
+| `--stats` | Show performance statistics | `tableaux --stats "complex_formula"` |
+| `--help` | Display help message | `tableaux --help` |
 
 ### Formula Syntax
 
@@ -79,15 +79,15 @@ python cli.py [OPTIONS] [FORMULA]
 
 ```bash
 # Simple satisfiability tests
-python cli.py "p"                      # Always satisfiable
-python cli.py "p & q"                  # Satisfiable
-python cli.py "p & ~p"                 # Contradiction (unsatisfiable)
-python cli.py "p | ~p"                 # Tautology (always satisfiable)
+tableaux "p"                      # Always satisfiable
+tableaux "p & q"                  # Satisfiable
+tableaux "p & ~p"                 # Contradiction (unsatisfiable)
+tableaux "p | ~p"                 # Tautology (always satisfiable)
 
 # Complex formulas
-python cli.py "(p -> q) & p & ~q"      # Modus ponens contradiction
-python cli.py "(p | q) & (~p | r)"     # Horn clause
-python cli.py "((p -> q) -> p) -> p"   # Peirce's law
+tableaux "(p -> q) & p & ~q"      # Modus ponens contradiction
+tableaux "(p | q) & (~p | r)"     # Horn clause
+tableaux "((p -> q) -> p) -> p"   # Peirce's law
 ```
 
 ## Interactive Mode
@@ -95,7 +95,7 @@ python cli.py "((p -> q) -> p) -> p"   # Peirce's law
 ### Starting Interactive Mode
 
 ```bash
-python cli.py
+tableaux
 ```
 
 ### Interactive Commands
@@ -116,7 +116,7 @@ Once in interactive mode, you can use these commands:
 ### Interactive Session Tutorial
 
 ```bash
-$ python cli.py
+$ tableaux
 Welcome to the Tableau Logic System!
 Type 'help' for commands, 'quit' to exit.
 
@@ -218,11 +218,11 @@ Classical two-valued logic with truth values `TRUE` and `FALSE`.
 
 ```bash
 # Explicit classical logic (default)
-python cli.py --classical "p | ~p"
+tableaux --classical "p | ~p"
 
 # These are equivalent
-python cli.py "p | ~p"
-python cli.py --classical "p | ~p"
+tableaux "p | ~p"
+tableaux --classical "p | ~p"
 ```
 
 **Characteristics:**
@@ -236,27 +236,27 @@ Weak Kleene three-valued logic with truth values `TRUE`, `FALSE`, and `UNDEFINED
 
 ```bash
 # Use WK3 logic
-python cli.py --wk3 "p & ~p"
-python cli.py --wk3 --models "p | ~p"
+tableaux --wk3 "p & ~p"
+tableaux --wk3 --models "p | ~p"
 ```
 
 **Key Differences from Classical:**
 
 ```bash
 # Classical contradiction - unsatisfiable
-python cli.py "p & ~p"
+tableaux "p & ~p"
 # Output: UNSATISFIABLE
 
 # WK3 contradiction - satisfiable when p is undefined
-python cli.py --wk3 "p & ~p"
+tableaux --wk3 "p & ~p"
 # Output: SATISFIABLE, Model: {p=UNDEFINED}
 
 # Classical tautology - 2 models (p=true, p=false)
-python cli.py --models "p | ~p"
+tableaux --models "p | ~p"
 # Output: 2 models
 
 # WK3 non-tautology - 3 models including undefined
-python cli.py --wk3 --models "p | ~p"
+tableaux --wk3 --models "p | ~p"
 # Output: 3 models (includes p=UNDEFINED where formula is UNDEFINED)
 ```
 
@@ -265,12 +265,12 @@ python cli.py --wk3 --models "p | ~p"
 ```bash
 # Compare same formula in both systems
 echo "Comparing p & ~p in classical vs WK3:"
-python cli.py "p & ~p"
-python cli.py --wk3 "p & ~p"
+tableaux "p & ~p"
+tableaux --wk3 "p & ~p"
 
 echo "Comparing p | ~p in classical vs WK3:"
-python cli.py --models "p | ~p"
-python cli.py --wk3 --models "p | ~p"
+tableaux --models "p | ~p"
+tableaux --wk3 --models "p | ~p"
 ```
 
 ## Output Formats
@@ -278,7 +278,7 @@ python cli.py --wk3 --models "p | ~p"
 ### Default Output Format
 
 ```bash
-python cli.py "p | q"
+tableaux "p | q"
 # Output:
 # Formula: p ∨ q
 # Logic: Classical
@@ -289,7 +289,7 @@ python cli.py "p | q"
 ### Detailed Output with Models
 
 ```bash
-python cli.py --models "p | q"
+tableaux --models "p | q"
 # Output:
 # Formula: p ∨ q
 # Logic: Classical
@@ -303,7 +303,7 @@ python cli.py --models "p | q"
 ### Statistics Output
 
 ```bash
-python cli.py --stats "complex_formula"
+tableaux --stats "complex_formula"
 # Output includes:
 # - Construction time
 # - Rule applications
@@ -314,7 +314,7 @@ python cli.py --stats "complex_formula"
 ### JSON Output
 
 ```bash
-python cli.py --format=json "p | q"
+tableaux --format=json "p | q"
 # Output:
 # {
 #   "formula": "p ∨ q",
@@ -336,7 +336,7 @@ python cli.py --format=json "p | q"
 ### CSV Output
 
 ```bash
-python cli.py --format=csv --models "p | q"
+tableaux --format=csv --models "p | q"
 # Output:
 # formula,logic,satisfiable,model_count,p,q
 # "p ∨ q",classical,true,3,true,false
@@ -350,13 +350,13 @@ python cli.py --format=csv --models "p | q"
 
 ```bash
 # From command line arguments
-python cli.py --batch "p & q" "p | q" "p -> q"
+tableaux --batch "p & q" "p | q" "p -> q"
 
 # From standard input
-echo -e "p & q\np | q\np -> q" | python cli.py --batch
+echo -e "p & q\np | q\np -> q" | tableaux --batch
 
 # From file
-python cli.py --file=formulas.txt
+tableaux --file=formulas.txt
 ```
 
 ### Formula File Format
@@ -387,20 +387,20 @@ p & ~p
 
 Then run:
 ```bash
-python cli.py --file=formulas.txt --models
+tableaux --file=formulas.txt --models
 ```
 
 ### Batch Output Formats
 
 ```bash
 # Generate CSV report for spreadsheet analysis
-python cli.py --file=formulas.txt --format=csv > results.csv
+tableaux --file=formulas.txt --format=csv > results.csv
 
 # Generate JSON for programmatic processing
-python cli.py --file=formulas.txt --format=json > results.json
+tableaux --file=formulas.txt --format=json > results.json
 
 # Compare classical vs WK3 for all formulas
-python cli.py --file=formulas.txt --compare-logics
+tableaux --file=formulas.txt --compare-logics
 ```
 
 ## Advanced Features
@@ -409,52 +409,52 @@ python cli.py --file=formulas.txt --compare-logics
 
 ```bash
 # Show detailed performance statistics
-python cli.py --stats --debug "complex_formula"
+tableaux --stats --debug "complex_formula"
 
 # Benchmark mode - multiple runs
-python cli.py --benchmark=10 "formula"
+tableaux --benchmark=10 "formula"
 
 # Memory usage analysis
-python cli.py --memory-profile "large_formula"
+tableaux --memory-profile "large_formula"
 ```
 
 ### Debugging Features
 
 ```bash
 # Show tableau construction steps
-python cli.py --debug "p & q"
+tableaux --debug "p & q"
 
 # Show all intermediate steps
-python cli.py --verbose --debug "(p | q) & r"
+tableaux --verbose --debug "(p | q) & r"
 
 # Export tableau tree visualization
-python cli.py --export-tree=tree.dot "formula"
+tableaux --export-tree=tree.dot "formula"
 ```
 
 ### Timeout and Limits
 
 ```bash
 # Set timeout for complex formulas (in seconds)
-python cli.py --timeout=5 "very_complex_formula"
+tableaux --timeout=5 "very_complex_formula"
 
 # Limit maximum number of models shown
-python cli.py --max-models=10 "formula_with_many_models"
+tableaux --max-models=10 "formula_with_many_models"
 
 # Limit maximum tableau size
-python cli.py --max-branches=1000 "formula"
+tableaux --max-branches=1000 "formula"
 ```
 
 ### Formula Validation
 
 ```bash
 # Check formula syntax without solving
-python cli.py --validate-only "p & q | r"
+tableaux --validate-only "p & q | r"
 
 # Show parsed formula structure
-python cli.py --show-parse-tree "((p -> q) & p) -> q"
+tableaux --show-parse-tree "((p -> q) & p) -> q"
 
 # Convert between different syntax formats
-python cli.py --convert-syntax=latex "p -> q"
+tableaux --convert-syntax=latex "p -> q"
 ```
 
 ## Troubleshooting
@@ -465,54 +465,54 @@ python cli.py --convert-syntax=latex "p -> q"
 
 ```bash
 # Wrong - shell interprets | and &
-python cli.py p | q & r
+tableaux p | q & r
 
 # Right - use quotes
-python cli.py "p | q & r"
+tableaux "p | q & r"
 ```
 
 **2. Operator Precedence**
 
 ```bash
 # Ambiguous - may not parse as expected
-python cli.py "p & q | r"
+tableaux "p & q | r"
 
 # Clear - use parentheses
-python cli.py "(p & q) | r"
-python cli.py "p & (q | r)"
+tableaux "(p & q) | r"
+tableaux "p & (q | r)"
 ```
 
 **3. Large Formula Timeout**
 
 ```bash
 # If formula takes too long
-python cli.py --timeout=10 "complex_formula"
+tableaux --timeout=10 "complex_formula"
 
 # Or check if it's actually unsatisfiable
-python cli.py --debug "complex_formula"
+tableaux --debug "complex_formula"
 ```
 
 ### Error Messages
 
 **Syntax Errors:**
 ```bash
-$ python cli.py "p && q"
+$ tableaux "p && q"
 Error: Unknown operator '&&'. Use '&' for conjunction.
 
-$ python cli.py "p or q"  
+$ tableaux "p or q"  
 Error: Unknown operator 'or'. Use '|' for disjunction.
 ```
 
 **Timeout Errors:**
 ```bash
-$ python cli.py --timeout=1 "very_complex_formula"
+$ tableaux --timeout=1 "very_complex_formula"
 Error: Tableau construction timed out after 1 second.
 Suggestion: Try increasing timeout or simplifying formula.
 ```
 
 **Memory Errors:**
 ```bash
-$ python cli.py "formula_with_exponential_blowup"
+$ tableaux "formula_with_exponential_blowup"
 Warning: Large number of branches created (>10000).
 This may indicate exponential blowup.
 ```
@@ -531,14 +531,14 @@ This may indicate exponential blowup.
 
 ```bash
 # Teaching propositional logic
-python cli.py --models "p -> q"        # Show when implication is true
-python cli.py "~(p & q)"               # De Morgan's law: equivalent to ~p | ~q
-python cli.py "(~p | ~q)"              # Verify equivalence
+tableaux --models "p -> q"        # Show when implication is true
+tableaux "~(p & q)"               # De Morgan's law: equivalent to ~p | ~q
+tableaux "(~p | ~q)"              # Verify equivalence
 
 # Exploring tautologies
-python cli.py "((p -> q) & (q -> r)) -> (p -> r)"  # Transitivity
-python cli.py "(p & (p -> q)) -> q"                # Modus ponens
-python cli.py "((p -> q) -> p) -> p"               # Peirce's law
+tableaux "((p -> q) & (q -> r)) -> (p -> r)"  # Transitivity
+tableaux "(p & (p -> q)) -> q"                # Modus ponens
+tableaux "((p -> q) -> p) -> p"               # Peirce's law
 ```
 
 ### Logic Puzzle Solving
@@ -547,10 +547,10 @@ python cli.py "((p -> q) -> p) -> p"               # Peirce's law
 # Solve "Knights and Knaves" style puzzles
 # A says "B is a knight", B says "A is a knave"
 # Let p = "A is knight", q = "B is knight" 
-python cli.py "(p -> q) & (q -> ~p)"
+tableaux "(p -> q) & (q -> ~p)"
 
 # Einstein's riddle constraints (simplified)
-python cli.py "(house1 -> red) & (house2 -> blue) & ~(house1 & house2)"
+tableaux "(house1 -> red) & (house2 -> blue) & ~(house1 & house2)"
 ```
 
 ### SAT Solver Applications
@@ -558,34 +558,34 @@ python cli.py "(house1 -> red) & (house2 -> blue) & ~(house1 & house2)"
 ```bash
 # Graph coloring (3-coloring of triangle)
 # Vertices: a, b, c; Colors: r, g, b
-python cli.py --models "(ar | ag | ab) & (br | bg | bb) & (cr | cg | cb) & ~(ar & br) & ~(ar & cr) & ~(br & cr)"
+tableaux --models "(ar | ag | ab) & (br | bg | bb) & (cr | cg | cb) & ~(ar & br) & ~(ar & cr) & ~(br & cr)"
 
 # Scheduling constraints
-python cli.py "task1_monday | task1_tuesday) & (task2_monday | task2_tuesday) & ~(task1_monday & task2_monday)"
+tableaux "task1_monday | task1_tuesday) & (task2_monday | task2_tuesday) & ~(task1_monday & task2_monday)"
 ```
 
 ### Research Applications
 
 ```bash
 # Test non-classical logic properties
-python cli.py --wk3 --models "p -> (q -> p)"      # Test axiom in WK3
-python cli.py --wk3 "((p -> q) -> p) -> p"        # Peirce's law in WK3
+tableaux --wk3 --models "p -> (q -> p)"      # Test axiom in WK3
+tableaux --wk3 "((p -> q) -> p) -> p"        # Peirce's law in WK3
 
 # Compare logic systems
-python cli.py --compare-logics "p | ~p"           # Excluded middle
-python cli.py --compare-logics "p & ~p"           # Contradiction
+tableaux --compare-logics "p | ~p"           # Excluded middle
+tableaux --compare-logics "p & ~p"           # Contradiction
 ```
 
 ### Verification and Testing
 
 ```bash
 # Verify logical equivalences
-python cli.py --models "~(p & q)"                 # De Morgan 1
-python cli.py --models "~p | ~q"                  # De Morgan 1 equivalent
+tableaux --models "~(p & q)"                 # De Morgan 1
+tableaux --models "~p | ~q"                  # De Morgan 1 equivalent
 
 # Test inference rules
-python cli.py "(p -> q) & p & ~q"                 # Should be unsatisfiable (modus ponens)
-python cli.py "(p | q) & ~p & ~q"                 # Should be unsatisfiable (disjunctive syllogism)
+tableaux "(p -> q) & p & ~q"                 # Should be unsatisfiable (modus ponens)
+tableaux "(p | q) & ~p & ~q"                 # Should be unsatisfiable (disjunctive syllogism)
 ```
 
 ### Automation and Scripting
@@ -602,7 +602,7 @@ tautologies=(
 
 for formula in "${tautologies[@]}"; do
     echo "Testing: $formula"
-    if python cli.py "$formula" | grep -q "SATISFIABLE"; then
+    if tableaux "$formula" | grep -q "SATISFIABLE"; then
         echo "  ✓ Tautology (satisfiable)"
     else
         echo "  ✗ Not a tautology"
@@ -614,13 +614,13 @@ done
 
 ```bash
 # Generate input for other solvers
-python cli.py --format=dimacs "cnf_formula" > formula.cnf
+tableaux --format=dimacs "cnf_formula" > formula.cnf
 
 # Convert to different formats
-python cli.py --format=latex "p -> q" > formula.tex
+tableaux --format=latex "p -> q" > formula.tex
 
 # Pipe to analysis tools
-python cli.py --format=json "formula" | jq '.models | length'
+tableaux --format=json "formula" | jq '.models | length'
 ```
 
 This comprehensive CLI guide provides everything needed to effectively use the tableau system from the command line, whether for learning, research, or practical problem-solving applications.

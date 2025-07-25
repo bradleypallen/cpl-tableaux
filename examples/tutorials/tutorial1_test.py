@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Tutorial 1: Basic Satisfiability Testing"""
 
-from tableau_core import Atom, Conjunction, Disjunction, Negation, Implication
-from tableau_core import T, F, classical_signed_tableau
+from tableaux import Atom, Conjunction, Disjunction, Negation, Implication
+from tableaux import T, F, classical_signed_tableau
 
 def test_satisfiability_examples():
     """Explore basic satisfiability concepts."""

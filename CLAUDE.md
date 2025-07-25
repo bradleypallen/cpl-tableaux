@@ -56,9 +56,9 @@ This is a research-grade Python project with unified architecture and comprehens
 python tableau_demo.py            # Comprehensive tableau system demonstration
 
 # Interactive research interface (supports multiple logics)
-python cli.py                     # Interactive mode with logic switching
-python cli.py "p | ~p"            # Classical logic command-line
-python cli.py --wk3 "p | ~p"      # WK3 logic command-line
+tableaux                     # Interactive mode with logic switching
+tableaux "p | ~p"            # Classical logic command-line
+tableaux --wk3 "p | ~p"      # WK3 logic command-line
 
 # Comprehensive testing framework (69 tests total)
 python -m pytest -v                           # All tests across all systems

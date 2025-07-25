@@ -2,7 +2,7 @@
 """Tutorial 7: Performance Analysis"""
 
 import time
-from tableau_core import Atom, Conjunction, Disjunction, classical_signed_tableau, T, F
+from tableaux import Atom, Conjunction, Disjunction, classical_signed_tableau, T, F
 
 def performance_comparison():
     """Compare performance across different formula sizes."""

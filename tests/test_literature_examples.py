@@ -13,7 +13,7 @@ the standard examples used in the academic literature.
 """
 
 import pytest
-from tableau_core import (
+from tableaux import (
     Atom, Negation, Conjunction, Disjunction, Implication, Predicate,
     Variable, Constant,
     T, F, T3, F3, U, TF, FF, M, N,
@@ -56,7 +56,7 @@ class TestPriestExamples:
         Test WK3 conjunction truth table from Priest Chapter 3
         Verifies that p ∧ q follows weak Kleene semantics
         """
-        from tableau_core import WeakKleeneOperators
+        from tableaux import WeakKleeneOperators
         
         # Test all 9 combinations of three-valued conjunction directly
         test_cases = [

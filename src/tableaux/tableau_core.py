@@ -2683,7 +2683,7 @@ class OptimizedTableauEngine:
         atoms not mentioned in the branch.
         """
         # Import dynamically to avoid circular imports
-        from unified_model import ClassicalModel, WK3Model, WkrqModel
+        from .unified_model import ClassicalModel, WK3Model, WkrqModel
         
         if not self.is_satisfiable():
             return []

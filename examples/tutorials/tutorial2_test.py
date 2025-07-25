@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Tutorial 2: Signed Tableaux with Visualization"""
 
-from tableau_core import Atom, Conjunction, Disjunction, Implication, Negation
-from tableau_core import T, F, classical_signed_tableau
+from tableaux import Atom, Conjunction, Disjunction, Implication, Negation
+from tableaux import T, F, classical_signed_tableau
 
 def visualize_simple_tableau():
     """Show tableau construction step-by-step."""

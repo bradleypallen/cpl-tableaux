@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Tutorial 3: Three-Valued Logic (WK3)"""
 
-from tableau_core import Atom, Conjunction, Disjunction, Negation, Implication
-from tableau_core import T, F, T3, U, classical_signed_tableau, three_valued_signed_tableau
-from tableau_core import TruthValue, t, f, e
+from tableaux import Atom, Conjunction, Disjunction, Negation, Implication
+from tableaux import T, F, T3, U, classical_signed_tableau, three_valued_signed_tableau
+from tableaux import TruthValue, t, f, e
 
 def compare_classical_vs_wk3():
     """Compare classical and WK3 logic on key examples."""
@@ -71,7 +71,7 @@ def compare_classical_vs_wk3():
 def explore_wk3_truth_tables():
     """Demonstrate WK3 truth tables."""
     
-    from tableau_core import WeakKleeneOperators
+    from tableaux import WeakKleeneOperators
     
     print("=== WK3 TRUTH TABLES ===\n")
     

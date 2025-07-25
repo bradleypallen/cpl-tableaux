@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Tutorial 5: Model Extraction and Analysis"""
 
-from tableau_core import Atom, Conjunction, Disjunction, Implication, Negation
-from tableau_core import T, F, T3, U, classical_signed_tableau, three_valued_signed_tableau
+from tableaux import Atom, Conjunction, Disjunction, Implication, Negation
+from tableaux import T, F, T3, U, classical_signed_tableau, three_valued_signed_tableau
 
 def analyze_classical_models():
     """Extract and analyze classical logic models."""
@@ -90,15 +90,15 @@ def analyze_wk3_models():
     
     # Show which assignments DON'T satisfy
     print("Non-satisfying assignments (formula evaluates to 'f'):")
-    from tableau_core import t, f, e
+    from tableaux import t, f, e
     all_assignments = [
         (t, t), (t, f), (t, e),
         (f, t), (f, f), (f, e),
         (e, t), (e, f), (e, e)
     ]
     
-    from unified_model import WK3Model
-    from tableau_core import WeakKleeneOperators
+    from tableaux import WK3Model
+    from tableaux import WeakKleeneOperators
     
     for p_val, q_val in all_assignments:
         model = WK3Model({"p": p_val, "q": q_val})

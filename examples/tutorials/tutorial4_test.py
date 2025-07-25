@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Tutorial 4: Ferguson's wKrQ Epistemic Logic"""
 
-from tableau_core import Atom, Conjunction, Disjunction, Implication, Negation
-from tableau_core import TF, FF, M, N, wkrq_signed_tableau, ferguson_signed_tableau
+from tableaux import Atom, Conjunction, Disjunction, Implication, Negation
+from tableaux import TF, FF, M, N, wkrq_signed_tableau, ferguson_signed_tableau
 
 def epistemic_basics():
     """Understand the four epistemic signs."""

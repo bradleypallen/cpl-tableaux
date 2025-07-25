@@ -35,13 +35,13 @@ import time
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 
-from tableau_core import (
+from tableaux import (
     Formula, Atom, Negation, Conjunction, Disjunction, Implication,
     T, F, T3, F3, U, TF, FF,
     classical_signed_tableau, three_valued_signed_tableau,
     parse_formula, TruthValue, t, f, e
 )
-from unified_model import UnifiedModel, ClassicalModel, WK3Model
+from tableaux import UnifiedModel, ClassicalModel, WK3Model
 
 
 @dataclass

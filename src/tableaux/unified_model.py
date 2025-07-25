@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, Union, Optional, Any
 from dataclasses import dataclass
 
-from tableau_core import TruthValue, t, f, e, WeakKleeneOperators, Formula, Atom, Negation, Conjunction, Disjunction, Implication
+from .tableau_core import TruthValue, t, f, e, WeakKleeneOperators, Formula, Atom, Negation, Conjunction, Disjunction, Implication
 
 
 

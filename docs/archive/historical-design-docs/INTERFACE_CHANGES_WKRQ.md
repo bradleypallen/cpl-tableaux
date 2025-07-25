@@ -50,8 +50,8 @@ def wkrq_tableau(formula) -> ComponentizedTableau
 
 ### 2.1 New Command-Line Options
 ```bash
-python cli.py --wkrq "formula"            # New wKrQ mode
-python cli.py --wkrq --interactive        # Interactive wKrQ mode
+tableaux --wkrq "formula"            # New wKrQ mode
+tableaux --wkrq --interactive        # Interactive wKrQ mode
 ```
 
 ### 2.2 Parser Extensions

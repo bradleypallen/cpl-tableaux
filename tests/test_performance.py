@@ -9,7 +9,7 @@ Tests complex formulas that would benefit from:
 """
 
 import time
-from tableau_core import Atom, Negation, Conjunction, Disjunction, Implication, T, classical_signed_tableau
+from tableaux import Atom, Negation, Conjunction, Disjunction, Implication, T, classical_signed_tableau
 
 
 def create_complex_formula(depth: int):

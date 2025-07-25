@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Tutorial 6: First-Order Logic"""
 
-from tableau_core import Predicate, Constant, Variable, Implication, Negation
-from tableau_core import T, F, classical_signed_tableau
+from tableaux import Predicate, Constant, Variable, Implication, Negation
+from tableaux import T, F, classical_signed_tableau
 
 def first_order_basics():
     """Basic first-order logic concepts."""

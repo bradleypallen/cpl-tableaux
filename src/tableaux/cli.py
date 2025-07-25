@@ -15,13 +15,13 @@ from typing import List, Dict, Any, Optional
 from io import StringIO
 
 # Import tableau components - using only tableau approach
-from tableau_core import (
+from .tableau_core import (
     Formula, Atom, Negation, Conjunction, Disjunction, Implication,
     classical_signed_tableau, three_valued_signed_tableau, wkrq_signed_tableau,
     T, F, T3, F3, U, TF, FF,
     parse_formula
 )
-from unified_model import UnifiedModel, ClassicalModel, WK3Model, WkrqModel
+from .unified_model import UnifiedModel, ClassicalModel, WK3Model, WkrqModel
 
 class EnhancedFormulaParser:
     """Enhanced parser supporting the syntax described in CLI_GUIDE.md"""

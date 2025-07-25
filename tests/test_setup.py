@@ -1,5 +1,5 @@
 # test_setup.py
-from tableau_core import Atom, classical_signed_tableau, T
+from tableaux import Atom, classical_signed_tableau, T
 
 # Create a simple formula
 p = Atom("p")

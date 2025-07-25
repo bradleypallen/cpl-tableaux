@@ -64,3 +64,13 @@ test_transitivity.py
 
 # Claude artifacts
 .claude/
+
+# Additional packaging
+.mypy_cache/
+.coverage.xml
+htmlcov/
+*.whl
+
+# Development
+.vscode/settings.json
+*.code-workspace

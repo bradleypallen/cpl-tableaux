@@ -7,7 +7,7 @@ Key differences between weak and strong Kleene logic:
 - Strong Kleene: Some operations with 'e' can still return definite values
 """
 
-from tableau_core import TruthValue, t, f, e, WeakKleeneOperators
+from tableaux import TruthValue, t, f, e, WeakKleeneOperators
 
 def print_truth_table(name, func, is_unary=False):
     """Print a truth table for a function"""

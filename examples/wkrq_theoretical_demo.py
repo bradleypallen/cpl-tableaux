@@ -11,7 +11,7 @@ with Analytic Tableaux and Related Methods, pp. 3-19. Cham: Springer Internation
 Publishing, 2021.
 """
 
-from tableau_core import Atom, Negation, Conjunction, Disjunction, Implication, RestrictedExistentialFormula, RestrictedUniversalFormula, Predicate, Variable, Constant, TF, FF, M, N, wkrq_signed_tableau
+from tableaux import Atom, Negation, Conjunction, Disjunction, Implication, RestrictedExistentialFormula, RestrictedUniversalFormula, Predicate, Variable, Constant, TF, FF, M, N, wkrq_signed_tableau
 
 
 def step_by_step_construction(signed_formulas, title="Tableau Construction"):
