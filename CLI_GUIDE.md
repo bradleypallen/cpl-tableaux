@@ -1,7 +1,7 @@
 # CLI Usage Guide: Tableau Logic System
 
 **Version**: 4.0 (Unified Implementation)  
-**Last Updated**: December 2024  
+**Last Updated**: July 2025  
 **License**: MIT  
 
 ## Table of Contents
