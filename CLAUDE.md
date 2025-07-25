@@ -12,138 +12,209 @@ This repository is a **research platform for semantic tableau systems supporting
 
 **License**: MIT License - This project is open source and freely available for use, modification, and distribution under the MIT License.
 
-## Project Structure
+## Current Unified Architecture
 
-### Research-Grade Logic Systems
-- `tableau.py` - Classical propositional logic (reference implementation)
-- `wk3_tableau.py` - Weak Kleene Logic (WK3) with three-valued semantics
-- `formula.py` - Formula AST with support for propositional and first-order constructs
-- `truth_value.py` - Multi-valued truth systems (classical, WK3, extensible)
-- `wk3_model.py` - Three-valued model evaluation and semantics
+The system has been consolidated into a **unified tableau framework** with a single core implementation supporting multiple logic systems:
 
-### Componentized Architecture (Version 2.0)
-- `componentized_tableau.py` - Unified tableau engine for multiple logic systems
-- `tableau_rules.py` - Abstract rule system with pluggable tableau rules
-- `logic_system.py` - Logic system registry and component management
-- `classical_rules.py` / `wk3_rules.py` - Logic-specific tableau rule implementations
-- `classical_components.py` / `wk3_components.py` - Logic-specific branch management and model extraction
-- `builtin_logics.py` - Standard logic system definitions and registry
+### Core Implementation (Unified System)
+- `tableau_core.py` - **Complete unified implementation** containing:
+  - Formula representation (atoms, connectives, predicates, quantifiers)
+  - Truth value systems (classical, three-valued WK3, four-valued wKrQ)
+  - Sign systems (classical T/F, three-valued T3/F3/U, epistemic wKrQ T/F/M/N)
+  - Optimized tableau engine with step-by-step visualization
+  - Tableau rules for multiple logic systems
+  - Model extraction and satisfiability checking
+  - Mode-aware system for propositional and first-order logic
+  - Formula parsing with proper operator precedence
 
-### Mode-Aware Extensions
-- `mode_aware_tableau.py` - Logic mode separation (propositional vs first-order)
-- `mode_aware_parser.py` - Mode-specific formula parsing and validation
-- `logic_mode.py` - Mode detection and enforcement
-- `term.py` - First-order terms (constants, variables, function applications)
+### Supporting Modules
+- `unified_model.py` - Unified model representation for all logic systems
+- `cli.py` - Command-line interface supporting multiple logic systems
 
-### Interface and Demonstration Tools
-- `cli.py` - Command-line interface with multi-logic support
-- `wk3_demo.py` - Weak Kleene logic demonstration and examples
-- `demo_componentized.py` - Componentized system capabilities demonstration
+### Demonstration Programs
+- `tableau_demo.py` - Comprehensive demonstration of tableau capabilities
+- `wkrq_countermodel_demo.py` - Ferguson's wKrQ epistemic logic demonstrations  
+- `wkrq_theoretical_demo.py` - Theoretical insights for weak Kleene logic
+- `verify_kleene_tables.py` - Verification of weak Kleene truth tables
 
-### Research Documentation and Testing
-- `test_comprehensive.py` - Unified test suite (42 tests) covering all functionality
-- `test_tableau.py` - Classical logic test suite (50+ tests)
-- `test_wk3.py` - WK3 logic test suite (25+ tests)
-- `test_componentized_rules.py` - Component system validation (18 tests)
+### Testing Framework (Consolidated)
+- `test_comprehensive.py` - **Main unified test suite (35 tests)** covering all functionality
+- `test_literature_examples.py` - Academic validation tests (26 tests) from Priest, Fitting, Smullyan, Ferguson
 - `test_performance.py` - Performance benchmarks and optimization validation
-- `ARCHITECTURE.md` - Comprehensive architectural documentation for code review
-- `README.md` - Complete usage documentation for all interfaces
-- `OPTIMIZATIONS.md` - Performance analysis and optimization strategies
-- `TECHNICAL_ANALYSIS.md` - Implementation quality assessment
-- `WEAK_KLEENE_PLAN.md` - WK3 research implementation plan
+- `test_setup.py` - Test utilities and setup functions
+
+### Tutorial System
+- `tutorial1_test.py` through `tutorial7_test.py` - Interactive tutorial examples
+- Various specialized demo files for research-specific features
 
 ## Development Commands
 
-This is a research-grade Python project with multiple logic systems, componentized architecture, and comprehensive testing. Key commands:
+This is a research-grade Python project with unified architecture and comprehensive testing. Key commands:
 
 ```bash
-# Research demonstrations and examples
-python tableau.py              # Classical logic reference implementation
-python wk3_demo.py             # Weak Kleene logic research demonstration
-python demo_componentized.py   # Componentized architecture capabilities
+# Main demonstration
+python tableau_demo.py            # Comprehensive tableau system demonstration
 
 # Interactive research interface (supports multiple logics)
-python cli.py                  # Interactive mode with logic switching
-python cli.py "p | ~p"         # Classical logic command-line
-python cli.py --wk3 "p | ~p"   # WK3 logic command-line
+python cli.py                     # Interactive mode with logic switching
+python cli.py "p | ~p"            # Classical logic command-line
+python cli.py --wk3 "p | ~p"      # WK3 logic command-line
 
-# Comprehensive testing framework (100+ tests total)
-python -m pytest test_comprehensive.py -v    # Unified test suite (42 tests)
-python -m pytest -v                          # All tests across all systems
-
-# Logic-specific test suites
-python -m pytest test_tableau.py -v          # Classical logic validation (50+ tests)
-python -m pytest test_wk3.py -v             # WK3 logic validation (25+ tests)
-python -m pytest test_componentized_rules.py -v  # Architecture validation (18 tests)
+# Comprehensive testing framework (69 tests total)
+python -m pytest -v                           # All tests across all systems
+python -m pytest test_comprehensive.py -v     # Unified test suite (35 tests)
+python -m pytest test_literature_examples.py -v  # Literature validation (26 tests)
 
 # Performance and optimization analysis
-python -m pytest test_performance.py -v      # Performance benchmarks
-python -m pytest test_medium_optimizations.py -v  # Optimization validation
+python -m pytest test_performance.py -v       # Performance benchmarks
 
-# Research-specific testing
-python -c "from test_comprehensive import run_classical_tests; run_classical_tests()"
-python -c "from test_comprehensive import run_wk3_tests; run_wk3_tests()"
-python -c "from test_comprehensive import run_componentized_tests; run_componentized_tests()"
+# Research demonstrations
+python wkrq_countermodel_demo.py    # Ferguson's wKrQ epistemic logic
+python wkrq_theoretical_demo.py     # Theoretical insights demonstration
+python verify_kleene_tables.py      # Weak Kleene truth table verification
+
+# Tutorial examples
+python tutorial1_test.py            # Basic tableau construction
+python tutorial2_test.py            # Signed formula notation
+# ... (tutorials 3-7 for advanced topics)
 ```
 
-## Research Architecture
+## Unified Architecture Details
 
-The system implements a **componentized tableau framework** designed specifically for non-classical logic research, with three architectural layers supporting rigorous investigation:
+The system implements a **single unified tableau engine** with the following key characteristics:
 
-### 1. Legacy Research Implementations (Version 1.0)
-- **Classical Logic Reference**: Optimized implementation demonstrating standard tableau methods
-- **Weak Kleene Logic (WK3)**: Complete three-valued logic system with proper semantics
-- **Theoretical Validation**: Each system includes comprehensive correctness verification
-
-### 2. Componentized Research Framework (Version 2.0)
-- **Plugin Architecture**: Abstract rule system enabling rapid logic system prototyping
-- **Logic System Registry**: Centralized management of multiple logic variants
-- **Component Abstractions**: Pluggable branch management, closure detection, model extraction
-- **Extension Framework**: Clean interfaces for implementing new non-classical logics
-
-### 3. Mode-Aware Logic Separation
-- **Propositional Mode**: Pure propositional logic with atom-level reasoning
-- **First-Order Mode**: Ground predicate support with term structures (extensible to full FOL)
-- **Mixed Mode Prevention**: Rigorous separation ensuring semantic correctness
-
-### Research-Grade Implementation Features
+### Core Engine Features
 - **Theoretical Soundness**: All tableau rules implement correct logical semantics
 - **Complete Termination**: No arbitrary limits that compromise logical completeness  
 - **Industrial Performance**: O(1) closure detection, α/β rule prioritization, subsumption elimination
-- **Extensibility**: Multiple clean extension points for new logic systems
-- **Validation Framework**: Comprehensive testing ensuring correctness of logical implementations
+- **Multi-Logic Support**: Classical, WK3, wKrQ epistemic logic in single engine
+- **Enhanced Visualization**: Step-by-step construction with rule names and tree structure
 
-### Supported Logic Systems (Current Research)
-- **Classical Propositional Logic**: Two-valued semantics with complete tableau rules
-- **Weak Kleene Logic (WK3)**: Three-valued semantics with undefined value propagation
+### Supported Logic Systems
+- **Classical Propositional Logic**: Two-valued semantics (T/F signs)
+- **Weak Kleene Logic (WK3)**: Three-valued semantics (T3/F3/U signs)  
+- **wKrQ Epistemic Logic**: Four-valued Ferguson system (T/F/M/N signs)
 - **First-Order Logic**: Ground atomic formulas with predicate and term structures
-- **Extension Points**: Modal, temporal, many-valued, and paraconsistent logics
+
+### Key API Functions (tableau_core.py)
+```python
+# Core tableau functions - use these exclusively
+classical_signed_tableau(signed_formula, track_steps=False)
+three_valued_signed_tableau(signed_formula, track_steps=False) 
+wkrq_signed_tableau(signed_formulas, track_steps=False)
+ferguson_signed_tableau(signed_formulas, track_steps=False)
+
+# Formula construction
+Atom(name), Negation(formula), Conjunction(left, right)
+Disjunction(left, right), Implication(left, right)
+Predicate(name, terms), Constant(name), Variable(name)
+
+# Sign systems
+T(formula), F(formula)        # Classical signs
+T3(formula), F3(formula), U(formula)  # Three-valued signs
+TF(formula), FF(formula), M(formula), N(formula)  # wKrQ signs
+
+# Truth values
+t, f, e  # true, false, undefined/error
+```
 
 ## Research Quality Standards
 
 This implementation maintains **research-grade quality standards** (9.0/10) combining theoretical rigor with industrial software engineering practices:
 
-### **Research Excellence Standards**
+### Research Excellence Standards
 - **Theoretical Soundness**: All tableau rules correctly implement formal logical semantics with mathematical precision
 - **Semantic Accuracy**: Three-valued WK3 semantics implement exact Weak Kleene truth conditions
 - **Completeness Preservation**: No arbitrary limits that compromise logical completeness or decidability
-- **Extension Correctness**: Component framework validated to preserve soundness across logic system extensions
 - **Performance Optimization**: Industrial-grade optimizations (α/β prioritization, O(1) closure, subsumption elimination)
 
-### **Research Infrastructure Quality**
-- **Comprehensive Testing**: 100+ tests across all logic systems with systematic edge case coverage
+### Research Infrastructure Quality
+- **Comprehensive Testing**: 69 tests across all logic systems with systematic edge case coverage
 - **Architecture Documentation**: Complete technical documentation suitable for peer review
-- **Component Validation**: Each logical component includes correctness verification
 - **Benchmarking Framework**: Performance analysis ensuring scalability for research applications
-- **Extension Validation**: Plugin architecture verified with multiple logic system implementations
+- **Literature Validation**: Academic examples from major tableau references
 
-### **Current Research Capabilities**
+### Current Research Capabilities
 - **Logic System Comparison**: Framework enables systematic comparison of reasoning performance
 - **Semantic Investigation**: Support for investigating truth value propagation in non-classical systems  
 - **Optimization Analysis**: Platform for studying tableau optimization effectiveness across logics
 - **Extensibility Research**: Clean framework for prototyping new tableau-based reasoning systems
 
-### **Research Development Guidelines**
+## Important: Eliminated Patterns (DO NOT USE)
+
+The following patterns were **eliminated during consolidation** and must **NOT** be referenced:
+
+### Eliminated Convenience Functions
+```python
+# DELETED - Do not use these functions:
+wk3_satisfiable(formula)     # Use tableau approach instead
+wk3_models(formula)          # Use tableau.extract_all_models() instead
+```
+
+### Eliminated Test Files
+```python
+# DELETED - These test files no longer exist:
+test_tableau.py              # Consolidated into test_comprehensive.py
+test_wk3.py                  # Consolidated into test_comprehensive.py  
+test_signed_tableau.py       # Consolidated into test_comprehensive.py
+# ... (16 total test files were consolidated)
+```
+
+### Eliminated Architecture Files
+```python
+# DELETED - These files never existed or were removed:
+tableau.py, wk3_tableau.py, formula.py, truth_value.py
+componentized_tableau.py, tableau_rules.py, logic_system.py
+mode_aware_tableau.py, mode_aware_parser.py, logic_mode.py
+# All functionality moved to tableau_core.py
+```
+
+## Correct Usage Patterns
+
+### WK3 Satisfiability Checking
+```python 
+# CORRECT: Use tableau approach
+from tableau_core import three_valued_signed_tableau, T3, U, Atom
+
+formula = Atom("p")
+# WK3 formula is satisfiable if it can be true OR undefined
+t3_tableau = three_valued_signed_tableau(T3(formula))
+u_tableau = three_valued_signed_tableau(U(formula))
+is_satisfiable = t3_tableau.build() or u_tableau.build()
+
+# Get models
+models = []
+if t3_tableau.build():
+    models.extend(t3_tableau.extract_all_models())
+if u_tableau.build():
+    models.extend(u_tableau.extract_all_models())
+```
+
+### Classical Logic Testing
+```python
+# CORRECT: Use unified tableau engine
+from tableau_core import classical_signed_tableau, T, Atom, Implication
+
+p, q = Atom("p"), Atom("q")
+formula = Implication(p, q)
+tableau = classical_signed_tableau(T(formula))
+is_satisfiable = tableau.build()
+models = tableau.extract_all_models() if is_satisfiable else []
+```
+
+### Testing Approach
+```python
+# CORRECT: Use consolidated test files
+python -m pytest test_comprehensive.py -v      # Main test suite
+python -m pytest test_literature_examples.py -v  # Academic validation
+
+# INCORRECT: These files don't exist
+python -m pytest test_tableau.py -v            # DELETED
+python -m pytest test_wk3.py -v                # DELETED
+```
+
+## Research Development Guidelines
+
 When extending this research platform:
 
 1. **Preserve Theoretical Correctness**: All extensions must maintain formal semantic accuracy
@@ -157,7 +228,7 @@ When extending this research platform:
    - Add performance benchmarks for new logic system implementations
 
 3. **Add Comprehensive Validation**: New logic systems require complete test coverage
-   - Implement systematic test cases covering all logical patterns
+   - Add tests to test_comprehensive.py or test_literature_examples.py
    - Include edge cases specific to non-classical semantics
    - Add comparative tests against reference implementations where available
 
@@ -176,6 +247,19 @@ When extending this research platform:
 ### Fundamental Principles
 - **Do not, under any circumstances, add a workaround to a demo when there is an underlying bug; fix the bug so that the demo works correctly.**
 - **Don't eliminate items for the imports because they are not working. Fix the underlying problem.**
+- **Always use the unified tableau approach - never reference eliminated convenience functions**
+- **Use consolidated test files - never reference deleted test files**
 
 ### Documentation and Communication Guidelines
 - In comments and documentation, do not use language that is promotional or self-congratulatory. Keep to fact-based statements that are appropriate for academic exposition.
+- Always reference the current unified architecture, not eliminated multi-file systems
+- Update any references to outdated file structures or eliminated functions
+
+### Important Reminders
+- The system uses **ONE** core file: `tableau_core.py` - everything else is supporting
+- All tableau operations use `tableau.build()` and `tableau.extract_all_models()`
+- Test count is **69 tests total** (35 comprehensive + 26 literature + 8 others)
+- **NO** convenience functions exist - use tableau functions directly
+- **NO** separate tableau files exist - everything is unified in tableau_core.py
+
+This unified architecture provides a clean, efficient, and theoretically sound foundation for automated reasoning research while maintaining industrial-grade performance characteristics.

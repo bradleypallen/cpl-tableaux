@@ -342,7 +342,7 @@ Current state: 1 open, 0 closed
 """Tutorial 3: Three-Valued Logic (WK3)"""
 
 from tableau_core import Atom, Conjunction, Disjunction, Negation
-from tableau_core import T, F, classical_signed_tableau, wk3_satisfiable, wk3_models
+from tableau_core import T, F, T3, U, classical_signed_tableau, three_valued_signed_tableau
 from tableau_core import TruthValue, t, f, e
 
 def compare_classical_vs_wk3():
@@ -360,19 +360,25 @@ def compare_classical_vs_wk3():
     classical_tableau = classical_signed_tableau(T(contradiction))
     classical_result = classical_tableau.build()
     
-    # WK3 logic
-    wk3_result = wk3_satisfiable(contradiction)
+    # WK3 logic (formula is satisfiable if it can be true OR undefined)
+    t3_tableau = three_valued_signed_tableau(T3(contradiction))
+    u_tableau = three_valued_signed_tableau(U(contradiction))
+    t3_satisfiable = t3_tableau.build()
+    u_satisfiable = u_tableau.build()
+    wk3_result = t3_satisfiable or u_satisfiable
     
     print(f"Classical satisfiable: {classical_result}")  # False
     print(f"WK3 satisfiable: {wk3_result}")  # True
     
     if wk3_result:
-        models = wk3_models(contradiction)
+        models = []
+        if t3_satisfiable:
+            models.extend(t3_tableau.extract_all_models())
+        if u_satisfiable:
+            models.extend(u_tableau.extract_all_models())
         print(f"WK3 models: {len(models)}")
         for model in models:
-            p_val = model.get_assignment("p")
-            result = model.satisfies(contradiction) 
-            print(f"  p={p_val}, formula evaluates to {result}")
+            print(f"  Model: {model}")
     print()
     
     # Example 2: Excluded middle
@@ -382,18 +388,24 @@ def compare_classical_vs_wk3():
     classical_tableau = classical_signed_tableau(T(excluded_middle))
     classical_result = classical_tableau.build()
     
-    wk3_result = wk3_satisfiable(excluded_middle)
+    t3_tableau = three_valued_signed_tableau(T3(excluded_middle))
+    u_tableau = three_valued_signed_tableau(U(excluded_middle))
+    t3_satisfiable = t3_tableau.build()
+    u_satisfiable = u_tableau.build()
+    wk3_result = t3_satisfiable or u_satisfiable
     
     print(f"Classical satisfiable: {classical_result}")  # True
     print(f"WK3 satisfiable: {wk3_result}")  # True
     
     if wk3_result:
-        models = wk3_models(excluded_middle)
+        models = []
+        if t3_satisfiable:
+            models.extend(t3_tableau.extract_all_models())
+        if u_satisfiable:
+            models.extend(u_tableau.extract_all_models())
         print(f"WK3 models: {len(models)}")
         for model in models:
-            p_val = model.get_assignment("p")
-            result = model.satisfies(excluded_middle)
-            print(f"  p={p_val}, formula evaluates to {result}")
+            print(f"  Model: {model}")
     print()
 
 def explore_wk3_truth_tables():
@@ -444,8 +456,20 @@ def test_wk3_formulas():
         classical_result = classical_tableau.build()
         
         # WK3
-        wk3_result = wk3_satisfiable(formula)
-        wk3_model_count = len(wk3_models(formula)) if wk3_result else 0
+        t3_tableau = three_valued_signed_tableau(T3(formula))
+        u_tableau = three_valued_signed_tableau(U(formula))
+        t3_satisfiable = t3_tableau.build()
+        u_satisfiable = u_tableau.build()
+        wk3_result = t3_satisfiable or u_satisfiable
+        
+        wk3_model_count = 0
+        if wk3_result:
+            models = []
+            if t3_satisfiable:
+                models.extend(t3_tableau.extract_all_models())
+            if u_satisfiable:
+                models.extend(u_tableau.extract_all_models())
+            wk3_model_count = len(models)
         
         print(f"  Classical: {'✓' if classical_result else '✗'}")
         print(f"  WK3: {'✓' if wk3_result else '✗'} ({wk3_model_count} models)")
@@ -570,7 +594,7 @@ if __name__ == "__main__":
 """Tutorial 5: Model Extraction and Analysis"""
 
 from tableau_core import Atom, Conjunction, Disjunction, Implication, Negation
-from tableau_core import T, F, classical_signed_tableau, wk3_models
+from tableau_core import T, F, T3, U, classical_signed_tableau, three_valued_signed_tableau
 
 def analyze_classical_models():
     """Extract and analyze classical logic models."""
@@ -638,15 +662,22 @@ def analyze_wk3_models():
     print("In WK3, this can be satisfied in various ways including")
     print("when p or q (or both) are undefined.\n")
     
-    models = wk3_models(formula)
+    # Get WK3 models using tableau approach
+    t3_tableau = three_valued_signed_tableau(T3(formula))
+    u_tableau = three_valued_signed_tableau(U(formula))
+    t3_satisfiable = t3_tableau.build()
+    u_satisfiable = u_tableau.build()
+    
+    models = []
+    if t3_satisfiable:
+        models.extend(t3_tableau.extract_all_models())
+    if u_satisfiable:
+        models.extend(u_tableau.extract_all_models())
+    
     print(f"Found {len(models)} WK3 models:")
     
     for i, model in enumerate(models):
-        p_val = model.get_assignment("p")
-        q_val = model.get_assignment("q")
-        result = model.satisfies(formula)
-        
-        print(f"Model {i+1}: p={p_val}, q={q_val} → formula={result}")
+        print(f"Model {i+1}: {model}")
     print()
     
     # Show which assignments DON'T satisfy
@@ -688,16 +719,24 @@ def model_comparison():
         classical_models = classical_tableau.extract_all_models()
         print(f"Classical models ({len(classical_models)}):")
         for model in classical_models:
-            print(f"  {model.assignment}")
+            print(f"  {model}")
     print()
     
-    # WK3 models
-    wk3_model_list = wk3_models(formula)
+    # WK3 models using tableau approach
+    t3_tableau = three_valued_signed_tableau(T3(formula))
+    u_tableau = three_valued_signed_tableau(U(formula))
+    t3_satisfiable = t3_tableau.build()
+    u_satisfiable = u_tableau.build()
+    
+    wk3_model_list = []
+    if t3_satisfiable:
+        wk3_model_list.extend(t3_tableau.extract_all_models())
+    if u_satisfiable:
+        wk3_model_list.extend(u_tableau.extract_all_models())
+    
     print(f"WK3 models ({len(wk3_model_list)}):")
     for model in wk3_model_list:
-        p_val = model.get_assignment("p")
-        result = model.satisfies(formula)
-        print(f"  p={p_val} → formula={result}")
+        print(f"  {model}")
     print()
     
     print("Key difference: WK3 has an additional model where p=e (undefined)")

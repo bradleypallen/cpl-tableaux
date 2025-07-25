@@ -124,7 +124,7 @@ The optimizations show significant improvements:
 Complex formula with depth 4:     0.0001 seconds, 2 branches
 Deep implication chain (10 levels): 0.0002 seconds, 10 branches  
 Prioritized expansion:             0.0000 seconds, 1 branch
-All 50 test cases:                 0.02 seconds total
+All 69 test cases:                 0.02 seconds total
 ```
 
 ## Impact on Automated Theorem Proving
@@ -161,7 +161,7 @@ This tableau implementation demonstrates understanding of automated theorem prov
 ### **⚠️ Areas for Improvement**
 
 #### **1. Model Extraction Limitation**
-**Location**: `tableau.py:273-315`
+**Location**: `tableau_core.py` (model extraction methods)
 ```python
 # Current: Only finds one model per branch
 for atom_name in all_atoms:
@@ -171,7 +171,7 @@ for atom_name in all_atoms:
 **Impact**: Misses complete model enumeration for satisfiable formulas.
 
 #### **2. Performance Bottleneck in Formula Access**
-**Location**: `tableau.py:101-109`
+**Location**: `tableau_core.py` (branch management)
 ```python
 # O(depth) traversal on every access
 while current is not None:
@@ -194,7 +194,7 @@ Pathological cases can still create exponential branches:
 - No arbitrary iteration limits (common flaw in educational systems)
 - Optimization integration
 - Clean, maintainable architecture
-- Test coverage (61 tests)
+- Test coverage (69 tests)
 
 #### **❌ Missing from industrial systems:**
 - Connection method integration for better performance
@@ -207,7 +207,7 @@ Pathological cases can still create exponential branches:
 Current performance characteristics:
 - **Simple formulas**: < 0.0001 seconds
 - **Complex nested formulas**: ~0.0001 seconds  
-- **61 tests**: 0.03 seconds total
+- **69 tests**: 0.03 seconds total
 - **Deep implication chains**: No performance degradation
 
 **Complexity Analysis:**

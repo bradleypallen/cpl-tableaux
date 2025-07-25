@@ -1754,9 +1754,21 @@ def parse_formula(formula_str: str) -> Formula:
         inner = parse_formula(formula_str[1:].strip())
         return Negation(inner)
     
-    # Handle parentheses
+    # Handle parentheses - only strip if they are balanced outer parentheses
     if formula_str.startswith('(') and formula_str.endswith(')'):
-        return parse_formula(formula_str[1:-1])
+        # Check if these are true outer parentheses
+        paren_depth = 0
+        can_strip = True
+        for i, char in enumerate(formula_str[1:-1]):  # Skip the first and last parentheses
+            if char == '(':
+                paren_depth += 1
+            elif char == ')':
+                paren_depth -= 1
+                if paren_depth < 0:  # More closes than opens - not balanced outer parens
+                    can_strip = False
+                    break
+        if can_strip and paren_depth == 0:  # Balanced and no early closes
+            return parse_formula(formula_str[1:-1])
     
     # Simple atoms (letters and numbers)
     if formula_str.isalnum():

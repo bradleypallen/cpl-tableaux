@@ -72,8 +72,7 @@ from tableau_core import (
     t, f, e,
     # Tableau functions
     classical_signed_tableau, three_valued_signed_tableau,
-    wkrq_signed_tableau, ferguson_signed_tableau,
-    wk3_satisfiable, wk3_models
+    wkrq_signed_tableau, ferguson_signed_tableau
 )
 
 # Classical Logic using Signed Tableaux
@@ -97,14 +96,23 @@ if satisfiable:
 # Three-Valued Logic (WK3)
 formula = Disjunction(p, Negation(p))  # p ∨ ¬p
 
-# Check WK3 satisfiability
-is_wk3_satisfiable = wk3_satisfiable(formula)
+# Check WK3 satisfiability (formula is satisfiable if it can be true OR undefined)
+t3_tableau = three_valued_signed_tableau(T3(formula))
+u_tableau = three_valued_signed_tableau(U(formula))
+t3_satisfiable = t3_tableau.build()
+u_satisfiable = u_tableau.build()
+is_wk3_satisfiable = t3_satisfiable or u_satisfiable
 print(f"WK3 satisfiable: {is_wk3_satisfiable}")
 
 # Get all WK3 models
-wk3_model_list = wk3_models(formula)
-for model in wk3_model_list:
-    print(f"Model: p={model.get_assignment('p')}")
+wk3_models = []
+if t3_satisfiable:
+    wk3_models.extend(t3_tableau.extract_all_models())
+if u_satisfiable:
+    wk3_models.extend(u_tableau.extract_all_models())
+
+for model in wk3_models:
+    print(f"Model: {model}")
 
 # Ferguson's wKrQ Epistemic Logic
 r = Atom("r")
@@ -116,7 +124,7 @@ result = tableau.build()
 print(f"Epistemic satisfiability: {result}")
 
 # First-Order Logic
-x = Variable("x")
+X = Variable("X")
 a = Constant("a")
 Student = lambda term: Predicate("Student", [term])
 Human = lambda term: Predicate("Human", [term])
@@ -193,7 +201,7 @@ The system includes comprehensive test coverage:
 python -m pytest                              # All tests
 
 # Run specific test suites
-python -m pytest test_comprehensive.py -v    # Unified test suite (42 tests)
+python -m pytest test_comprehensive.py -v    # Unified test suite (35 tests)
 python -m pytest test_literature_examples.py -v  # Literature-based tests (26 tests)
 
 # Run tutorial tests
@@ -205,7 +213,7 @@ python -m pytest --tb=no -q                   # Brief output
 
 ### Core Test Suites
 
-- **test_comprehensive.py** (42 tests) - Complete validation of unified implementation
+- **test_comprehensive.py** (35 tests) - Complete validation of unified implementation
 - **test_literature_examples.py** (26 tests) - Examples from Priest, Fitting, Smullyan, Ferguson
 - **tutorial*_test.py** - Tutorial code validation
 
@@ -236,7 +244,7 @@ The implementation includes standard tableau optimizations:
 - **Subsumption elimination** for branch pruning
 
 ### Performance Metrics
-- Complete test suite (227 tests) executes in under 0.2 seconds
+- Complete test suite (69 tests) executes in under 0.2 seconds
 - Efficient memory usage with shallow copying for branch management
 - Cached rule lookup for O(1) rule selection
 
@@ -333,15 +341,10 @@ For comprehensive documentation and detailed guides, see:
 
 ### Implementation Guides
 - **[BUILDING_GUIDE.md](BUILDING_GUIDE.md)** - Step-by-step guide for extending the system with new logic systems
-- **[OPTIMIZATIONS.md](OPTIMIZATIONS.md)** - Performance optimization strategies and analysis
-- **[TECHNICAL_ANALYSIS.md](TECHNICAL_ANALYSIS.md)** - Implementation quality assessment and code review
-
-### Logic System Specific
-- **[WEAK_KLEENE_PLAN.md](WEAK_KLEENE_PLAN.md)** - WK3 implementation design, semantics, and theoretical background
-- **[IMPLEMENTATION_PLAN_WKRQ.md](IMPLEMENTATION_PLAN_WKRQ.md)** - Ferguson's wKrQ epistemic logic implementation plan
-- **[INTERFACE_CHANGES_WKRQ.md](INTERFACE_CHANGES_WKRQ.md)** - Interface evolution for epistemic logic support
+- **[OPTIMIZATIONS.md](OPTIMIZATIONS.md)** - Performance optimization strategies and analysis (still current)
 
 ### Development
 - **[CLAUDE.md](CLAUDE.md)** - Project instructions and development guidelines for AI assistants
+- **[archive/historical-design-docs/](archive/historical-design-docs/)** - Historical design documents from before the July 2025 consolidation
 
 The system demonstrates how semantic tableau methods can be implemented with clean architecture, optimized performance, and support for multiple logical systems suitable for both research and educational applications.

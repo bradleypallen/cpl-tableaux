@@ -16,7 +16,7 @@ This implementation represents a semantic tableau system for Classical Propositi
 - Sound closure detection using literal contradiction
 - Complete termination without arbitrary limits (crucial for logical completeness)
 
-**Evidence**: 61 tests pass, covering all major logical patterns including transitivity, modus ponens, De Morgan's laws, and Pierce's law.
+**Evidence**: 69 tests pass, covering all major logical patterns including transitivity, modus ponens, De Morgan's laws, and Pierce's law.
 
 ### 2. Optimization Techniques ✅
 
@@ -51,7 +51,7 @@ def subsumes(self, other: 'Branch') -> bool:
 ### 3. Production-Quality Engineering ✅
 
 - **Clean architecture**: Proper separation between formula representation and tableau logic
-- **Testing**: 61 tests with good coverage of edge cases
+- **Testing**: 69 tests with good coverage of edge cases
 - **Maintainable code**: Well-documented with clear abstractions
 - **Performance monitoring**: Built-in timing and branch counting
 
@@ -59,7 +59,7 @@ def subsumes(self, other: 'Branch') -> bool:
 
 ### 1. Model Extraction Incompleteness ⚠️
 
-**Location**: `tableau.py:273-315`
+**Location**: `tableau_core.py` (model extraction methods)
 
 **Problem**: Only generates one model per satisfiable branch
 ```python
@@ -75,7 +75,7 @@ for atom_name in all_atoms:
 
 ### 2. Performance Bottleneck in Branch Access ⚠️
 
-**Location**: `tableau.py:101-109`
+**Location**: `tableau_core.py` (branch management)
 
 **Problem**: O(depth) traversal on every formula access
 ```python
@@ -109,7 +109,7 @@ def formulas(self) -> Set[Formula]:
 ### Benchmarks
 - **Simple formulas**: < 0.0001 seconds
 - **Complex nested formulas**: ~0.0001 seconds  
-- **61 tests**: 0.03 seconds total
+- **69 tests**: 0.03 seconds total
 - **Deep implication chains**: No performance degradation
 
 ### Complexity Analysis

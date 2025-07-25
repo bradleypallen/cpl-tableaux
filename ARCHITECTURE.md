@@ -100,10 +100,9 @@ The system is implemented in a single comprehensive module:
 │   ├── ClassicalModel
 │   ├── WK3Model with three-valued evaluation
 │   └── Model extraction from open branches
-├── Convenience Functions
+├── Tableau Functions
 │   ├── classical_signed_tableau, three_valued_signed_tableau
-│   ├── wkrq_signed_tableau, ferguson_signed_tableau
-│   └── wk3_satisfiable, wk3_models
+│   └── wkrq_signed_tableau, ferguson_signed_tableau
 └── Mode-Aware System
     ├── LogicMode enum
     ├── PropositionalBuilder
@@ -925,20 +924,14 @@ def classical_signed_tableau(formulas, track_steps=False) -> OptimizedTableauEng
         >>> tableau.print_construction_steps()
     """
 
-def wk3_satisfiable(formula: Formula) -> bool:
-    """
-    Check WK3 satisfiability using brute force.
-    
-    Generates all possible three-valued assignments and
-    checks if any satisfy the formula (evaluate to t or e).
-    """
-
-def wk3_models(formula: Formula) -> List[WK3Model]:
-    """
-    Find all WK3 models using systematic enumeration.
-    
-    Returns models where formula evaluates to t or e.
-    """
+# NOTE: Convenience functions wk3_satisfiable() and wk3_models() have been eliminated.
+# Use tableau approach instead:
+# 
+# t3_tableau = three_valued_signed_tableau(T3(formula))
+# u_tableau = three_valued_signed_tableau(U(formula))
+# is_satisfiable = t3_tableau.build() or u_tableau.build()
+# models = t3_tableau.extract_all_models() if t3_tableau.build() else []
+# models.extend(u_tableau.extract_all_models() if u_tableau.build() else [])
 
 def ferguson_signed_tableau(formulas, track_steps=False) -> OptimizedTableauEngine:
     """
@@ -1045,7 +1038,7 @@ class WkrqModel:
 
 **Documentation**: Functions and classes include docstrings describing parameters, return values, and behavior.
 
-**Testing**: The system includes 227 tests covering all major functionality with no failing tests.
+**Testing**: The system includes 69 tests covering all major functionality with no failing tests.
 
 **Performance**: Critical algorithms use optimized data structures and avoid quadratic complexity where possible.
 
