@@ -2,7 +2,7 @@
 """
 Unified Model Interface for All Tableau Systems
 
-Provides a consistent model interface across classical, WK3, and wKrQ logic systems.
+Provides a consistent model interface across classical, weak Kleene, and wKrQ logic systems.
 All tableau systems will return models that implement the same interface.
 """
 
@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, Union, Optional, Any
 from dataclasses import dataclass
 
-from .tableau_core import TruthValue, t, f, e, WeakKleeneOperators, Formula, Atom, Negation, Conjunction, Disjunction, Implication
+from .tableau_core import TruthValue, t, f, e, weakKleeneOperators, Formula, Atom, Negation, Conjunction, Disjunction, Implication
 
 
 
@@ -122,8 +122,8 @@ class ClassicalModel(UnifiedModel):
 
 
 @dataclass  
-class WK3Model(UnifiedModel):
-    """Unified model for Weak Kleene three-valued logic"""
+class weakKleeneModel(UnifiedModel):
+    """Unified model for weak Kleene three-valued logic"""
     
     _assignments: Dict[str, TruthValue]
     
@@ -141,7 +141,7 @@ class WK3Model(UnifiedModel):
                 raise ValueError(f"Invalid truth value type for {atom}: {type(value)}")
     
     def satisfies(self, formula: Formula) -> TruthValue:
-        """Evaluate formula under WK3 semantics"""
+        """Evaluate formula under weak Kleene semantics"""
         return self._evaluate_wk3(formula)
     
     def is_satisfying(self, formula: Formula) -> bool:
@@ -158,24 +158,24 @@ class WK3Model(UnifiedModel):
         return self._assignments.copy()
     
     def _evaluate_wk3(self, formula) -> TruthValue:
-        """Evaluate formula using Weak Kleene semantics"""
+        """Evaluate formula using weak Kleene semantics"""
         if isinstance(formula, Atom):
             return self._assignments.get(formula.name, e)
         elif isinstance(formula, Negation):
             operand_value = self._evaluate_wk3(formula.operand)
-            return WeakKleeneOperators.negation(operand_value)
+            return weakKleeneOperators.negation(operand_value)
         elif isinstance(formula, Conjunction):
             left_value = self._evaluate_wk3(formula.left)
             right_value = self._evaluate_wk3(formula.right)
-            return WeakKleeneOperators.conjunction(left_value, right_value)
+            return weakKleeneOperators.conjunction(left_value, right_value)
         elif isinstance(formula, Disjunction):
             left_value = self._evaluate_wk3(formula.left)  
             right_value = self._evaluate_wk3(formula.right)
-            return WeakKleeneOperators.disjunction(left_value, right_value)
+            return weakKleeneOperators.disjunction(left_value, right_value)
         elif isinstance(formula, Implication):
             antecedent_value = self._evaluate_wk3(formula.antecedent)
             consequent_value = self._evaluate_wk3(formula.consequent)
-            return WeakKleeneOperators.implication(antecedent_value, consequent_value)
+            return weakKleeneOperators.implication(antecedent_value, consequent_value)
         else:
             raise ValueError(f"Unknown formula type: {type(formula)}")
     
@@ -188,12 +188,12 @@ class WK3Model(UnifiedModel):
         return "{" + ", ".join(assignment_strs) + "}"
     
     def __repr__(self) -> str:
-        return f"WK3Model({self._assignments})"
+        return f"weakKleeneModel({self._assignments})"
 
 
 @dataclass
 class WkrqModel(UnifiedModel):
-    """Unified model for Ferguson's wKrQ four-valued epistemic logic"""
+    """Unified model for wKrQ four-valued logic"""
     
     _assignments: Dict[str, str]  # T, F, M, N
     
@@ -267,6 +267,6 @@ Model = ClassicalModel  # For legacy code expecting "Model"
 
 # Export all unified model types
 __all__ = [
-    'UnifiedModel', 'ClassicalModel', 'WK3Model', 'WkrqModel', 
+    'UnifiedModel', 'ClassicalModel', 'weakKleeneModel', 'WkrqModel', 
     'Model'
 ]

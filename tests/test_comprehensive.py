@@ -25,7 +25,7 @@ from tableaux import (
     classical_signed_tableau, three_valued_signed_tableau, wkrq_signed_tableau
 )
 from tableaux import TruthValue, t, f, e
-from tableaux import WK3Model
+from tableaux import weakKleeneModel
 # Unified system imports only - removed legacy components
 
 
@@ -246,28 +246,28 @@ class TestWeakKleeneLogic:
     
     def test_wk3_truth_values(self):
         """Test WK3 truth value system"""
-        from tableaux import WeakKleeneOperators
+        from tableaux import weakKleeneOperators
         
-        # Test truth value operations using WeakKleeneOperators
-        assert WeakKleeneOperators.negation(t) == f
-        assert WeakKleeneOperators.negation(f) == t
-        assert WeakKleeneOperators.negation(e) == e
+        # Test truth value operations using weakKleeneOperators
+        assert weakKleeneOperators.negation(t) == f
+        assert weakKleeneOperators.negation(f) == t
+        assert weakKleeneOperators.negation(e) == e
         
         # Test conjunction
-        assert WeakKleeneOperators.conjunction(t, t) == t
-        assert WeakKleeneOperators.conjunction(t, f) == f
-        assert WeakKleeneOperators.conjunction(t, e) == e
-        assert WeakKleeneOperators.conjunction(e, e) == e
+        assert weakKleeneOperators.conjunction(t, t) == t
+        assert weakKleeneOperators.conjunction(t, f) == f
+        assert weakKleeneOperators.conjunction(t, e) == e
+        assert weakKleeneOperators.conjunction(e, e) == e
         
         # Test disjunction
-        assert WeakKleeneOperators.disjunction(f, f) == f
-        assert WeakKleeneOperators.disjunction(f, t) == t
-        assert WeakKleeneOperators.disjunction(f, e) == e
-        assert WeakKleeneOperators.disjunction(e, e) == e
+        assert weakKleeneOperators.disjunction(f, f) == f
+        assert weakKleeneOperators.disjunction(f, t) == t
+        assert weakKleeneOperators.disjunction(f, e) == e
+        assert weakKleeneOperators.disjunction(e, e) == e
     
     def test_wk3_model_evaluation(self):
         """Test WK3 model evaluation"""
-        model = WK3Model({"p": t, "q": f, "r": e})
+        model = weakKleeneModel({"p": t, "q": f, "r": e})
         
         p, q, r = Atom("p"), Atom("q"), Atom("r")
         

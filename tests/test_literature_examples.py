@@ -56,7 +56,7 @@ class TestPriestExamples:
         Test WK3 conjunction truth table from Priest Chapter 3
         Verifies that p ∧ q follows weak Kleene semantics
         """
-        from tableaux import WeakKleeneOperators
+        from tableaux import weakKleeneOperators
         
         # Test all 9 combinations of three-valued conjunction directly
         test_cases = [
@@ -73,7 +73,7 @@ class TestPriestExamples:
         ]
         
         for p_val, q_val, expected in test_cases:
-            result = WeakKleeneOperators.conjunction(p_val, q_val)
+            result = weakKleeneOperators.conjunction(p_val, q_val)
             assert result == expected, f"Weak Kleene conjunction failed for p={p_val}, q={q_val}: got {result}, expected {expected}"
     
     def test_priest_excluded_middle_not_tautology(self):

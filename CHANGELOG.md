@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial release of the semantic tableau system
 - Support for classical propositional logic with optimized tableau algorithm
 - Support for three-valued Weak Kleene logic (WK3) with gap semantics
-- Support for Ferguson's wKrQ four-valued epistemic logic
+- Support for wKrQ four-valued epistemic logic
 - Unified tableau engine with step-by-step visualization
 - Command-line interface with multiple output formats
 - Comprehensive test suite with 69 tests

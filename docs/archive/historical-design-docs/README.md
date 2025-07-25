@@ -15,7 +15,7 @@ The tableau system was consolidated into a unified architecture with a single co
 
 ### Design Plans (Now Implemented)
 - **WEAK_KLEENE_PLAN.md** - Original design plan for WK3 implementation (now complete)
-- **IMPLEMENTATION_PLAN_WKRQ.md** - Original design plan for Ferguson's wKrQ logic (now complete)
+- **IMPLEMENTATION_PLAN_WKRQ.md** - Original design plan for wKrQ logic (now complete)
 - **INTERFACE_CHANGES_WKRQ.md** - Planned interface changes for a multi-file architecture (superseded)
 
 ### Analysis Documents

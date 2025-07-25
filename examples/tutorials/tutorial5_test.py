@@ -98,7 +98,7 @@ def analyze_wk3_models():
     ]
     
     from tableaux import WK3Model
-    from tableaux import WeakKleeneOperators
+    from tableaux import weakKleeneOperators
     
     for p_val, q_val in all_assignments:
         model = WK3Model({"p": p_val, "q": q_val})

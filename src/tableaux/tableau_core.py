@@ -101,12 +101,12 @@ f = TruthValue.FALSE
 e = TruthValue.UNDEFINED
 
 
-class WeakKleeneOperators:
-    """Implementation of weak Kleene logic truth tables (true WK3)"""
+class weakKleeneOperators:
+    """Implementation of weak Kleene logic truth tables"""
     
     @staticmethod
     def negation(a: TruthValue) -> TruthValue:
-        """Weak Kleene negation: ¬A"""
+        """weak Kleene negation: ¬A"""
         if a == t:
             return f
         elif a == f:
@@ -116,7 +116,7 @@ class WeakKleeneOperators:
     
     @staticmethod
     def conjunction(a: TruthValue, b: TruthValue) -> TruthValue:
-        """Weak Kleene conjunction: A ∧ B"""
+        """weak Kleene conjunction: A ∧ B"""
         # In weak Kleene, any operation with 'e' returns 'e'
         if a == e or b == e:
             return e
@@ -129,7 +129,7 @@ class WeakKleeneOperators:
     
     @staticmethod
     def disjunction(a: TruthValue, b: TruthValue) -> TruthValue:
-        """Weak Kleene disjunction: A ∨ B"""
+        """weak Kleene disjunction: A ∨ B"""
         # In weak Kleene, any operation with 'e' returns 'e'
         if a == e or b == e:
             return e
@@ -142,7 +142,7 @@ class WeakKleeneOperators:
     
     @staticmethod
     def implication(a: TruthValue, b: TruthValue) -> TruthValue:
-        """Weak Kleene implication: A → B"""
+        """weak Kleene implication: A → B"""
         # In weak Kleene, any operation with 'e' returns 'e'
         if a == e or b == e:
             return e
@@ -1932,7 +1932,7 @@ class TableauBranch:
         
         Closure conditions by logic system:
         - Classical: T:A and F:A
-        - WK3: T:A and F:A (U is compatible with both)
+        - weak Kleene: T:A and F:A (U is compatible with both)
         - wKrQ: T:A and F:A (M and N represent uncertainty, don't close branches)
         
         Reference: Ferguson, T. M. (2021). Tableaux and restricted quantification.
@@ -2101,14 +2101,14 @@ class OptimizedTableauEngine:
             )]
         
         elif self.sign_system in ["wk3", "three_valued"]:
-            # Weak Kleene three-valued logic rules
+            # weak Kleene three-valued logic rules
             # Reference: Priest, G. (2008). An Introduction to Non-Classical Logic.
             
             # Similar structure to classical but with undefined value handling
-            # For brevity, implementing basic rules - full WK3 rules would follow same pattern
+            # For brevity, implementing basic rules - full weak Kleene rules would follow same pattern
             rules.update(self._get_classical_rules())  # Start with classical base
             
-            # Add WK3-specific rules for undefined values
+            # Add weak Kleene-specific rules for undefined values
             rules['U_conjunction'] = [TableauRule(
                 rule_type="alpha",
                 premises=["U:(A ∧ B)"], 
@@ -2117,7 +2117,7 @@ class OptimizedTableauEngine:
             )]
             
         elif self.sign_system == "wkrq":
-            # Ferguson's wKrQ epistemic logic rules
+            # wKrQ rules
             # Reference: Ferguson, T. M. (2021). Tableaux and restricted quantification.
             
             rules.update(self._get_classical_rules())  # Base classical rules for T/F
@@ -2683,7 +2683,7 @@ class OptimizedTableauEngine:
         atoms not mentioned in the branch.
         """
         # Import dynamically to avoid circular imports
-        from .unified_model import ClassicalModel, WK3Model, WkrqModel
+        from .unified_model import ClassicalModel, weakKleeneModel, WkrqModel
         
         if not self.is_satisfiable():
             return []
@@ -2734,7 +2734,7 @@ class OptimizedTableauEngine:
             if self.sign_system == "classical":
                 models.append(ClassicalModel(assignments))
             elif self.sign_system in ["wk3", "three_valued"]:
-                models.append(WK3Model(assignments))
+                models.append(weakKleeneModel(assignments))
             elif self.sign_system == "wkrq":
                 models.append(WkrqModel(assignments))
         
@@ -3055,7 +3055,7 @@ def ferguson_signed_tableau(signed_formula, track_steps=False):
 
 __all__ = [
     # Truth values
-    'TruthValue', 't', 'f', 'e', 'WeakKleeneOperators',
+    'TruthValue', 't', 'f', 'e', 'weakKleeneOperators',
     
     # Terms
     'Term', 'Constant', 'Variable', 'FunctionApplication',

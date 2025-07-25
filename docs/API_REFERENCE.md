@@ -21,7 +21,7 @@
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/bradleypallen/tableaux.git
 cd tableaux
 
 # Verify installation
@@ -60,12 +60,12 @@ if satisfiable:
     models = tableau.extract_all_models()
     print(f"Found {len(models)} models")
 
-# Three-valued logic (WK3)
-# WK3 satisfiability using tableau approach
+# Three-valued logic (weak Kleene)
+# weak Kleene satisfiability using tableau approach
 t3_tableau = three_valued_signed_tableau(T3(formula))
 u_tableau = three_valued_signed_tableau(U(formula))
 wk3_result = t3_tableau.build() or u_tableau.build()
-print(f"WK3 satisfiable: {wk3_result}")
+print(f"weak Kleene satisfiable: {wk3_result}")
 ```
 
 ## Core API Functions
@@ -121,12 +121,12 @@ result = tableau.build()
 
 ### Three-Valued Logic Functions
 
-#### WK3 Satisfiability Check (Tableau Approach)
+#### weak Kleene Satisfiability Check (Tableau Approach)
 
-Check WK3 (Weak Kleene) satisfiability using the tableau method.
+Check weak Kleene satisfiability using the tableau method.
 
 **Approach:**
-A formula is WK3-satisfiable if it can be either **true** (T3) or **undefined** (U).
+A formula is weak Kleene-satisfiable if it can be either **true** (T3) or **undefined** (U).
 
 **Algorithm:**
 1. Create tableau for `T3(formula)` (can the formula be true?)
@@ -145,16 +145,16 @@ tableau = classical_signed_tableau(T(contradiction))
 classical_result = tableau.build()
 print(f"Classical: {classical_result}")  # False
 
-# WK3: satisfiable using tableau approach
+# weak Kleene: satisfiable using tableau approach
 t3_tableau = three_valued_signed_tableau(T3(contradiction))
 u_tableau = three_valued_signed_tableau(U(contradiction))
 wk3_result = t3_tableau.build() or u_tableau.build()
-print(f"WK3: {wk3_result}")  # True
+print(f"weak Kleene: {wk3_result}")  # True
 ```
 
-#### WK3 Model Extraction (Tableau Approach)
+#### weak Kleene Model Extraction (Tableau Approach)
 
-Extract all WK3 models for a formula using the tableau method.
+Extract all weak Kleene models for a formula using the tableau method.
 
 **Approach:**
 1. Check if formula can be true (T3) - extract models from successful tableau
@@ -188,11 +188,11 @@ for i, model in enumerate(models):
     print(f"  Satisfies formula: {model.satisfies(formula)}")
 ```
 
-### Ferguson's wKrQ Epistemic Logic
+### wKrQ Epistemic Logic
 
 #### `wkrq_signed_tableau(formulas, track_steps=False)`
 
-Create Ferguson's wKrQ epistemic logic tableau.
+Create wKrQ tableau.
 
 **Parameters:**
 - `formulas`: `SignedFormula` or `List[SignedFormula]` - Initial signed formulas
@@ -261,7 +261,7 @@ u_p = U(p)    # "p is undefined"
 
 #### wKrQ Signs: `TF(formula)`, `FF(formula)`, `M(formula)`, `N(formula)`
 
-Create signed formulas for Ferguson's epistemic logic.
+Create signed formulas for wKrQ.
 
 **Signs:**
 - `TF`: Definitely true (classical T)
@@ -328,7 +328,7 @@ Check satisfiability (must call `build()` first).
 Extract all satisfying models from open branches.
 
 **Returns:**
-- `List[Model]` - List of models (ClassicalModel, WK3Model, or WkrqModel)
+- `List[Model]` - List of models (ClassicalModel, weakKleeneModel, or WkrqModel)
 
 **Example:**
 ```python
@@ -468,17 +468,17 @@ f = TruthValue.FALSE     # False
 e = TruthValue.UNDEFINED # Undefined/error
 ```
 
-#### `WeakKleeneOperators`
+#### `weakKleeneOperators`
 
 Operators for weak Kleene semantics:
 
 ```python
-from tableau_core import WeakKleeneOperators
+from tableau_core import weakKleeneOperators
 
 # Any operation with 'e' returns 'e'
-result = WeakKleeneOperators.conjunction(t, e)  # Returns e
-result = WeakKleeneOperators.disjunction(f, e)  # Returns e
-result = WeakKleeneOperators.negation(e)        # Returns e
+result = weakKleeneOperators.conjunction(t, e)  # Returns e
+result = weakKleeneOperators.disjunction(f, e)  # Returns e
+result = weakKleeneOperators.negation(e)        # Returns e
 ```
 
 ### Model Classes
@@ -491,7 +491,7 @@ Two-valued model for classical logic.
 - `get_assignment(atom_name: str) -> bool`
 - `satisfies(formula: Formula) -> bool`
 
-#### `WK3Model`
+#### `weakKleeneModel`
 
 Three-valued model for weak Kleene logic.
 
@@ -501,7 +501,7 @@ Three-valued model for weak Kleene logic.
 
 #### `WkrqModel`
 
-Model for Ferguson's wKrQ epistemic logic.
+Model for wKrQ.
 
 **Methods:**
 - `get_assignment(formula: Formula) -> Optional[Sign]`
@@ -537,7 +537,7 @@ f ∧ t = e    f ∧ f = f    f ∧ e = e
 e ∧ t = e    e ∧ f = e    e ∧ e = e
 ```
 
-### Ferguson's wKrQ Epistemic Logic
+### wKrQ Epistemic Logic
 
 **Signs:** T/F (definite), M/N (epistemic)  
 **Contradiction:** Only T:φ and F:φ contradict
@@ -669,7 +669,7 @@ print(f"Classical satisfiable: {classical_result}")  # False
 
 # WK3 logic
 wk3_result = wk3_satisfiable(contradiction)
-print(f"WK3 satisfiable: {wk3_result}")  # True
+print(f"weak Kleene satisfiable: {wk3_result}")  # True
 
 # Find WK3 models
 models = wk3_models(contradiction)

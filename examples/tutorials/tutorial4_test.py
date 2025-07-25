@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tutorial 4: Ferguson's wKrQ Epistemic Logic"""
+"""Tutorial 4: wKrQ Epistemic Logic"""
 
 from tableaux import Atom, Conjunction, Disjunction, Implication, Negation
 from tableaux import TF, FF, M, N, wkrq_signed_tableau, ferguson_signed_tableau

@@ -21,7 +21,7 @@ from .tableau_core import (
     T, F, T3, F3, U, TF, FF,
     parse_formula
 )
-from .unified_model import UnifiedModel, ClassicalModel, WK3Model, WkrqModel
+from .unified_model import UnifiedModel, ClassicalModel, weakKleeneModel, WkrqModel
 
 class EnhancedFormulaParser:
     """Enhanced parser supporting the syntax described in CLI_GUIDE.md"""
@@ -346,7 +346,7 @@ Examples:
             
             # Create tableau using actual API
             if logic_system == "wk3":
-                # For WK3, check if formula can be true OR undefined
+                # For weak Kleene, check if formula can be true OR undefined
                 t3_tableau = three_valued_signed_tableau(T3(formula))
                 u_tableau = three_valued_signed_tableau(U(formula))
                 t3_satisfiable = t3_tableau.build()
@@ -420,7 +420,7 @@ Examples:
                     formula = self.parser.parse(formula_str)
                     
                     if logic_system == "wk3":
-                        # For WK3, check if formula can be true OR undefined
+                        # For weak Kleene, check if formula can be true OR undefined
                         t3_tableau = three_valued_signed_tableau(T3(formula))
                         u_tableau = three_valued_signed_tableau(U(formula))
                         t3_satisfiable = t3_tableau.build()
@@ -524,7 +524,7 @@ Examples:
                 elif user_input.startswith('wk3 '):
                     formula_str = user_input[4:].strip()
                     logic_system = "wk3"
-                    print("Switching to WK3 (three-valued) logic...")
+                    print("Switching to weak Kleene (three-valued) logic...")
                     self._interactive_test(formula_str, logic_system)
                 
                 elif user_input.startswith('classical '):
@@ -551,7 +551,7 @@ Examples:
         print("""Available commands:
   test <formula>        - Test satisfiability
   models <formula>      - Show all models
-  wk3 <formula>         - Use WK3 logic
+  wk3 <formula>         - Use weak Kleene logic
   classical <formula>   - Use classical logic
   stats                 - Show performance statistics
   examples              - Show example formulas
@@ -587,7 +587,7 @@ Examples:
             formula = self.parser.parse(formula_str)
             
             if logic_system == "wk3":
-                # For WK3, check if formula can be true OR undefined
+                # For weak Kleene, check if formula can be true OR undefined
                 t3_tableau = three_valued_signed_tableau(T3(formula))
                 u_tableau = three_valued_signed_tableau(U(formula))
                 t3_satisfiable = t3_tableau.build()
@@ -621,7 +621,7 @@ Examples:
             formula = self.parser.parse(formula_str)
             
             if logic_system == "wk3":
-                # For WK3, check if formula can be true OR undefined
+                # For weak Kleene, check if formula can be true OR undefined
                 t3_tableau = three_valued_signed_tableau(T3(formula))
                 u_tableau = three_valued_signed_tableau(U(formula))
                 t3_satisfiable = t3_tableau.build()

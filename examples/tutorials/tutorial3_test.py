@@ -71,7 +71,7 @@ def compare_classical_vs_wk3():
 def explore_wk3_truth_tables():
     """Demonstrate WK3 truth tables."""
     
-    from tableaux import WeakKleeneOperators
+    from tableaux import weakKleeneOperators
     
     print("=== WK3 TRUTH TABLES ===\n")
     
@@ -85,7 +85,7 @@ def explore_wk3_truth_tables():
     values = [t, f, e]
     for a in values:
         for b in values:
-            result = WeakKleeneOperators.conjunction(a, b)
+            result = weakKleeneOperators.conjunction(a, b)
             print(f"  {a} ∧ {b} = {result}")
     print()
     

@@ -1,6 +1,6 @@
 # Semantic Tableau System
 
-A Python implementation of semantic tableau methods for automated theorem proving, supporting multiple logic systems including classical propositional logic and three-valued Weak Kleene logic (WK3).
+A Python implementation of semantic tableau methods for automated theorem proving, supporting multiple logic systems including classical propositional logic and three-valued weak Kleene logic.
 
 ## License
 
@@ -13,7 +13,7 @@ The system uses a unified architecture with a single core module:
 ### Core Modules
 - `src/tableaux/tableau_core.py` - Complete implementation containing:
   - Formula representation (atoms, connectives, predicates, quantifiers)
-  - Truth value systems (classical, three-valued WK3)
+  - Truth value systems (classical, three-valued weak Kleene)
   - Sign systems (classical T/F, three-valued T/F/U, epistemic wKrQ T/F/M/N)
   - Optimized tableau engine with step-by-step visualization
   - Tableau rules for multiple logic systems
@@ -23,7 +23,7 @@ The system uses a unified architecture with a single core module:
 - `src/tableaux/cli.py` - Command-line interface supporting multiple logic systems
 
 ### Examples and Demonstrations
-- `examples/wkrq_countermodel_demo.py` - Ferguson's wKrQ epistemic logic demonstrations
+- `examples/wkrq_countermodel_demo.py` - wKrQ demonstrations
 - `examples/wkrq_theoretical_demo.py` - Theoretical insights for weak Kleene logic
 - `examples/verify_kleene_tables.py` - Verification of weak Kleene truth tables
 - `examples/tutorials/` - Interactive tutorial examples
@@ -40,7 +40,7 @@ pip install tableaux
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/bradleypallen/tableaux.git
 cd tableaux
 
 # Install in development mode
@@ -61,9 +61,9 @@ After installation, use the `tableaux` command:
 tableaux "p | ~p"                         # Tautology check
 tableaux "p & ~p"                         # Contradiction check
 
-# Weak Kleene logic (WK3)
-tableaux --wk3 "p | ~p"                   # WK3 satisfiability check
-tableaux --wk3 "p & ~p"                   # WK3 satisfiability check
+# weak Kleene logic
+tableaux --wk3 "p | ~p"                   # weak Kleene satisfiability check
+tableaux --wk3 "p & ~p"                   # weak Kleene satisfiability check
 
 # Interactive mode
 tableaux                                  # Interactive tableau system
@@ -108,18 +108,18 @@ if satisfiable:
     models = tableau.extract_all_models()
     print(f"Found {len(models)} models")
 
-# Three-Valued Logic (WK3)
+# Three-Valued Logic (weak Kleene)
 formula = Disjunction(p, Negation(p))  # p ∨ ¬p
 
-# Check WK3 satisfiability (formula is satisfiable if it can be true OR undefined)
+# Check weak Kleene satisfiability (formula is satisfiable if it can be true OR undefined)
 t3_tableau = three_valued_signed_tableau(T3(formula))
 u_tableau = three_valued_signed_tableau(U(formula))
 t3_satisfiable = t3_tableau.build()
 u_satisfiable = u_tableau.build()
 is_wk3_satisfiable = t3_satisfiable or u_satisfiable
-print(f"WK3 satisfiable: {is_wk3_satisfiable}")
+print(f"weak Kleene satisfiable: {is_wk3_satisfiable}")
 
-# Get all WK3 models
+# Get all weak Kleene models
 wk3_models = []
 if t3_satisfiable:
     wk3_models.extend(t3_tableau.extract_all_models())
@@ -129,7 +129,7 @@ if u_satisfiable:
 for model in wk3_models:
     print(f"Model: {model}")
 
-# Ferguson's wKrQ Epistemic Logic
+# wKrQ Epistemic Logic
 r = Atom("r")
 epistemic_formula = Conjunction(p, q)
 
@@ -168,7 +168,7 @@ Standard two-valued logic with truth values true and false.
 - `T:φ` - formula φ is true
 - `F:φ` - formula φ is false
 
-### Weak Kleene Logic (WK3)
+### weak Kleene Logic
 
 Three-valued logic with truth values true, false, and undefined.
 
@@ -235,7 +235,7 @@ python -m pytest tests/ --tb=no -q            # Brief output
 ### Demonstrations
 
 ```bash
-# Ferguson's wKrQ epistemic logic demonstrations
+# wKrQ demonstrations
 python examples/wkrq_countermodel_demo.py
 
 # Theoretical insights demonstration
@@ -276,7 +276,7 @@ For detailed technical documentation, see:
 - **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Complete system architecture and implementation details
 - **[OPTIMIZATIONS.md](docs/OPTIMIZATIONS.md)** - Performance optimization strategies and analysis
 - **[docs/archive/historical-design-docs/TECHNICAL_ANALYSIS.md](docs/archive/historical-design-docs/TECHNICAL_ANALYSIS.md)** - Implementation quality assessment
-- **[docs/archive/historical-design-docs/WEAK_KLEENE_PLAN.md](docs/archive/historical-design-docs/WEAK_KLEENE_PLAN.md)** - WK3 implementation design and semantics
+- **[docs/archive/historical-design-docs/WEAK_KLEENE_PLAN.md](docs/archive/historical-design-docs/WEAK_KLEENE_PLAN.md)** - weak Kleene implementation design and semantics
 
 ## Extension Framework
 
@@ -338,7 +338,7 @@ When extending the system:
 
 ### Key Features
 
-- **Multi-Logic Support**: Classical, WK3, wKrQ epistemic logic in one system
+- **Multi-Logic Support**: Classical, weak Kleene, wKrQ in one system
 - **Enhanced Visualization**: Shows specific rules applied and tableau tree structure
 - **Optimized Performance**: α/β rule prioritization, subsumption elimination
 - **Comprehensive Testing**: Literature-based examples validate correctness

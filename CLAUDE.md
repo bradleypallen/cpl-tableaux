@@ -19,7 +19,7 @@ The system has been consolidated into a **unified tableau framework** with a sin
 ### Core Implementation (Unified System)
 - `tableau_core.py` - **Complete unified implementation** containing:
   - Formula representation (atoms, connectives, predicates, quantifiers)
-  - Truth value systems (classical, three-valued WK3, four-valued wKrQ)
+  - Truth value systems (classical, three-valued weak Kleene, four-valued wKrQ)
   - Sign systems (classical T/F, three-valued T3/F3/U, epistemic wKrQ T/F/M/N)
   - Optimized tableau engine with step-by-step visualization
   - Tableau rules for multiple logic systems
@@ -33,7 +33,7 @@ The system has been consolidated into a **unified tableau framework** with a sin
 
 ### Demonstration Programs
 - `tableau_demo.py` - Comprehensive demonstration of tableau capabilities
-- `wkrq_countermodel_demo.py` - Ferguson's wKrQ epistemic logic demonstrations  
+- `wkrq_countermodel_demo.py` - wKrQ demonstrations  
 - `wkrq_theoretical_demo.py` - Theoretical insights for weak Kleene logic
 - `verify_kleene_tables.py` - Verification of weak Kleene truth tables
 
@@ -58,7 +58,7 @@ python tableau_demo.py            # Comprehensive tableau system demonstration
 # Interactive research interface (supports multiple logics)
 tableaux                     # Interactive mode with logic switching
 tableaux "p | ~p"            # Classical logic command-line
-tableaux --wk3 "p | ~p"      # WK3 logic command-line
+tableaux --wk3 "p | ~p"      # weak Kleene logic command-line
 
 # Comprehensive testing framework (69 tests total)
 python -m pytest -v                           # All tests across all systems
@@ -69,7 +69,7 @@ python -m pytest test_literature_examples.py -v  # Literature validation (26 tes
 python -m pytest test_performance.py -v       # Performance benchmarks
 
 # Research demonstrations
-python wkrq_countermodel_demo.py    # Ferguson's wKrQ epistemic logic
+python wkrq_countermodel_demo.py    # wKrQ
 python wkrq_theoretical_demo.py     # Theoretical insights demonstration
 python verify_kleene_tables.py      # Weak Kleene truth table verification
 
@@ -87,12 +87,12 @@ The system implements a **single unified tableau engine** with the following key
 - **Theoretical Soundness**: All tableau rules implement correct logical semantics
 - **Complete Termination**: No arbitrary limits that compromise logical completeness  
 - **Industrial Performance**: O(1) closure detection, α/β rule prioritization, subsumption elimination
-- **Multi-Logic Support**: Classical, WK3, wKrQ epistemic logic in single engine
+- **Multi-Logic Support**: Classical, weak Kleene, wKrQ in single engine
 - **Enhanced Visualization**: Step-by-step construction with rule names and tree structure
 
 ### Supported Logic Systems
 - **Classical Propositional Logic**: Two-valued semantics (T/F signs)
-- **Weak Kleene Logic (WK3)**: Three-valued semantics (T3/F3/U signs)  
+- **weak Kleene Logic**: Three-valued semantics (T3/F3/U signs)  
 - **wKrQ Epistemic Logic**: Four-valued Ferguson system (T/F/M/N signs)
 - **First-Order Logic**: Ground atomic formulas with predicate and term structures
 
@@ -124,7 +124,7 @@ This implementation maintains **research-grade quality standards** (9.0/10) comb
 
 ### Research Excellence Standards
 - **Theoretical Soundness**: All tableau rules correctly implement formal logical semantics with mathematical precision
-- **Semantic Accuracy**: Three-valued WK3 semantics implement exact Weak Kleene truth conditions
+- **Semantic Accuracy**: Three-valued weak Kleene semantics implement exact weak Kleene truth conditions
 - **Completeness Preservation**: No arbitrary limits that compromise logical completeness or decidability
 - **Performance Optimization**: Industrial-grade optimizations (α/β prioritization, O(1) closure, subsumption elimination)
 
@@ -171,13 +171,13 @@ mode_aware_tableau.py, mode_aware_parser.py, logic_mode.py
 
 ## Correct Usage Patterns
 
-### WK3 Satisfiability Checking
+### weak Kleene Satisfiability Checking
 ```python 
 # CORRECT: Use tableau approach
 from tableau_core import three_valued_signed_tableau, T3, U, Atom
 
 formula = Atom("p")
-# WK3 formula is satisfiable if it can be true OR undefined
+# weak Kleene formula is satisfiable if it can be true OR undefined
 t3_tableau = three_valued_signed_tableau(T3(formula))
 u_tableau = three_valued_signed_tableau(U(formula))
 is_satisfiable = t3_tableau.build() or u_tableau.build()

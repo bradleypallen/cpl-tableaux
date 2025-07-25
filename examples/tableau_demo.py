@@ -41,7 +41,7 @@ from tableaux import (
     classical_signed_tableau, three_valued_signed_tableau,
     parse_formula, TruthValue, t, f, e
 )
-from tableaux import UnifiedModel, ClassicalModel, WK3Model
+from tableaux import UnifiedModel, ClassicalModel, weakKleeneModel
 
 
 @dataclass

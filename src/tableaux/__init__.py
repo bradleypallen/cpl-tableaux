@@ -3,7 +3,7 @@ Semantic Tableau System
 
 A Python implementation of semantic tableau methods for automated theorem proving,
 supporting multiple logic systems including classical propositional logic and 
-three-valued Weak Kleene logic (WK3).
+three-valued weak Kleene logic.
 """
 
 __version__ = "0.1.0"
@@ -32,7 +32,7 @@ from .tableau_core import (
     t, f, e,
     
     # Operators
-    WeakKleeneOperators,
+    weakKleeneOperators,
     
     # Signed formulas
     SignedFormula,
@@ -62,7 +62,7 @@ from .tableau_core import (
 from .unified_model import (
     UnifiedModel,
     ClassicalModel,
-    WK3Model,
+    weakKleeneModel,
     WkrqModel,
     Model,  # Backward compatibility alias
 )
@@ -91,7 +91,7 @@ __all__ = [
     "t", "f", "e",
     
     # Operators
-    "WeakKleeneOperators",
+    "weakKleeneOperators",
     
     # Signed formulas
     "SignedFormula",
@@ -119,7 +119,7 @@ __all__ = [
     # Model classes
     "UnifiedModel",
     "ClassicalModel",
-    "WK3Model",
+    "weakKleeneModel",
     "WkrqModel",
     "Model",
     

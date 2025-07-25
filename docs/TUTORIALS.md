@@ -29,7 +29,7 @@
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/bradleypallen/tableaux.git
 cd tableaux
 
 # Verify installation works
@@ -483,13 +483,13 @@ if __name__ == "__main__":
 
 ## Tutorial 4: Ferguson's Epistemic Logic
 
-**Goal**: Explore epistemic reasoning with Ferguson's wKrQ system.
+**Goal**: Explore epistemic reasoning with wKrQ system.
 
 ### Step 1: Understanding Epistemic Signs
 
 ```python
 #!/usr/bin/env python3
-"""Tutorial 4: Ferguson's wKrQ Epistemic Logic"""
+"""Tutorial 4: wKrQ Epistemic Logic"""
 
 from tableaux import Atom, Conjunction, Disjunction, Implication, Negation
 from tableaux import TF, FF, M, N, wkrq_signed_tableau, ferguson_signed_tableau
@@ -1154,7 +1154,7 @@ These tutorials demonstrate the power and flexibility of the unified tableau sys
 
 1. **Unified Architecture**: Single module handles all logic systems
 2. **Rich Visualization**: Step-by-step construction with tree structure
-3. **Multiple Logics**: Classical, WK3, and Ferguson's epistemic logic
+3. **Multiple Logics**: Classical, WK3, and wKrQ
 4. **Industrial Performance**: Optimized algorithms with O(1) closure detection
 5. **Educational Value**: Clear visualizations aid understanding
 6. **Extensibility**: Framework supports adding new logic systems

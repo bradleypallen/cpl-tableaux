@@ -22,7 +22,7 @@
 This document describes the architecture of a unified tableau system for automated theorem proving. The system implements semantic tableau methods for multiple logic systems including:
 - Classical propositional logic (two-valued)
 - Weak Kleene logic (WK3, three-valued)
-- Ferguson's wKrQ epistemic logic (four-valued)
+- wKrQ (four-valued)
 - First-order logic with ground terms
 
 The implementation uses a single unified module (`tableau_core.py`) containing all functionality, with optimized algorithms and educational visualization features.
@@ -248,7 +248,7 @@ class ThreeValuedSign(Sign):
         self.designation = designation
         # Only T and F contradict; U doesn't contradict anything
     
-# Ferguson's wKrQ (4-valued)
+# wKrQ (4-valued)
 class WkrqSign(Sign):
     def __init__(self, designation: str):  # "T", "F", "M", "N"
         self.designation = designation
@@ -1008,7 +1008,7 @@ class WK3Model:
         """Evaluate formula under WK3 semantics."""
 
 class WkrqModel:
-    """Model for Ferguson's wKrQ epistemic logic."""
+    """Model for wKrQ."""
     def __init__(self, assignments: Dict[Formula, Sign]):
         self.assignments = assignments
     
@@ -1059,7 +1059,7 @@ class WkrqModel:
 **Unique Capabilities**:
 - Step-by-step visualization with named rules and tree structure
 - Multiple sign systems in unified framework
-- Ferguson's epistemic logic implementation
+- wKrQ implementation
 - Mode-aware propositional/first-order separation
 - Educational demonstrations included
 
