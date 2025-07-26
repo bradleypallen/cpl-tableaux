@@ -1,20 +1,20 @@
-# CLI Usage Guide: Tableau Logic System
+# CLI Usage Guide: Tableau System
 
-**Version**: 4.0 (Unified Implementation)  
-**Last Updated**: July 2025  
+**Version**: 2.0 (Extensible CLI)  
+**Last Updated**: January 2025  
 **License**: MIT  
 
 ## Table of Contents
 
 1. [Quick Start](#quick-start)
 2. [Basic Commands](#basic-commands)
-3. [Interactive Mode](#interactive-mode)
-4. [Logic Systems](#logic-systems)
-5. [Output Formats](#output-formats)
-6. [Batch Processing](#batch-processing)
-7. [Advanced Features](#advanced-features)
-8. [Troubleshooting](#troubleshooting)
-9. [Examples and Use Cases](#examples-and-use-cases)
+3. [Logic System Selection](#logic-system-selection)
+4. [Output Formats](#output-formats)
+5. [Interactive Mode](#interactive-mode)
+6. [Advanced Features](#advanced-features)
+7. [Batch Processing](#batch-processing)
+8. [Examples and Use Cases](#examples-and-use-cases)
+9. [Troubleshooting](#troubleshooting)
 
 ## Quick Start
 
@@ -23,71 +23,184 @@
 ```bash
 # Verify the system is working
 tableaux "p | ~p"
-# Expected output: SATISFIABLE with 2 models
+# Expected output: SATISFIABLE with models
 ```
 
 ### Your First Commands
 
 ```bash
-# Test a simple tautology
+# Test a tautology
 tableaux "p | ~p"
 
 # Test a contradiction
 tableaux "p & ~p"
 
-# Show all satisfying models
-tableaux --models "p | q"
+# Test with different logic systems
+tableaux --logic=weak_kleene "p | ~p"
+tableaux --logic=wkrq "p & ~p"
 
-# Use three-valued logic
-tableaux --wk3 "p & ~p"
-
-# Start interactive mode
+# Interactive mode
 tableaux
 ```
 
 ## Basic Commands
 
-### Command Line Syntax
+### Command Structure
 
 ```bash
 tableaux [OPTIONS] [FORMULA]
 ```
 
-### Essential Options
+**Core Options:**
+- `--logic=SYSTEM`: Choose logic system (default: classical)
+- `--models`: Show all satisfying models
+- `--sign=SIGN`: Test with specific sign
+- `--format=FORMAT`: Output format (text, json)
+- `--debug`: Show detailed tableau construction
+- `--list-logics`: List available logic systems
 
-| Option | Description | Example |
-|--------|-------------|---------|
-| `--models` | Show all satisfying models | `tableaux --models "p \| q"` |
-| `--wk3` | Use three-valued (WK3) logic | `tableaux --wk3 "p & ~p"` |
-| `--stats` | Show performance statistics | `tableaux --stats "complex_formula"` |
-| `--help` | Display help message | `tableaux --help` |
+### Basic Formula Testing
+
+```bash
+# Satisfiability testing (default behavior)
+tableaux "p -> q"
+tableaux "p & q"
+tableaux "(p | q) & ~p"
+
+# Test specific signs
+tableaux --sign=F "p | ~p"              # Can excluded middle be false?
+tableaux --sign=T "(p & q) -> p"        # Can this be true?
+
+# Show all models
+tableaux --models "p -> q"
+tableaux --models "(p & q) | (r & s)"
+```
 
 ### Formula Syntax
 
-| Logic Symbol | CLI Syntax | Example |
-|--------------|------------|---------|
-| Atom | `p`, `q`, `r` | `p` |
-| Negation (¬) | `~` | `~p` |
-| Conjunction (∧) | `&` | `p & q` |
-| Disjunction (∨) | `\|` | `p \| q` |
-| Implication (→) | `->` | `p -> q` |
-| Parentheses | `()` | `(p & q) \| r` |
+The CLI uses standard logical notation:
 
-**Note**: Use quotes around formulas to prevent shell interpretation of special characters.
+**Operators (precedence high to low):**
+- `~p` - Negation (NOT)
+- `p & q` - Conjunction (AND)
+- `p | q` - Disjunction (OR)
+- `p -> q` - Implication (IMPLIES)
 
-### Basic Examples
+**Parentheses for grouping:**
+```bash
+tableaux "p & (q | r)"
+tableaux "((p -> q) & p) -> q"
+tableaux "~(p & q) -> (~p | ~q)"
+```
+
+**Atoms:**
+- Single letters: `p`, `q`, `r`, `s`, etc.
+- Multi-character: `p1`, `q2`, `prop`, `atom`
+
+## Logic System Selection
+
+### Available Logic Systems
 
 ```bash
-# Simple satisfiability tests
-tableaux "p"                      # Always satisfiable
-tableaux "p & q"                  # Satisfiable
-tableaux "p & ~p"                 # Contradiction (unsatisfiable)
-tableaux "p | ~p"                 # Tautology (always satisfiable)
+# List all available systems
+tableaux --list-logics
+```
 
-# Complex formulas
-tableaux "(p -> q) & p & ~q"      # Modus ponens contradiction
-tableaux "(p | q) & (~p | r)"     # Horn clause
-tableaux "((p -> q) -> p) -> p"   # Peirce's law
+**Built-in Systems:**
+- `classical` (default) - Two-valued logic (T, F)
+- `weak_kleene` - Three-valued logic (T, F, U)
+- `wkrq` - Four-valued epistemic logic (T, F, M, N)
+
+### Using Different Logic Systems
+
+```bash
+# Classical logic (default)
+tableaux "p & ~p"                      # Unsatisfiable
+
+# Weak Kleene logic
+tableaux --logic=weak_kleene "p & ~p"  # May be satisfiable
+tableaux --logic=weak_kleene "p | ~p"  # Not always tautology
+
+# wKrQ logic
+tableaux --logic=wkrq "p & ~p"         # Paraconsistent
+tableaux --logic=wkrq --sign=M "p"     # Can p be both true and false?
+```
+
+### Sign Testing by Logic System
+
+**Classical Logic:**
+```bash
+tableaux --sign=T "p -> q"    # Can be true
+tableaux --sign=F "p | ~p"    # Can excluded middle be false? (No)
+```
+
+**Weak Kleene Logic:**
+```bash
+tableaux --logic=weak_kleene --sign=T "p | ~p"  # Can be true
+tableaux --logic=weak_kleene --sign=F "p | ~p"  # Can be false
+tableaux --logic=weak_kleene --sign=U "p | ~p"  # Can be undefined
+```
+
+**wKrQ Logic:**
+```bash
+tableaux --logic=wkrq --sign=T "p"   # True only
+tableaux --logic=wkrq --sign=F "p"   # False only  
+tableaux --logic=wkrq --sign=M "p"   # Both true and false
+tableaux --logic=wkrq --sign=N "p"   # Neither true nor false
+```
+
+
+## Output Formats
+
+### Text Output (Default)
+
+```bash
+tableaux "p -> q"
+# Output:
+# Formula: (p -> q)
+# Status: SATISFIABLE
+# Models: 3
+```
+
+### Detailed Model Display
+
+```bash
+tableaux --models "p -> q"
+# Output:
+# Formula: (p -> q)
+# Status: SATISFIABLE
+# Models: 3
+# 
+# Model 1: {p: False, q: False}
+# Model 2: {p: False, q: True}  
+# Model 3: {p: True, q: True}
+```
+
+### JSON Output
+
+```bash
+tableaux --format=json "p -> q"
+# Output:
+# {
+#   "formula": "(p -> q)",
+#   "satisfiable": true,
+#   "models": [
+#     {"p": false, "q": false},
+#     {"p": false, "q": true},
+#     {"p": true, "q": true}
+#   ]
+# }
+```
+
+### Debug Output
+
+```bash
+tableaux --debug "p & q"
+# Shows step-by-step tableau construction:
+# Initial: T:(p & q)
+# Apply T-Conjunction: T:p, T:q
+# Branch closed: satisfiable
+# Model: {p: True, q: True}
 ```
 
 ## Interactive Mode
@@ -96,531 +209,390 @@ tableaux "((p -> q) -> p) -> p"   # Peirce's law
 
 ```bash
 tableaux
+# Enters interactive mode
+tableau[classical]> 
 ```
 
 ### Interactive Commands
 
-Once in interactive mode, you can use these commands:
-
-| Command | Description | Example |
-|---------|-------------|---------|
-| `test <formula>` | Test satisfiability | `test p & q` |
-| `models <formula>` | Show all models | `models p \| q` |
-| `wk3 <formula>` | Switch to WK3 logic | `wk3 p & ~p` |
-| `classical <formula>` | Switch to classical logic | `classical p \| ~p` |
-| `stats` | Show last operation statistics | `stats` |
-| `examples` | Show example formulas | `examples` |
-| `help` | Show help message | `help` |
-| `quit` | Exit interactive mode | `quit` |
-
-### Interactive Session Tutorial
-
-```bash
-$ tableaux
-Welcome to the Tableau Logic System!
-Type 'help' for commands, 'quit' to exit.
-
-tableau> help
-Available commands:
-  test <formula>        - Test satisfiability
-  models <formula>      - Show all models
-  wk3 <formula>         - Use WK3 logic
-  classical <formula>   - Use classical logic
-  stats                 - Show performance statistics
-  examples              - Show example formulas
-  help                  - Show this help
-  quit                  - Exit
-
-tableau> examples
-Example formulas to try:
-  
-  Basic Formulas:
-    p                    - Simple atom
-    p & q                - Conjunction
-    p | q                - Disjunction
-    ~p                   - Negation
-    p -> q               - Implication
-  
-  Tautologies (always true):
-    p | ~p               - Law of excluded middle
-    (p -> q) | (q -> p)  - One direction must hold
-    ((p -> q) -> p) -> p - Peirce's law
-  
-  Contradictions (always false):
-    p & ~p               - Contradiction
-    (p -> q) & p & ~q    - Modus ponens failure
-  
-  Interesting Cases:
-    (p | q) & (~p | r)   - Satisfiable with constraints
-    (p & q) -> p         - Valid implication
-    p -> (q -> p)        - Exportation theorem
-
-tableau> test p & q
-Formula: p ∧ q
-Logic: Classical
-Result: SATISFIABLE
-Found 1 model(s)
-
-tableau> models p | q
-Formula: p ∨ q
-Logic: Classical
-Result: SATISFIABLE
-Found 3 model(s):
-  Model 1: {p=TRUE, q=FALSE}
-  Model 2: {p=FALSE, q=TRUE}
-  Model 3: {p=TRUE, q=TRUE}
-
-tableau> test p & ~p
-Formula: p ∧ ¬p
-Logic: Classical
-Result: UNSATISFIABLE
-No satisfying models exist.
-
-tableau> wk3 p & ~p
-Switching to WK3 (three-valued) logic...
-Formula: p ∧ ¬p
-Logic: WK3
-Result: SATISFIABLE
-Found 1 model(s):
-  Model 1: {p=UNDEFINED}
-Explanation: In WK3 logic, contradictions can be satisfied when atoms are undefined.
-
-tableau> classical p | ~p
-Switching to classical logic...
-Formula: p ∨ ¬p
-Logic: Classical
-Result: SATISFIABLE
-Found 2 model(s):
-  Model 1: {p=FALSE}
-  Model 2: {p=TRUE}
-This is a tautology - it's true under all possible assignments.
-
-tableau> stats
-Last Operation Statistics:
-  Formula: p ∨ ¬p
-  Logic System: Classical
-  Result: SATISFIABLE
-  Models Found: 2
-  Tableau Construction Time: 0.0012 seconds
-  Rule Applications: 3
-  Total Branches Created: 2
-  Maximum Branch Size: 3
-
-tableau> quit
-Goodbye!
+**Formula Testing:**
+```
+tableau[classical]> p -> q
+tableau[classical]> test (p & q) | r
+tableau[classical]> models p | ~p
 ```
 
-## Logic Systems
-
-### Classical Logic (Default)
-
-Classical two-valued logic with truth values `TRUE` and `FALSE`.
-
-```bash
-# Explicit classical logic (default)
-tableaux --classical "p | ~p"
-
-# These are equivalent
-tableaux "p | ~p"
-tableaux --classical "p | ~p"
+**Logic System Switching:**
+```
+tableau[classical]> logic weak_kleene
+tableau[weak_kleene]> logic wkrq
+tableau[wkrq]> logic classical
 ```
 
-**Characteristics:**
-- Law of excluded middle: `p | ~p` is always true
-- Non-contradiction: `p & ~p` is always false
-- Complete: every formula is either satisfiable or unsatisfiable
-
-### Three-Valued Logic (WK3)
-
-Weak Kleene three-valued logic with truth values `TRUE`, `FALSE`, and `UNDEFINED`.
-
-```bash
-# Use WK3 logic
-tableaux --wk3 "p & ~p"
-tableaux --wk3 --models "p | ~p"
+**Sign Testing:**
+```
+tableau[classical]> sign F
+tableau[classical]> test p | ~p        # Test with F sign
+tableau[classical]> sign T             # Reset to T sign
 ```
 
-**Key Differences from Classical:**
-
-```bash
-# Classical contradiction - unsatisfiable
-tableaux "p & ~p"
-# Output: UNSATISFIABLE
-
-# WK3 contradiction - satisfiable when p is undefined
-tableaux --wk3 "p & ~p"
-# Output: SATISFIABLE, Model: {p=UNDEFINED}
-
-# Classical tautology - 2 models (p=true, p=false)
-tableaux --models "p | ~p"
-# Output: 2 models
-
-# WK3 non-tautology - 3 models including undefined
-tableaux --wk3 --models "p | ~p"
-# Output: 3 models (includes p=UNDEFINED where formula is UNDEFINED)
+**Information Commands:**
+```
+tableau[classical]> help               # Show help
+tableau[classical]> logics             # List available logics
+tableau[classical]> examples           # Show example formulas
+tableau[classical]> quit               # Exit
 ```
 
-### Logic System Comparison
+### Interactive Examples
 
-```bash
-# Compare same formula in both systems
-echo "Comparing p & ~p in classical vs WK3:"
-tableaux "p & ~p"
-tableaux --wk3 "p & ~p"
-
-echo "Comparing p | ~p in classical vs WK3:"
-tableaux --models "p | ~p"
-tableaux --wk3 --models "p | ~p"
 ```
+tableau[classical]> examples
+Example formulas:
+  p | ~p          # Excluded middle (tautology)
+  p & ~p          # Contradiction
+  p -> q          # Implication
+  (p & q) -> p    # Simplification
+  p -> (q -> p)   # Axiom K
 
-## Output Formats
+tableau[classical]> test p | ~p
+Formula: (p | ~p)
+Status: SATISFIABLE
+Models: 2
 
-### Default Output Format
+tableau[classical]> logic weak_kleene
+tableau[weak_kleene]> test p | ~p
+Formula: (p | ~p)  
+Status: SATISFIABLE
+Models: 3
 
-```bash
-tableaux "p | q"
-# Output:
-# Formula: p ∨ q
-# Logic: Classical
-# Result: SATISFIABLE
-# Found 3 model(s)
-```
-
-### Detailed Output with Models
-
-```bash
-tableaux --models "p | q"
-# Output:
-# Formula: p ∨ q
-# Logic: Classical
-# Result: SATISFIABLE
-# Found 3 model(s):
-#   Model 1: {p=TRUE, q=FALSE}
-#   Model 2: {p=FALSE, q=TRUE}
-#   Model 3: {p=TRUE, q=TRUE}
-```
-
-### Statistics Output
-
-```bash
-tableaux --stats "complex_formula"
-# Output includes:
-# - Construction time
-# - Rule applications
-# - Branch count
-# - Memory usage estimates
-```
-
-### JSON Output
-
-```bash
-tableaux --format=json "p | q"
-# Output:
-# {
-#   "formula": "p ∨ q",
-#   "logic": "classical",
-#   "satisfiable": true,
-#   "models": [
-#     {"p": true, "q": false},
-#     {"p": false, "q": true},
-#     {"p": true, "q": true}
-#   ],
-#   "statistics": {
-#     "construction_time": 0.0015,
-#     "rule_applications": 5,
-#     "total_branches": 3
-#   }
-# }
-```
-
-### CSV Output
-
-```bash
-tableaux --format=csv --models "p | q"
-# Output:
-# formula,logic,satisfiable,model_count,p,q
-# "p ∨ q",classical,true,3,true,false
-# "p ∨ q",classical,true,3,false,true
-# "p ∨ q",classical,true,3,true,true
-```
-
-## Batch Processing
-
-### Processing Multiple Formulas
-
-```bash
-# From command line arguments
-tableaux --batch "p & q" "p | q" "p -> q"
-
-# From standard input
-echo -e "p & q\np | q\np -> q" | tableaux --batch
-
-# From file
-tableaux --file=formulas.txt
-```
-
-### Formula File Format
-
-Create `formulas.txt`:
-```
-# Tableau test formulas
-# Lines starting with # are comments
-
-# Basic formulas
-p
-p & q
-p | q
-~p
-
-# Tautologies  
-p | ~p
-(p -> q) | (~p -> ~q)
-
-# Contradictions
-p & ~p
-(p -> q) & p & ~q
-
-# Complex formulas
-(p | q) & (~p | r) & (~q | r)
-((p -> q) -> p) -> p
-```
-
-Then run:
-```bash
-tableaux --file=formulas.txt --models
-```
-
-### Batch Output Formats
-
-```bash
-# Generate CSV report for spreadsheet analysis
-tableaux --file=formulas.txt --format=csv > results.csv
-
-# Generate JSON for programmatic processing
-tableaux --file=formulas.txt --format=json > results.json
-
-# Compare classical vs WK3 for all formulas
-tableaux --file=formulas.txt --compare-logics
+tableau[weak_kleene]> sign U
+tableau[weak_kleene]> test p | ~p
+Formula: (p | ~p)
+Status: SATISFIABLE (with sign U)
+Models: 1
 ```
 
 ## Advanced Features
 
-### Performance Analysis
+### Statistics and Performance
 
 ```bash
-# Show detailed performance statistics
-tableaux --stats --debug "complex_formula"
-
-# Benchmark mode - multiple runs
-tableaux --benchmark=10 "formula"
-
-# Memory usage analysis
-tableaux --memory-profile "large_formula"
+tableaux --stats "complex_formula"
+# Shows:
+# - Construction time
+# - Number of branches
+# - Rule applications
+# - Memory usage
 ```
 
-### Debugging Features
+### Batch Formula Testing
 
 ```bash
-# Show tableau construction steps
-tableaux --debug "p & q"
+# Test multiple formulas
+echo "p | ~p
+p & ~p  
+p -> q
+(p & q) -> p" | tableaux --batch
 
-# Show all intermediate steps
-tableaux --verbose --debug "(p | q) & r"
-
-# Export tableau tree visualization
-tableaux --export-tree=tree.dot "formula"
+# With different logic systems
+echo "p & ~p" | tableaux --batch --logic=classical
 ```
 
-### Timeout and Limits
+### Output Redirection
 
 ```bash
-# Set timeout for complex formulas (in seconds)
-tableaux --timeout=5 "very_complex_formula"
+# Save results to file
+tableaux --models "complex_formula" > results.txt
 
-# Limit maximum number of models shown
-tableaux --max-models=10 "formula_with_many_models"
-
-# Limit maximum tableau size
-tableaux --max-branches=1000 "formula"
+# JSON output for processing
+tableaux --format=json "p -> q" | jq '.models | length'
 ```
 
-### Formula Validation
+### Comparison Across Logic Systems
 
 ```bash
-# Check formula syntax without solving
-tableaux --validate-only "p & q | r"
+# Test same formula across all systems
+for logic in classical weak_kleene wkrq; do
+    echo "=== $logic ==="
+    tableaux --logic=$logic "p & ~p"
+done
+```
 
-# Show parsed formula structure
-tableaux --show-parse-tree "((p -> q) & p) -> q"
+## Batch Processing
 
-# Convert between different syntax formats
-tableaux --convert-syntax=latex "p -> q"
+### Using Echo and Pipes
+
+```bash
+# Single formula
+echo "p -> q" | tableaux
+
+# Multiple formulas
+echo -e "p | ~p\np & ~p\np -> q" | tableaux --batch
+```
+
+### File Input
+
+```bash
+# Create formula file
+cat > formulas.txt << EOF
+p | ~p
+p & ~p
+(p -> q) & p & ~q
+p -> (q -> p)
+EOF
+
+# Process file
+cat formulas.txt | tableaux --batch --logic=classical
+```
+
+### Processing with Different Options
+
+```bash
+# Test with models
+cat formulas.txt | tableaux --batch --models
+
+# Test with JSON output
+cat formulas.txt | tableaux --batch --format=json
+
+# Test with different logic systems
+cat formulas.txt | tableaux --batch --logic=weak_kleene
+```
+
+## Examples and Use Cases
+
+### Testing Classical Logic Properties
+
+```bash
+# Test tautologies
+tableaux "p | ~p"                    # Excluded middle
+tableaux "(p -> q) -> ((q -> r) -> (p -> r))"  # Transitivity
+tableaux "p -> (q -> p)"             # Axiom K
+
+# Test contradictions
+tableaux "p & ~p"                    # Basic contradiction
+tableaux "(p -> q) & p & ~q"         # Modus ponens failure
+
+# Test contingencies with models
+tableaux --models "p -> q"           # Show all truth assignments
+tableaux --models "(p & q) | (r & s)"  # Complex formula
+```
+
+### Exploring Non-Classical Logic
+
+```bash
+# Weak Kleene logic exploration
+tableaux --logic=weak_kleene "p | ~p"       # Not always tautology
+tableaux --logic=weak_kleene --sign=U "p"   # Undefined values
+tableaux --logic=weak_kleene --models "p & q"  # Three-valued models
+
+# Paraconsistent logic (contradictions satisfiable)
+tableaux --logic=wkrq "p & ~p"              # Satisfiable in wKrQ
+```
+
+### Argument Validity Testing
+
+```bash
+# Test valid argument forms
+# Modus ponens: p -> q, p ⊢ q
+# Cannot directly test entailment in CLI, but can test:
+tableaux "(p -> q) & p & ~q"         # Should be unsatisfiable
+
+# Modus tollens: p -> q, ~q ⊢ ~p  
+tableaux "(p -> q) & ~q & p"         # Should be unsatisfiable
+
+# Disjunctive syllogism: p | q, ~p ⊢ q
+tableaux "(p | q) & ~p & ~q"         # Should be unsatisfiable
+```
+
+### Formula Analysis
+
+```bash
+# Analyze complex formulas
+tableaux --models --debug "(p & q) -> (r | s)"
+
+# Compare across logic systems
+formula="(p -> q) -> (~q -> ~p)"     # Contraposition
+tableaux "$formula"
+tableaux --logic=weak_kleene "$formula"
+tableaux --logic=wkrq "$formula"
+```
+
+### Performance Testing
+
+```bash
+# Test complex formulas
+tableaux --stats "((p1 & p2) | (p3 & p4)) -> ((p5 | p6) & (p7 | p8))"
+
+# Batch performance testing
+time echo -e "p1 | p2\n(p1 & p2) | (p3 & p4)\n((p1 & p2) | (p3 & p4)) -> (p5 | p6)" | tableaux --batch
 ```
 
 ## Troubleshooting
 
 ### Common Issues
 
-**1. Shell Character Interpretation**
-
+**1. Formula Parsing Errors:**
 ```bash
-# Wrong - shell interprets | and &
-tableaux p | q & r
+# Wrong: Missing quotes
+tableaux p -> q          # Error: shell interprets ->
 
-# Right - use quotes
-tableaux "p | q & r"
+# Right: Use quotes  
+tableaux "p -> q"        # Correct
+
+# Wrong: Invalid operators
+tableaux "p → q"         # Error: Unicode arrow not supported
+
+# Right: Use ASCII
+tableaux "p -> q"        # Correct
 ```
 
-**2. Operator Precedence**
-
+**2. Logic System Not Found:**
 ```bash
-# Ambiguous - may not parse as expected
-tableaux "p & q | r"
+# Check available systems
+tableaux --list-logics
 
-# Clear - use parentheses
-tableaux "(p & q) | r"
-tableaux "p & (q | r)"
+# Use correct name
+tableaux --logic=weak_kleene "p | ~p"   # Correct
+tableaux --logic=kleene "p | ~p"        # Error: not found
 ```
 
-**3. Large Formula Timeout**
-
+**3. Invalid Signs:**
 ```bash
-# If formula takes too long
-tableaux --timeout=10 "complex_formula"
+# Check valid signs for logic system
+tableaux --logic=classical --sign=U "p"   # Error: U not valid in classical
 
-# Or check if it's actually unsatisfiable
-tableaux --debug "complex_formula"
+# Use appropriate signs
+tableaux --logic=weak_kleene --sign=U "p"  # Correct
 ```
 
 ### Error Messages
 
-**Syntax Errors:**
+**Parse Errors:**
 ```bash
-$ tableaux "p && q"
-Error: Unknown operator '&&'. Use '&' for conjunction.
-
-$ tableaux "p or q"  
-Error: Unknown operator 'or'. Use '|' for disjunction.
+tableaux "p & & q"
+# Error: Invalid formula syntax at position 4
+# Expected: atom or opening parenthesis
 ```
 
-**Timeout Errors:**
+**Logic System Errors:**
 ```bash
-$ tableaux --timeout=1 "very_complex_formula"
-Error: Tableau construction timed out after 1 second.
-Suggestion: Try increasing timeout or simplifying formula.
+tableaux --logic=nonexistent "p"
+# Error: Unknown logic system 'nonexistent'
+# Available systems: classical, weak_kleene, wkrq
 ```
 
-**Memory Errors:**
+**Sign Errors:**
 ```bash
-$ tableaux "formula_with_exponential_blowup"
-Warning: Large number of branches created (>10000).
-This may indicate exponential blowup.
+tableaux --logic=classical --sign=M "p"
+# Error: Sign 'M' not valid for logic system 'classical'
+# Valid signs: T, F
 ```
 
-### Performance Tips
-
-1. **Use parentheses** to make operator precedence explicit
-2. **Start simple** - test subformulas before combining them
-3. **Set timeouts** for complex formulas to avoid hanging
-4. **Use --debug** to understand why formulas are slow
-5. **Consider WK3 logic** for formulas that are unsatisfiable classically
-
-## Examples and Use Cases
-
-### Educational Examples
+### Getting Help
 
 ```bash
-# Teaching propositional logic
-tableaux --models "p -> q"        # Show when implication is true
-tableaux "~(p & q)"               # De Morgan's law: equivalent to ~p | ~q
-tableaux "(~p | ~q)"              # Verify equivalence
+# Command-line help
+tableaux --help
 
-# Exploring tautologies
-tableaux "((p -> q) & (q -> r)) -> (p -> r)"  # Transitivity
-tableaux "(p & (p -> q)) -> q"                # Modus ponens
-tableaux "((p -> q) -> p) -> p"               # Peirce's law
+# Interactive help
+tableaux
+tableau[classical]> help
+
+# List available options
+tableaux --list-logics
 ```
 
-### Logic Puzzle Solving
+### Debug Information
 
 ```bash
-# Solve "Knights and Knaves" style puzzles
-# A says "B is a knight", B says "A is a knave"
-# Let p = "A is knight", q = "B is knight" 
-tableaux "(p -> q) & (q -> ~p)"
+# Show detailed tableau construction
+tableaux --debug "p & q"
 
-# Einstein's riddle constraints (simplified)
-tableaux "(house1 -> red) & (house2 -> blue) & ~(house1 & house2)"
+# Show statistics
+tableaux --stats "complex_formula"
+
+# JSON output for programmatic analysis
+tableaux --format=json "p -> q" | jq '.'
 ```
 
-### SAT Solver Applications
+### Performance Issues
 
 ```bash
-# Graph coloring (3-coloring of triangle)
-# Vertices: a, b, c; Colors: r, g, b
-tableaux --models "(ar | ag | ab) & (br | bg | bb) & (cr | cg | cb) & ~(ar & br) & ~(ar & cr) & ~(br & cr)"
+# For very complex formulas, use stats to monitor
+tableaux --stats --debug "very_complex_formula"
 
-# Scheduling constraints
-tableaux "task1_monday | task1_tuesday) & (task2_monday | task2_tuesday) & ~(task1_monday & task2_monday)"
+# Consider simplifying or breaking down complex formulas
+tableaux "part1_of_formula"
+tableaux "part2_of_formula"
 ```
 
-### Research Applications
+## Integration with Other Tools
 
-```bash
-# Test non-classical logic properties
-tableaux --wk3 --models "p -> (q -> p)"      # Test axiom in WK3
-tableaux --wk3 "((p -> q) -> p) -> p"        # Peirce's law in WK3
-
-# Compare logic systems
-tableaux --compare-logics "p | ~p"           # Excluded middle
-tableaux --compare-logics "p & ~p"           # Contradiction
-```
-
-### Verification and Testing
-
-```bash
-# Verify logical equivalences
-tableaux --models "~(p & q)"                 # De Morgan 1
-tableaux --models "~p | ~q"                  # De Morgan 1 equivalent
-
-# Test inference rules
-tableaux "(p -> q) & p & ~q"                 # Should be unsatisfiable (modus ponens)
-tableaux "(p | q) & ~p & ~q"                 # Should be unsatisfiable (disjunctive syllogism)
-```
-
-### Automation and Scripting
+### Shell Scripting
 
 ```bash
 #!/bin/bash
-# Test all tautologies in a list
-tautologies=(
-    "p | ~p"
-    "(p -> q) | (q -> p)"
-    "((p -> q) -> p) -> p"
-    "(p & (p -> q)) -> q"
-)
-
-for formula in "${tautologies[@]}"; do
-    echo "Testing: $formula"
-    if tableaux "$formula" | grep -q "SATISFIABLE"; then
-        echo "  ✓ Tautology (satisfiable)"
-    else
-        echo "  ✗ Not a tautology"
-    fi
+# Test multiple logic systems
+formula="p & ~p"
+for logic in classical weak_kleene wkrq; do
+    result=$(tableaux --logic=$logic "$formula" | grep "Status:")
+    echo "$logic: $result"
 done
 ```
 
-### Integration with Other Tools
+### JSON Processing
 
 ```bash
-# Generate input for other solvers
-tableaux --format=dimacs "cnf_formula" > formula.cnf
+# Extract model count
+tableaux --format=json "p -> q" | jq '.models | length'
 
-# Convert to different formats
-tableaux --format=latex "p -> q" > formula.tex
+# Extract specific model
+tableaux --format=json --models "p & q" | jq '.models[0]'
 
-# Pipe to analysis tools
-tableaux --format=json "formula" | jq '.models | length'
+# Check satisfiability
+tableaux --format=json "p & ~p" | jq '.satisfiable'
 ```
 
-This comprehensive CLI guide provides everything needed to effectively use the tableau system from the command line, whether for learning, research, or practical problem-solving applications.
+### File Processing
+
+```bash
+# Process formulas from file
+while IFS= read -r formula; do
+    echo "Testing: $formula"
+    tableaux "$formula"
+    echo "---"
+done < formulas.txt
+```
+
+## Best Practices
+
+### Formula Writing
+
+1. **Always use quotes** around formulas to prevent shell interpretation
+2. **Use parentheses** for clarity in complex formulas
+3. **Test incrementally** - build complex formulas step by step
+4. **Use meaningful atom names** for readability
+
+### Logic System Selection
+
+1. **Start with classical** for standard logical reasoning
+2. **Use weak Kleene** for three-valued scenarios
+3. **Use wKrQ** for epistemic reasoning with four values
+4. **Use FDE** for paraconsistent reasoning
+
+### Performance
+
+1. **Use `--stats`** to monitor performance on complex formulas
+2. **Break down** very complex formulas into parts
+3. **Use batch mode** for multiple formula testing
+4. **Consider JSON output** for programmatic processing
+
+### Debugging
+
+1. **Use `--debug`** to understand tableau construction
+2. **Use `--models`** to see all satisfying assignments
+3. **Test with different signs** to understand formula behavior
+4. **Compare across logic systems** to understand differences
+
+The CLI provides a powerful interface for exploring automated reasoning across multiple logic systems, with both interactive and batch processing capabilities suitable for research, education, and practical applications.

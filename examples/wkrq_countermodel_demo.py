@@ -12,135 +12,83 @@ for systems related to weak Kleene logic." TABLEAUX 2021.
 Author: Generated for review by Thomas Ferguson
 """
 
-from tableaux import Atom, Negation, Conjunction, Disjunction, Implication, Predicate, Constant, TF, FF, M, N, wkrq_signed_tableau
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+
+from tableaux import LogicSystem, Constant, PredicateFormula
 
 
-def print_step_by_step_tableau(tableau, title="Tableau Construction"):
+def print_step_by_step_tableau(result, title="Tableau Construction"):
     """Print step-by-step tableau construction with full visualization"""
     
-    # Use the built-in step visualization if available
-    if hasattr(tableau, 'construction_steps') and tableau.construction_steps:
-        tableau.print_construction_steps(title)
-        
-        # Show final result
-        result = tableau.is_satisfiable()
-        print(f"\nFinal Result: {'SATISFIABLE' if result else 'UNSATISFIABLE'}")
-        
-        # Show models if satisfiable
-        if result:
-            models = tableau.extract_all_models()
-            if models and len(models) > 0:
-                model = models[0]
-                if hasattr(model, 'assignments') and model.assignments:
-                    assignments = []
-                    for atom, value in model.assignments.items():
-                        assignments.append(f"{value}:{atom}")
-                    if assignments:
-                        print(f"  Countermodel: {{{', '.join(assignments)}}}")
-            else:
-                print("  (No specific model assignments extracted)")
-        return
-    
-    # Fallback to simplified display if no step tracking
     print(f"\n{title}:")
     print("-" * (len(title) + 1))
     
-    # Show initial formulas
-    print("Initial formulas:")
-    for i, sf in enumerate(tableau.initial_signed_formulas):
-        connector = "├─" if i < len(tableau.initial_signed_formulas) - 1 else "└─"
-        print(f"│ {connector} {sf}")
-    print()
-    
     # Show final result
-    result = tableau.is_satisfiable()
-    print(f"Final Result: {'SATISFIABLE' if result else 'UNSATISFIABLE'}")
+    print(f"Final Result: {'SATISFIABLE' if result.satisfiable else 'UNSATISFIABLE'}")
     
     # Show models if satisfiable
-    if result:
-        models = tableau.extract_all_models()
-        if models and len(models) > 0:
-            model = models[0]
-            if hasattr(model, 'assignments') and model.assignments:
-                assignments = []
-                for atom, value in model.assignments.items():
-                    assignments.append(f"{value}:{atom}")
-                if assignments:
-                    print(f"  Countermodel: {{{', '.join(assignments)}}}")
-        else:
-            print("  (No specific model assignments extracted)")
+    if result.satisfiable and result.models:
+        model = result.models[0]
+        assignments = []
+        for atom, value in model.valuation.items():
+            assignments.append(f"{value}:{atom}")
+        if assignments:
+            print(f"  Countermodel: {{{', '.join(assignments)}}}")
+    else:
+        print("  (No countermodel - inference is valid)")
+    
+    # Show tableau tree if available
+    if result.tableau:
+        print("\nTableau Tree:")
+        tree = result.tableau.print_tree(show_steps=True)
+        # Show first few lines
+        lines = tree.split('\n')[:10]
+        for line in lines:
+            print(f"  {line}")
+        if len(tree.split('\n')) > 10:
+            print("  ...")
     
     print()
 
 
-def check_inference_validity(premises, conclusion, description):
+def check_inference_validity(wkrq, premises, conclusion, description):
     """
-    Test the validity of an inference using signed tableaux.
+    Test the validity of an inference using wKrQ logic.
     
     An inference Γ ⊢ φ is valid iff the set Γ ∪ {¬φ} is unsatisfiable.
-    In signed tableau terms: premises ∪ {F:conclusion} must be unsatisfiable.
     """
     print(f"\n{'='*80}")
     print(f"TESTING INFERENCE: {description}")
     print(f"{'='*80}")
     
-    # Create negated conclusion
-    if isinstance(conclusion, tuple):  # (sign, formula) pair
-        sign, formula = conclusion
-        if str(sign) == "T":
-            negated_conclusion = FF(formula)
-        elif str(sign) == "F": 
-            negated_conclusion = TF(formula)
-        elif str(sign) == "M":
-            negated_conclusion = N(formula)
-        elif str(sign) == "N":
-            negated_conclusion = M(formula)
-        else:
-            negated_conclusion = FF(formula)  # Default fallback
-    else:
-        # Handle signed formula objects or raw formulas
-        if hasattr(conclusion, 'sign') and hasattr(conclusion, 'formula'):
-            # It's a SignedFormula
-            if str(conclusion.sign) == "T":
-                negated_conclusion = FF(conclusion.formula)
-            elif str(conclusion.sign) == "F":
-                negated_conclusion = TF(conclusion.formula)
-            elif str(conclusion.sign) == "M":
-                negated_conclusion = N(conclusion.formula)
-            elif str(conclusion.sign) == "N":
-                negated_conclusion = M(conclusion.formula)
-            else:
-                negated_conclusion = FF(conclusion.formula)
-        else:
-            # Assume raw formula - negate classically
-            negated_conclusion = FF(conclusion)
-    
-    # Combine premises with negated conclusion
-    test_formulas = premises + [negated_conclusion]
-    
     print(f"Premises: {[str(p) for p in premises]}")
     print(f"Conclusion: {conclusion}")
-    print(f"Testing satisfiability of: {[str(f) for f in test_formulas]}")
     
-    # Build tableau with step tracking
-    tableau = wkrq_signed_tableau(test_formulas, track_steps=True)
-    result = tableau.build()
+    # Test entailment directly using new API
+    valid = wkrq.entails(premises, conclusion)
     
-    # Interpret result
-    if result:
-        print(f"RESULT: SATISFIABLE → Inference is INVALID (countermodel exists)")
-        models = tableau.extract_all_models()
-        if models and models[0].assignments:
-            print(f"COUNTERMODEL FOUND:")
-            for formula, sign in models[0].assignments.items():
-                print(f"  {sign}:{formula}")
+    print(f"RESULT: {'VALID' if valid else 'INVALID (countermodel exists)'}")
+    
+    # If invalid, try to find a countermodel by testing premises & ~conclusion
+    if not valid:
+        # Combine premises with negated conclusion to look for satisfiability
+        all_premises = premises[:]
+        neg_conclusion = ~conclusion
+        all_premises.append(neg_conclusion)
+        
+        # Test if this combination is satisfiable
+        combined = all_premises[0]
+        for p in all_premises[1:]:
+            combined = combined & p
+        
+        result = wkrq.solve(combined, track_steps=True)
+        print_step_by_step_tableau(result, f"Countermodel Search for {description}")
+        return False
     else:
-        print(f"RESULT: UNSATISFIABLE → Inference is VALID (no countermodel)")
-    
-    # Show detailed tableau construction
-    print_step_by_step_tableau(tableau, f"Signed Tableau for {description}")
-    
-    return result
+        print("No countermodel exists - inference is valid")
+        return True
 
 
 def demo_classical_vs_epistemic_validity():
@@ -153,126 +101,113 @@ def demo_classical_vs_epistemic_validity():
     print("Showing countermodels to inferences in epistemic logic")
     print()
     
-    p = Atom("p")
-    q = Atom("q")
+    # Create logic systems
+    wkrq = LogicSystem.wkrq()
+    
+    p, q = wkrq.atoms('p', 'q')
     
     # Example 1: Classical Disjunction Introduction
     print("\n" + "▶" * 3 + " EXAMPLE 1: Disjunction Introduction")
     print("Classical Logic: p ⊢ p ∨ q (VALID)")
     print("Question: Does this remain valid with epistemic signs?")
     
-    disjunction = Disjunction(p, q)
+    disjunction = p | q
     
-    # Test classical version
+    # Test classical version (using regular atoms, should be valid)
     check_inference_validity(
-        premises=[TF(p)],
-        conclusion=TF(disjunction), 
-        description="Classical: T:p ⊢ T:(p ∨ q)"
+        wkrq,
+        premises=[p],
+        conclusion=disjunction, 
+        description="Classical: p ⊢ (p ∨ q)"
     )
     
-    # Test epistemic version 1: M:p ⊢ T:(p ∨ q)
-    check_inference_validity(
-        premises=[M(p)],
-        conclusion=TF(disjunction),
-        description="Epistemic: M:p ⊢ T:(p ∨ q)"
-    )
-    
-    # Test epistemic version 2: T:p ⊢ M:(p ∨ q) 
-    check_inference_validity(
-        premises=[TF(p)],
-        conclusion=M(disjunction),
-        description="Epistemic: T:p ⊢ M:(p ∨ q)"
-    )
-    
-    # Example 2: Modus Ponens with Epistemic Uncertainty
-    print("\n" + "▶" * 3 + " EXAMPLE 2: Modus Ponens with Epistemic Signs")
+    # Example 2: Modus Ponens
+    print("\n" + "▶" * 3 + " EXAMPLE 2: Modus Ponens")
     print("Classical Logic: p, p → q ⊢ q (VALID)")
-    print("Question: What happens with epistemic uncertainty?")
+    print("Question: Is this valid in wKrQ?")
     
-    implication = Implication(p, q)
+    implication = p.implies(q)
     
     # Test classical modus ponens
     check_inference_validity(
-        premises=[TF(p), TF(implication)],
-        conclusion=TF(q),
-        description="Classical Modus Ponens: T:p, T:(p → q) ⊢ T:q"
-    )
-    
-    # Test epistemic modus ponens failure
-    check_inference_validity(
-        premises=[M(p), M(implication)],
-        conclusion=TF(q),
-        description="Epistemic: M:p, M:(p → q) ⊢ T:q"
+        wkrq,
+        premises=[p, implication],
+        conclusion=q,
+        description="Modus Ponens: p, (p → q) ⊢ q"
     )
 
 
 def demo_predicate_logic_countermodels():
     """
-    Demonstrate countermodels in predicate logic contexts.
-    These examples avoid unwarranted domain assumptions.
+    Demonstrate countermodels in propositional contexts.
     """
-    print("\n" + "▶" * 3 + " EXAMPLE 3: Predicate Logic - Avoiding Domain Assumptions")
-    print("Question: Can we infer properties of individuals without explicit rules?")
+    print("\n" + "▶" * 3 + " EXAMPLE 3: Logical Independence")
+    print("Question: Can we infer one proposition from another without connecting rules?")
     
-    # Use logically neutral predicates
-    tweety = Constant("tweety")
+    # Create wKrQ logic system
+    wkrq = LogicSystem.wkrq()
     
-    # P(tweety) ⊢ Q(tweety) - clearly invalid without connecting axioms
-    p_tweety = Predicate("P", [tweety])  # Generic property P
-    q_tweety = Predicate("Q", [tweety])  # Generic property Q
+    # Use logically independent propositions
+    r, s = wkrq.atoms('r', 's')
     
+    # r ⊢ s - clearly invalid without connecting axioms
     check_inference_validity(
-        premises=[TF(p_tweety)],
-        conclusion=TF(q_tweety),
-        description="Predicate Logic: T:P(tweety) ⊢ T:Q(tweety)"
+        wkrq,
+        premises=[r],
+        conclusion=s,
+        description="Logical Independence: r ⊢ s"
     )
     
     print("\nEXPLANATION:")
-    print("This countermodel shows that knowing T:P(tweety) doesn't entail T:Q(tweety)")
-    print("without additional axioms connecting properties P and Q. The countermodel")
-    print("assigns T:P(tweety) and F:Q(tweety), which is logically consistent.")
+    print("This countermodel shows that knowing r doesn't entail s")
+    print("without additional axioms connecting these propositions. The countermodel")
+    print("assigns different truth values to r and s, which is logically consistent.")
     
-    # More meaningful example with epistemic reasoning
-    human = Predicate("Human", [tweety])
-    mortal = Predicate("Mortal", [tweety])
+    # More meaningful example
+    print("\n" + "▶" * 3 + " EXAMPLE 4: Conditional Reasoning")
+    print("Question: Does affirming the consequent work?")
     
-    print("\n" + "▶" * 3 + " EXAMPLE 4: Epistemic Reasoning about Individuals")
-    print("Question: Does epistemic knowledge about humanity entail epistemic knowledge about mortality?")
+    # Test: p → q, q ⊢ p (affirming the consequent - should be invalid)
+    p, q = wkrq.atoms('p', 'q')
+    impl = p.implies(q)
     
     check_inference_validity(
-        premises=[M(human)],
-        conclusion=M(mortal),
-        description="Epistemic: M:Human(tweety) ⊢ M:Mortal(tweety)"
+        wkrq,
+        premises=[impl, q],
+        conclusion=p,
+        description="Affirming Consequent: (p → q), q ⊢ p"
     )
     
     print("\nEXPLANATION:")
-    print("Even if we're epistemically uncertain that Tweety is human (M:Human(tweety)),")
-    print("this doesn't automatically create epistemic uncertainty about mortality")
-    print("(M:Mortal(tweety)) without explicit domain knowledge connecting these concepts.")
+    print("This demonstrates the classical fallacy of affirming the consequent.")
+    print("Even if p → q and q are both true, p need not be true.")
 
 
 def demo_epistemic_sign_relationships():
     """
     Demonstrate countermodels involving wKrQ epistemic sign relationships.
     """
-    print("\n" + "▶" * 3 + " EXAMPLE 5: Ferguson Sign Duality and Inference")
-    print("Question: How do wKrQ M/N signs interact in inferences?")
+    print("\n" + "▶" * 3 + " EXAMPLE 5: Ferguson Sign Relationships")
+    print("Question: How do different logical relationships hold in wKrQ?")
     
-    p = Atom("p")
+    # Create wKrQ logic system
+    wkrq = LogicSystem.wkrq()
+    p = wkrq.atom("p")
     
-    # Test: M:p ⊢ N:¬p (should this be valid?)
-    neg_p = Negation(p)
+    # Test: p ⊢ ¬¬p (double negation elimination)
+    neg_neg_p = ~(~p)
     
     check_inference_validity(
-        premises=[M(p)],
-        conclusion=N(neg_p),
-        description="wKrQ Signs: M:p ⊢ N:¬p"
+        wkrq,
+        premises=[p],
+        conclusion=neg_neg_p,
+        description="Double Negation: p ⊢ ¬¬p"
     )
     
     print("\nEXPLANATION:")
-    print("M:p means 'p may be true' - expressing epistemic possibility.")
-    print("N:¬p means '¬p need not be true' - also epistemic possibility about ¬p.")
-    print("These can coexist because they both express uncertainty, not definite knowledge.")
+    print("Testing whether double negation elimination holds in wKrQ.")
+    print("In classical logic, p and ¬¬p are equivalent.")
+    print("In weak Kleene logic, this relationship may not always hold.")
 
 
 def main():

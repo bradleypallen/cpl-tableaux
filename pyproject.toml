@@ -39,7 +39,7 @@ dev = [
 ]
 
 [project.scripts]
-tableaux = "tableaux.cli:main"
+tableaux = "tableaux.extensible_cli:main"
 
 [project.urls]
 "Homepage" = "https://github.com/bradleypallen/tableaux"
@@ -61,3 +61,4 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "-v"
+norecursedirs = ["tests/archive"]
