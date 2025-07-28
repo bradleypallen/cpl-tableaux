@@ -14,7 +14,7 @@ from .formula import Formula
 from .signs import Sign, T, F, M, N, sign_from_string
 from .tableau import solve, TableauResult, Tableau, TableauNode
 from .parser import parse, parse_inference, Inference, ParseError
-from .api import test_inference, InferenceResult, WkrqLogic
+from .api import check_inference, InferenceResult
 
 
 class TableauTreeRenderer:
@@ -228,6 +228,7 @@ Examples:
     )
     
     parser.add_argument('input', nargs='?', help='Formula or inference to evaluate')
+    parser.add_argument('--version', action='version', version='wKrQ 2.0')
     parser.add_argument('--sign', default='T', choices=['T', 'F', 'M', 'N'],
                        help='Sign to test (default: T)')
     parser.add_argument('--models', action='store_true',
@@ -273,13 +274,11 @@ Examples:
         return
     
     try:
-        logic = WkrqLogic()
-        
         # Parse input
         if '|-' in args.input:
             # Inference
-            inference = logic.parse_inference(args.input)
-            result = test_inference(inference, args.consequence)
+            inference = parse_inference(args.input)
+            result = check_inference(inference)
             
             if args.json:
                 output = {
@@ -301,7 +300,7 @@ Examples:
         
         else:
             # Formula
-            formula = logic.parse(args.input)
+            formula = parse(args.input)
             sign = sign_from_string(args.sign)
             result = solve(formula, sign)
             
@@ -360,8 +359,6 @@ def interactive_mode():
     print("Commands: formula, inference (P |- Q), help, quit")
     print()
     
-    logic = WkrqLogic()
-    
     while True:
         try:
             line = input("wkrq> ").strip()
@@ -383,12 +380,12 @@ def interactive_mode():
             
             # Parse and evaluate
             if '|-' in line:
-                inference = logic.parse_inference(line)
-                result = test_inference(inference)
+                inference = parse_inference(line)
+                result = check_inference(inference)
                 display_inference_result(result)
             else:
-                formula = logic.parse(line)
-                result = logic.solve(formula)
+                formula = parse(line)
+                result = solve(formula, T)
                 display_result(result)
         
         except ParseError as e:
