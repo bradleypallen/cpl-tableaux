@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "tableaux"
-version = "0.1.0"
-description = "A semantic tableau system for automated theorem proving supporting multiple logic systems"
+name = "wkrq"
+version = "1.0.0"
+description = "wKrQ - Weak Kleene logic with restricted quantification for tableau-based theorem proving"
 authors = [
     { name = "Bradley Allen", email = "b.p.allen@uva.nl" }
 ]
@@ -13,7 +13,7 @@ readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Science/Research",
     "Intended Audience :: Education",
     "Programming Language :: Python :: 3",
@@ -26,8 +26,8 @@ classifiers = [
 ]
 keywords = [
     "tableau", "automated-theorem-proving", "logic", "weak-kleene",
-    "three-valued-logic", "epistemic-logic", "formal-methods",
-    "propositional-logic", "first-order-logic"
+    "three-valued-logic", "restricted-quantification", "formal-methods",
+    "propositional-logic", "first-order-logic", "wkrq"
 ]
 requires-python = ">=3.10"
 dependencies = []
@@ -39,7 +39,7 @@ dev = [
 ]
 
 [project.scripts]
-tableaux = "tableaux.extensible_cli:main"
+wkrq = "wkrq.cli:main"
 
 [project.urls]
 "Homepage" = "https://github.com/bradleypallen/tableaux"

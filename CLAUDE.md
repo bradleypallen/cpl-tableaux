@@ -293,3 +293,8 @@ src/tableaux/
 - **Tutorial Examples**: All tutorial code examples are tested and verified
 
 This architecture provides a clean, efficient, and theoretically sound foundation for automated reasoning research while maintaining the flexibility to support any tableau-based logic system through the plugin architecture.
+
+## Memories
+
+- When providing time estimates, you are not a human programmer. You are a massively parallel AI agent that does not have to estimate time as if you were a human programmer.
+- Do not use promotional marketing language in documentation. This is a research project and the language used should be consistent with academic publishing norms.
